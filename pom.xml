@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.sonatype.nexus.plugins</groupId>
+        <artifactId>nexus-plugins</artifactId>
+        <version>3.42.0-01</version>
+    </parent>
+
+    <name>${project.groupId}:${project.artifactId}</name>
+    <packaging>bundle</packaging>
+
+
+    <groupId>com.redhat.nx3-maven-central-deploy</groupId>
+    <artifactId>nx3-maven-central-deploy</artifactId>
+    <version>${nexus.version}-SNAPSHOT</version>
+    <description>Plugin for deployment of artifacts from Sonatype Nexus 3 repositories to Maven Central.</description>
+
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <mockitoversion>4.9.0</mockitoversion>
+    </properties>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>David Hladky</name>
+            <email>dhladky@redhat.com</email>
+            <organization>Red Hat, Inc.</organization>
+            <organizationUrl>https://developers.redhat.com</organizationUrl>
+        </developer>
+    </developers>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>5.9.1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.sonatype.nexus</groupId>
+            <artifactId>nexus-scheduling</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.sonatype.nexus</groupId>
+            <artifactId>nexus-repository</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- new stuff -->
+        <dependency>
+            <groupId>org.sonatype.nexus</groupId>
+            <artifactId>nexus-capability</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.sonatype.nexus</groupId>
+            <artifactId>nexus-capability</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sonatype.nexus.plugins</groupId>
+            <artifactId>nexus-tags-plugin</artifactId>
+            <version>${nexus.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>com.intellij</groupId>
+            <artifactId>annotations</artifactId>
+            <version>12.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.sonatype.nexus</groupId>
+            <artifactId>nexus-testsupport</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+
+                <dependency>
+                    <groupId>org.sonatype.nexus</groupId>
+                    <artifactId>nexus-repository-config</artifactId>
+                    <scope>provided</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.sonatype.nexus</groupId>
+                    <artifactId>nexus-plugin-api</artifactId>
+                    <scope>provided</scope>
+                </dependency>
+
+
+
+                <dependency>
+                    <groupId>org.sonatype.nexus</groupId>
+                    <artifactId>nexus-siesta</artifactId>
+                    <scope>provided</scope>
+                </dependency>
+         -->
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.karaf.tooling</groupId>
+                <artifactId>karaf-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+
+
+
+</project>
