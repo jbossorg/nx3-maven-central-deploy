@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.jboss.nexus.constants.FileExtensions.EXTENSION_POM;
 
 /** <p>Class for  verification of the content of pom.xml files, such as present license, scm and such.
  *  While many errors would normally be avoided in xml using
@@ -39,7 +40,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Singleton
 @Named
 public class PomXMLValidationCheck extends CentralValidation {
-	private BlobStoreManager blobStoreManager;
+	private final BlobStoreManager blobStoreManager;
 
 	@Inject
 	public PomXMLValidationCheck(BlobStoreManager blobStoreManager) {
@@ -51,7 +52,7 @@ public class PomXMLValidationCheck extends CentralValidation {
 	public void validateComponent(@NotNull Component component, @NotNull List<Asset> assets, @NotNull List<FailedCheck> listOfFailures) {
 		XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
 		for(Asset asset : assets ) {
-			if(asset.name().endsWith(".pom")) {
+			if(asset.name().endsWith(EXTENSION_POM)) {
 
 				if(asset.blobRef() == null) {
 					String msg = "Program error: asset " + asset.name() + " has no blob reference!";
@@ -139,14 +140,21 @@ public class PomXMLValidationCheck extends CentralValidation {
 												if(level == 2)
 													hasArtifact = true;
 											case "version":
-												if(level==2 || level == 3 && parentSection) {
-													hasVersion = true;
-
-													// TODO: 05.01.2023 analyze if snapshot version
+												XMLEvent versionEvent = reader.peek();
+												if(versionEvent.isCharacters()) {
+													if(versionEvent.asCharacters().getData().endsWith("-SNAPSHOT")) {
+														hasSnapshotVersion = true;
+													}
+													if(level==2 || level == 3 && parentSection) {
+														hasVersion = true;
+													}
+												} else {
+														String msg = asset.name() + " at [" + versionEvent.getLocation().getLineNumber()+":"+versionEvent.getLocation().getColumnNumber()   + "]: the version element should contain a string!";
+														log.info("Failed PomXMLValidationCheck: "+msg);
+														listOfFailures.add(new FailedCheck(component, msg));
 												}
-												break;
-												
 
+												break;
 										}
 									} else if (event.isEndElement()) {
 										level--;
@@ -205,7 +213,7 @@ public class PomXMLValidationCheck extends CentralValidation {
 									listOfFailures.add(new FailedCheck(component, msg));
 								}
 								if(!hasGroup) {
-									String msg = asset.name() + " does not have the product group specified!";
+									String msg = asset.name() + " does not have the project group specified!";
 									log.info("Failed PomXMLValidationCheck: "+msg);
 									listOfFailures.add(new FailedCheck(component, msg));
 								}
@@ -215,7 +223,7 @@ public class PomXMLValidationCheck extends CentralValidation {
 									listOfFailures.add(new FailedCheck(component, msg));
 								}
 								if(!hasVersion) {
-									String msg = asset.name() + " does not have the version specified!";
+									String msg = asset.name() + " does not have the project version specified!";
 									log.info("Failed PomXMLValidationCheck: "+msg);
 									listOfFailures.add(new FailedCheck(component, msg));
 								}
@@ -230,7 +238,7 @@ public class PomXMLValidationCheck extends CentralValidation {
 								log.error(msg);
 								listOfFailures.add(new FailedCheck(component, msg));
 							} catch (XMLStreamException e) {
-								String msg = asset.name() + " at ["+ e.getLocation().getLineNumber()+","+e.getLocation().getColumnNumber() + "] parsing error: " + e.getMessage();
+								String msg = asset.name() + " parsing error: " + e.getMessage().replace("\n", "");
 								log.info("Failed PomXMLValidationCheck: "+msg);
 								listOfFailures.add(new FailedCheck(component, msg));
 							}

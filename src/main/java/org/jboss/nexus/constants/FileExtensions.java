@@ -12,4 +12,6 @@ public class FileExtensions {
 	/** GPG signature. */
 	public static final String EXTENSION_ASC = ".asc";
 
+	public static final String EXTENSION_POM = ".pom";
+
 }
