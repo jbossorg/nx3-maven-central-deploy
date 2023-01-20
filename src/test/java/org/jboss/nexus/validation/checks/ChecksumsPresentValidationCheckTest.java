@@ -1,4 +1,5 @@
 package org.jboss.nexus.validation.checks;
+import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,16 +22,19 @@ public class ChecksumsPresentValidationCheckTest {
 
         private ChecksumsPresentValidationCheck testObject  = new ChecksumsPresentValidationCheck();
 
+        private MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration;
+
         @Before
         public void setup() {
             failedChecks = new ArrayList<>();
+            mavenCentralDeployTaskConfiguration = new MavenCentralDeployTaskConfiguration(TaskConfigurationGenerator.defaultMavenCentralDeployTaskConfiguration());
         }
 
 
         @Test
         public void validateComponentEmpty() {
              Component testComponent = mock(Component.class);
-             testObject.validateComponent(testComponent, Collections.emptyList(), failedChecks);
+             testObject.validateComponent(mavenCentralDeployTaskConfiguration, testComponent, Collections.emptyList(), failedChecks);
              assertTrue(failedChecks.isEmpty());
         }
 
@@ -54,7 +58,7 @@ public class ChecksumsPresentValidationCheckTest {
                 assets.add(component1AssetCheckSumMd5);
                 assets.add(component1AssetCheckSumSha1);
 
-                testObject.validateComponent(component1, assets, failedChecks);
+                testObject.validateComponent(mavenCentralDeployTaskConfiguration, component1, assets, failedChecks);
                 assertTrue("Simple test should have been OK", failedChecks.isEmpty());
 
                 assets = new ArrayList<>();
@@ -62,7 +66,7 @@ public class ChecksumsPresentValidationCheckTest {
                 assets.add(component2AssetCheckSumMd5);
                 assets.add(component2AssetCheckSumSha1);
 
-                testObject.validateComponent(component1, assets, failedChecks);
+                testObject.validateComponent(mavenCentralDeployTaskConfiguration, component1, assets, failedChecks);
                 assertTrue("It should still be OK", failedChecks.isEmpty());
         }
         @Test
@@ -84,7 +88,7 @@ public class ChecksumsPresentValidationCheckTest {
                 assets.add(component1Asset);
                 assets.add(component1AssetCheckSumMd5);
 
-                testObject.validateComponent(component1, assets, failedChecks);
+                testObject.validateComponent(mavenCentralDeployTaskConfiguration, component1, assets, failedChecks);
                 assertEquals("First error", 1, failedChecks.size()  );
                 assertEquals("Missing checksum reported", "SHA1 checksum not found for something/file.jar", failedChecks.get(0).getProblem());
                 assertSame(component1, failedChecks.get(0).getComponent());
@@ -93,7 +97,7 @@ public class ChecksumsPresentValidationCheckTest {
                 assets.add(component2Asset);
                 assets.add(component2AssetCheckSumSha1);
 
-                testObject.validateComponent(component2, assets, failedChecks);
+                testObject.validateComponent(mavenCentralDeployTaskConfiguration, component2, assets, failedChecks);
                 assertEquals("Missing checksum still there", "SHA1 checksum not found for something/file.jar", failedChecks.get(0).getProblem());
                 assertEquals("Missing new checksum.", "MD5 checksum not found for something/file2.jar", failedChecks.get(1).getProblem());
                 assertEquals("First error", 2, failedChecks.size() );

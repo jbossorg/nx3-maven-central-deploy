@@ -1,6 +1,7 @@
 package org.jboss.nexus.validation.reporting;
 
 import org.sonatype.nexus.capability.CapabilityDescriptor;
+import org.sonatype.nexus.capability.CapabilityDescriptorSupport;
 import org.sonatype.nexus.capability.CapabilityIdentity;
 import org.sonatype.nexus.capability.CapabilityType;
 import org.sonatype.nexus.formfields.FormField;
@@ -9,51 +10,38 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 
-public class TestReportCapabilityDescriptorParent implements CapabilityDescriptor {
+@SuppressWarnings("rawtypes")
+public abstract class TestReportCapabilityDescriptorParent extends CapabilityDescriptorSupport<TestReportCapabilityConfigurationParent> {
 
-    @Override
-    public CapabilityType type() {
-        return null;
+    public TestReportCapabilityDescriptorParent(List<FormField> formFields) {
+        this.formFields = formFields;
     }
 
-    @Override
-    public String name() {
-        // TODO: 06.12.2022
-        return getClass().getName();
-    }
+    private final List<FormField> formFields;
 
     @Override
     public List<FormField> formFields() {
-        // TODO: 06.12.2022
-        return null;
+        return formFields;
     }
 
     @Override
     public boolean isExposed() {
-        // TODO: 06.12.2022
-        return false;
+        return true;
     }
 
     @Override
     public boolean isHidden() {
-        // TODO: 06.12.2022
         return false;
     }
 
     @Override
     public String about() {
-        // TODO: 06.12.2022
-        return null;
+        return "Report for failed Maven Central Deployment: "+ getClass().getName();
     }
 
     @Override
     public void validate(@Nullable CapabilityIdentity id, Map<String, String> properties, ValidationMode validationMode) {
-        // TODO: 06.12.2022 
-    }
-
-    @Override
-    public int version() {
-        return 0;
+        // nothing yet
     }
 
     @Override

@@ -1,5 +1,6 @@
 package org.jboss.nexus.validation.checks;
 
+import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
 import org.jboss.nexus.constants.FileExtensions;
 import org.jetbrains.annotations.NotNull;
 import org.sonatype.nexus.repository.storage.Asset;
@@ -24,7 +25,7 @@ public class ChecksumsPresentValidationCheck extends CentralValidation {
    static final Set<String> checkSumExtensions = Arrays.stream((new String[]{FileExtensions.EXTENSION_MD5, FileExtensions.EXTENSION_SHA1, FileExtensions.EXTENSION_SHA256, FileExtensions.EXTENSION_SHA512, FileExtensions.EXTENSION_ASC})).collect(Collectors.toSet());
    // asc is not a checksum, but it should not require checksums itself, so it should be treated as the optional one.
     @Override
-    public void validateComponent(@NotNull Component component, @NotNull List<Asset> assets, @NotNull List<FailedCheck> listOfFailures) {
+    public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<Asset> assets, @NotNull List<FailedCheck> listOfFailures) {
         Set<String> checksumFiles = new HashSet<>();
         Set<String> nonChecksumFiles = new HashSet<>();
         for(Asset asset : assets) {

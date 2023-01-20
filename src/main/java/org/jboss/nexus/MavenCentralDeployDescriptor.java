@@ -66,6 +66,12 @@ public class MavenCentralDeployDescriptor
     @DefaultMessage("Text for latest results")
     String latestResultsHelp();
 
+    @DefaultMessage("Plain-text reports file")
+    String plainTextReportOutputFileLabel();
+
+    @DefaultMessage("A file name, where you will be able to find reports from deployments.")
+    String plainTextReportOutputFileHelp();
+
   }
 
 //
@@ -91,6 +97,7 @@ public class MavenCentralDeployDescriptor
             (new CheckboxFormField(MavenCentralDeployTaskConfiguration.DRY_RUN, messages.dryRunLabel(), messages.dryRunHelp(), FormField.OPTIONAL)).withInitialValue(true),
             (new CheckboxFormField(MavenCentralDeployTaskConfiguration.MARK_ARTIFACTS, messages.markArtifactsAfterRunLabel(), messages.markArtifactsAfterRunHelp(), FormField.OPTIONAL)).withInitialValue(false),
             new StringTextFormField(MavenCentralDeployTaskConfiguration.FILTER, messages.filterLabel(), messages.filterHelp(), FormField.OPTIONAL),
+            new StringTextFormField(MavenCentralDeployTaskConfiguration.PLAIN_TEXT_REPORT_OUTPUT_FILE, messages.plainTextReportOutputFileLabel(), messages.plainTextReportOutputFileHelp(), FormField.OPTIONAL),
             new TextAreaFormField(MavenCentralDeployTaskConfiguration.LATEST_STATUS, messages.latestResultsLabel(), messages.latestResultsHelp(), FormField.OPTIONAL, null, true )
             );
 

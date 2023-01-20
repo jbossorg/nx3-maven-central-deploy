@@ -1,5 +1,6 @@
 package org.jboss.nexus.validation.checks;
 
+import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,6 +45,8 @@ public class PomXMLValidationCheckTest {
 
 	private List<FailedCheck> failedCheckList;
 
+	private MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration;
+
 	@Before
 	public void setup() {
 		Asset testAsset = new Asset().name("some/SomeProject.pom").blobRef(fakeBlobRef);
@@ -57,6 +60,8 @@ public class PomXMLValidationCheckTest {
 
 		listOfAssets = new ArrayList<>();
 		listOfAssets.add(testAsset);
+
+		mavenCentralDeployTaskConfiguration = new MavenCentralDeployTaskConfiguration(TaskConfigurationGenerator.defaultMavenCentralDeployTaskConfiguration());
 	}
 
 	/**
@@ -80,8 +85,8 @@ public class PomXMLValidationCheckTest {
 				  "   <description>des</description>" +
 				  "   <url>http://localhost</url>" +
 				  "   <organization></organization>" +
-				  "   <group>group</group>" +
-				  "   <artifact>artifact</artifact>" +
+				  "   <groupId>group</groupId>" +
+				  "   <artifactId>artifact</artifactId>" +
 				  "   <version>version</version>" +
 				  "   <scm>" +
 				  "   </scm>" +
@@ -92,7 +97,7 @@ public class PomXMLValidationCheckTest {
 				  "   </licenses>" +
 				  "</project>");
 
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 
 		assertTrue(failedCheckList.isEmpty());
 	}
@@ -110,7 +115,7 @@ public class PomXMLValidationCheckTest {
 				  "   <license/>" + // <-- it should not be here
 				  "</project>");
 
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 
 		assertTrue( errorExist("pom.xml validation failed: some/SomeProject.pom at [1,100]: license appeared outside its expected location in xml."));
 		assertFalse( errorExist("some/SomeProject.pom does not have any license specified!"));
@@ -127,7 +132,7 @@ public class PomXMLValidationCheckTest {
 				  "   </scm>" +
 				  "</project>");
 
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 
 		assertTrue( errorExist("pom.xml validation failed: some/SomeProject.pom at [1,34]: licenses section appeared outside its expected location in xml."));
 		assertTrue( errorExist("some/SomeProject.pom does not have any license specified!"));
@@ -141,7 +146,7 @@ public class PomXMLValidationCheckTest {
 				  "   </scm>" +
 				  "</project>");
 
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 
 		assertTrue( errorExist("some/SomeProject.pom does not have any license specified!"));
 	}
@@ -159,7 +164,7 @@ public class PomXMLValidationCheckTest {
 				  "   </licenses>" +
 				  ""); // missing end tag
 
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 
 		assertTrue(errorExist("some/SomeProject.pom parsing error: ParseError at [row,col]:[1,104]" +
 				  "Message: XML document structures must start and end within the same entity."));
@@ -172,7 +177,7 @@ public class PomXMLValidationCheckTest {
 			 "name",
 			 "description",
 			 "url",
-			 "artifact"
+			 "artifactId"
 		};
 
 		final String xmlTemplate =
@@ -191,7 +196,7 @@ public class PomXMLValidationCheckTest {
 		for(String entity : Level2entities) {
 			failedCheckList.clear();
 			prepareInputStream("<project/>");
-			tested.validateComponent(component, listOfAssets, failedCheckList);
+			tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 			assertTrue(errorExist(errors[i]));
 
 
@@ -199,7 +204,7 @@ public class PomXMLValidationCheckTest {
 			prepareInputStream(
 				 xmlTemplate.replace("xxx", entity));
 
-			tested.validateComponent(component, listOfAssets, failedCheckList);
+			tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 			assertFalse(errorExist(errors[i++]));
 		}
 	}
@@ -210,29 +215,29 @@ public class PomXMLValidationCheckTest {
 	   "<project>" +
 			 "</project>");
 
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 		String groupError = "some/SomeProject.pom does not have the project group specified!";
 		assertTrue(errorExist(groupError));
 
 		prepareInputStream(
 	   "<project>" +
-				  "<group></group>" +
+				  "<groupId></groupId>" +
 			 "</project>");
 
 		failedCheckList.clear();
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 		assertFalse("Direct group", errorExist(groupError));
 
 		failedCheckList.clear();
 		prepareInputStream(
 			 "<project>" +
 				   "<parent>" +
-				  "      <group>ff</group>" +
+				  "      <groupId>ff</groupId>" +
 				   "</parent>" +
 				  "</project>");
 
 		failedCheckList.clear();
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 		assertFalse("Group in parent", errorExist(groupError));
 	}
 
@@ -242,7 +247,7 @@ public class PomXMLValidationCheckTest {
 	   "<project>" +
 			 "</project>");
 
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 		String versionError = "some/SomeProject.pom does not have the project version specified!";
 		assertTrue(errorExist(versionError));
 
@@ -252,7 +257,7 @@ public class PomXMLValidationCheckTest {
 			 "</project>");
 
 		failedCheckList.clear();
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 		assertFalse("Direct group", errorExist(versionError));
 
 		failedCheckList.clear();
@@ -264,7 +269,7 @@ public class PomXMLValidationCheckTest {
 				  "</project>");
 
 		failedCheckList.clear();
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 		assertFalse("Group in parent", errorExist(versionError));
 	}
 
@@ -277,14 +282,14 @@ public class PomXMLValidationCheckTest {
 				  "   </parent>" +
 				  "   <dependencies>" +
 				  "       <dependency>" +
-				  "            <group>group</group>" +
-				  "            <artifact>artifact</artifact>" +
+				  "            <groupId>group</groupId>" +
+				  "            <artifactId>artifact</artifactId>" +
 				  "            <version>version</version>" +
 				  "       </dependency>" +
 				  "   </dependencies>" +
 				  "</project>");
 
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 		assertTrue( errorExist("some/SomeProject.pom does not have the project group specified!"));
 		assertTrue( errorExist("some/SomeProject.pom does not have the artifact specified!"));
 		assertTrue( errorExist("some/SomeProject.pom does not have the project version specified!"));
@@ -298,7 +303,7 @@ public class PomXMLValidationCheckTest {
 				  "</parent>" +
 				  "</project>");
 
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 		assertTrue("Parent SNAPSHOT", errorExist("some/SomeProject.pom contains a dependency on a SNAPSHOT artifact!"));
 
 		failedCheckList.clear();
@@ -309,7 +314,7 @@ public class PomXMLValidationCheckTest {
 				  "</parent>" +
 				  "</project>");
 
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 		assertFalse("Parent SNAPSHOT OK", errorExist("some/SomeProject.pom contains a dependency on a SNAPSHOT artifact!"));
 
 		failedCheckList.clear();
@@ -318,7 +323,7 @@ public class PomXMLValidationCheckTest {
 				  "   <version>something-SNAPSHOT</version>" +
 				  "</project>");
 
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 		assertTrue("Direct SNAPSHOT", errorExist("some/SomeProject.pom contains a dependency on a SNAPSHOT artifact!"));
 
 		failedCheckList.clear();
@@ -327,7 +332,7 @@ public class PomXMLValidationCheckTest {
 				  "   <version>something</version>" +
 				  "</project>");
 
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 		assertFalse("Not snapshot", errorExist("some/SomeProject.pom contains a dependency on a SNAPSHOT artifact!"));
 	}
 
@@ -341,7 +346,7 @@ public class PomXMLValidationCheckTest {
 				  "</parent>" +
 				  "</project>");
 
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 		assertTrue("Parent SNAPSHOT", errorExist("some/SomeProject.pom at [1:42]: the version element should contain a string!"));
 	}
 
@@ -353,14 +358,14 @@ public class PomXMLValidationCheckTest {
 				  "   </parent>" +
 				  "   <dependencies>" +
 				  "       <dependency>" +
-				  "            <group>group</group>" +
-				  "            <artifact>artifact</artifact>" +
+				  "            <groupId>group</groupId>" +
+				  "            <artifactId>artifact</artifactId>" +
 				  "            <version>version-SNAPSHOT</version>" +
 				  "       </dependency>" +
 				  "   </dependencies>" +
 				  "</project>");
 
-		tested.validateComponent(component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 		assertTrue( errorExist("some/SomeProject.pom contains a dependency on a SNAPSHOT artifact!"));
 
 	}

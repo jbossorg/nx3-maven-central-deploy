@@ -1,5 +1,6 @@
 package org.jboss.nexus.validation.checks;
 
+import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
 import org.jetbrains.annotations.NotNull;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Component;
@@ -11,7 +12,7 @@ import java.util.List;
  */
 public class SnapshotDependencyValidationCheck extends CentralValidation {
 	@Override
-	public void validateComponent(@NotNull Component component, @NotNull List<Asset> assets, @NotNull List<FailedCheck> listOfFailures) {
+	public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<Asset> assets, @NotNull List<FailedCheck> listOfFailures) {
 		// TODO: 15.12.2022 Implement 
 	}
 }

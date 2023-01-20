@@ -1,5 +1,6 @@
 package org.jboss.nexus.validation.checks;
 
+import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
 import org.jetbrains.annotations.NotNull;
 import org.sonatype.nexus.blobstore.api.Blob;
 import org.sonatype.nexus.blobstore.api.BlobRef;
@@ -49,7 +50,7 @@ public class PomXMLValidationCheck extends CentralValidation {
 	}
 
 	@Override
-	public void validateComponent(@NotNull Component component, @NotNull List<Asset> assets, @NotNull List<FailedCheck> listOfFailures) {
+	public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<Asset> assets, @NotNull List<FailedCheck> listOfFailures) {
 		XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
 		for(Asset asset : assets ) {
 			if(asset.name().endsWith(EXTENSION_POM)) {
@@ -132,11 +133,11 @@ public class PomXMLValidationCheck extends CentralValidation {
 											case "parent":
 												parentSection  = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "parent", level, 2);
 												break;
-											case "group":
+											case "groupId":
 												if(level==2 || level == 3 && parentSection)
 													hasGroup = true;
 												break;
-											case "artifact":
+											case "artifactId":
 												if(level == 2)
 													hasArtifact = true;
 											case "version":

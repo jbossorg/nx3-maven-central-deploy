@@ -1,5 +1,6 @@
 package org.jboss.nexus.validation.checks;
 
+import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.sonatype.goodies.common.Loggers;
@@ -20,6 +21,6 @@ public abstract class CentralValidation {
      * @param listOfFailures the list where the possible validation failures will be reported
      *
      */
-    public abstract void validateComponent(@NotNull Component component, @NotNull List<Asset> assets,  @NotNull List<FailedCheck> listOfFailures); // TODO: 06.12.2022 add error reporting parameter
+    public abstract void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<Asset> assets, @NotNull List<FailedCheck> listOfFailures); // TODO: 06.12.2022 add error reporting parameter
 
 }

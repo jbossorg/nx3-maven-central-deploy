@@ -1,11 +1,14 @@
 package org.jboss.nexus;
 
+import javax.enterprise.inject.spi.CDI;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.jboss.nexus.validation.checks.CentralValidation;
 import org.jboss.nexus.validation.checks.FailedCheck;
+import org.jboss.nexus.validation.reporting.TestReportCapability;
+import org.jboss.nexus.validation.reporting.TestReportCapabilityDescriptorParent;
 import org.sonatype.goodies.common.ComponentSupport;
 import org.sonatype.nexus.blobstore.api.BlobStoreManager;
 import org.sonatype.nexus.repository.Repository;
@@ -16,9 +19,8 @@ import org.sonatype.nexus.repository.query.QueryOptions;
 import org.sonatype.nexus.repository.storage.*;
 
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -36,16 +38,20 @@ public class MavenCentralDeploy extends ComponentSupport {
 
     private BlobStoreManager blobStoreManager;
 
-    Set<CentralValidation> validations;
+    private final Set<CentralValidation> validations;
+
+    private final Set<TestReportCapability> reports;
 
     @Inject
-    public MavenCentralDeploy(RepositoryManager repositoryManager, BrowseService browseService, BucketStore bucketStore, BlobStoreManager blobStoreManager, Set<CentralValidation> validations) {
+    public MavenCentralDeploy(RepositoryManager repositoryManager, BrowseService browseService, BucketStore bucketStore, BlobStoreManager blobStoreManager, Set<CentralValidation> validations, Set<TestReportCapability> reports) {
         this.repositoryManager = checkNotNull(repositoryManager);
         this.browseService = checkNotNull(browseService);
         this.bucketStore = checkNotNull(bucketStore);
         this.blobStoreManager = checkNotNull(blobStoreManager);
         this.validations = checkNotNull(validations);
         checkArgument(!validations.isEmpty());
+        this.reports = reports;
+        checkArgument(!reports.isEmpty());
     }
 
     private static final int SEARCH_COMPONENT_PAGE_SIZE = 10;
@@ -62,7 +68,9 @@ public class MavenCentralDeploy extends ComponentSupport {
         Repository releases = repositoryManager.get(checkNotNull(configuration.getRepository(), "Repository not configured for the task!"));
 
         QueryOptions queryOptions =  new QueryOptions(configuration.getFilter(), "id", "asc", 0, SEARCH_COMPONENT_PAGE_SIZE, null, false);
-
+        // TODO: 10.01.2023 add time filter to remove already updated stuff
+        
+        
         PageResult<Component> result = browseService.browseComponents(releases, queryOptions);
 
         int counter_component = SEARCH_COMPONENT_PAGE_SIZE-1;
@@ -81,15 +89,43 @@ public class MavenCentralDeploy extends ComponentSupport {
 
 
                for(CentralValidation validation : validations) {
-                   validation.validateComponent(component, assetsInside.getResults(), listOfFailures);
+                   validation.validateComponent(configuration, component, assetsInside.getResults(), listOfFailures);
                }
 
-               queryOptions = new QueryOptions(queryOptions.getFilter(), queryOptions.getSortProperty(), queryOptions.getSortDirection(), counter_component ,queryOptions.getLimit(), null, false);
-               result = browseService.browseComponents(releases, queryOptions);
-                counter_component += SEARCH_COMPONENT_PAGE_SIZE;
            }
+
+          queryOptions = new QueryOptions(queryOptions.getFilter(), queryOptions.getSortProperty(), queryOptions.getSortDirection(), counter_component ,queryOptions.getLimit(), null, false);
+          result = browseService.browseComponents(releases, queryOptions);
+          counter_component += SEARCH_COMPONENT_PAGE_SIZE;
        }
-       configuration.setLatestStatus("Processed "+result.getTotal()+"\none\ntwo\nthree\nfour\nfive\nsix\nseven\neight\nnine");
+
+       StringBuilder response = new StringBuilder("Processed ").append(result.getTotal()).append(" components.");
+
+       if(listOfFailures.isEmpty()) {
+
+           // TODO: 10.01.2023 Go ahead with publishing
+
+          response.append("\n- no errors were found.");
+       } else {
+           response.append("\n- ").append(listOfFailures.size()).append(" problems found!");
+
+           for(TestReportCapability report : reports) {
+              report.createReport(configuration, listOfFailures, result.getTotal());
+           }
+
+
+//           // process
+//          CDI.current().select(TestReportCapabilityDescriptorParent.class).forEach(
+//              testReport -> testReport.validate()
+//          );
+
+       }
+
+       configuration.setLatestStatus(response.toString());
+       if(!listOfFailures.isEmpty())
+           throw new RuntimeException("Validations failed"); // throw an exception so the task is reported as failed
+       
+       
 //
 //        PageResult<Asset> assets = browseService.browseAssets(releases, queryOptions);
 //
