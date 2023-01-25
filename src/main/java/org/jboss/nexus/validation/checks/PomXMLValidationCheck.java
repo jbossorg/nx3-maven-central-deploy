@@ -176,62 +176,65 @@ public class PomXMLValidationCheck extends CentralValidation {
 
 								}
 
-								// TODO: 02.01.2023 add possibility to disable the check
-								// TODO: 02.01.2023 add the other tests as well
-								if(!hasProject) {
+								if(! mavenCentralDeployTaskConfiguration.getDisableHasProject() && !hasProject) {
 									String msg = asset.name() + " does not have required project root!";
 									log.info("Failed PomXMLValidationCheck: "+msg);
 									listOfFailures.add(new FailedCheck(component, msg));
 								}
-								if(!hasSCM) {
-									String msg = asset.name() + " does not have source code repository specified (scm)!";
-									log.info("Failed PomXMLValidationCheck: "+msg);
-									listOfFailures.add(new FailedCheck(component, msg));
-								}
-								if(!hasLicense) {
-									String msg = asset.name() + " does not have any license specified!";
-									log.info("Failed PomXMLValidationCheck: "+msg);
-									listOfFailures.add(new FailedCheck(component, msg));
-								}
-								if(!hasProjectName) {
-									String msg = asset.name() + " does not have the project name specified!";
-									log.info("Failed PomXMLValidationCheck: "+msg);
-									listOfFailures.add(new FailedCheck(component, msg));
-								}
-								if(!hasDeveloperInfo) {
-									String msg = asset.name() + " does not have any developer information specified!";
-									log.info("Failed PomXMLValidationCheck: "+msg);
-									listOfFailures.add(new FailedCheck(component, msg));
-								}
-								if(!hasProjectDescription) {
-									String msg = asset.name() + " does not have the project description specified!";
-									log.info("Failed PomXMLValidationCheck: "+msg);
-									listOfFailures.add(new FailedCheck(component, msg));
-								}
-								if(!hasProjectURL) {
-									String msg = asset.name() + " does not have the project URL specified!";
-									log.info("Failed PomXMLValidationCheck: "+msg);
-									listOfFailures.add(new FailedCheck(component, msg));
-								}
-								if(!hasGroup) {
-									String msg = asset.name() + " does not have the project group specified!";
-									log.info("Failed PomXMLValidationCheck: "+msg);
-									listOfFailures.add(new FailedCheck(component, msg));
-								}
-								if(!hasArtifact) {
-									String msg = asset.name() + " does not have the artifact specified!";
-									log.info("Failed PomXMLValidationCheck: "+msg);
-									listOfFailures.add(new FailedCheck(component, msg));
-								}
-								if(!hasVersion) {
-									String msg = asset.name() + " does not have the project version specified!";
-									log.info("Failed PomXMLValidationCheck: "+msg);
-									listOfFailures.add(new FailedCheck(component, msg));
-								}
-								if(hasSnapshotVersion) {
-									String msg = asset.name() + " contains a dependency on a SNAPSHOT artifact!";
-									log.info("Failed PomXMLValidationCheck: "+msg);
-									listOfFailures.add(new FailedCheck(component, msg));
+
+								if(hasProject) {
+									// if there is no project it does not make any sense to report anything else from here
+
+									if (!mavenCentralDeployTaskConfiguration.getDisableHasSCM() && !hasSCM) {
+										String msg = asset.name() + " does not have source code repository specified (scm)!";
+										log.info("Failed PomXMLValidationCheck: " + msg);
+										listOfFailures.add(new FailedCheck(component, msg));
+									}
+									if (!mavenCentralDeployTaskConfiguration.getDisableHasLicense() && !hasLicense) {
+										String msg = asset.name() + " does not have any license specified!";
+										log.info("Failed PomXMLValidationCheck: " + msg);
+										listOfFailures.add(new FailedCheck(component, msg));
+									}
+									if (!mavenCentralDeployTaskConfiguration.getDisableHasProjectName() && !hasProjectName) {
+										String msg = asset.name() + " does not have the project name specified!";
+										log.info("Failed PomXMLValidationCheck: " + msg);
+										listOfFailures.add(new FailedCheck(component, msg));
+									}
+									if (!mavenCentralDeployTaskConfiguration.getDisableHasDeveloperInfo() && !hasDeveloperInfo) {
+										String msg = asset.name() + " does not have any developer information specified!";
+										log.info("Failed PomXMLValidationCheck: " + msg);
+										listOfFailures.add(new FailedCheck(component, msg));
+									}
+									if (!mavenCentralDeployTaskConfiguration.getDisableHasProjectDescription() && !hasProjectDescription) {
+										String msg = asset.name() + " does not have the project description specified!";
+										log.info("Failed PomXMLValidationCheck: " + msg);
+										listOfFailures.add(new FailedCheck(component, msg));
+									}
+									if (!mavenCentralDeployTaskConfiguration.getDisableHasProjectURL() && !hasProjectURL) {
+										String msg = asset.name() + " does not have the project URL specified!";
+										log.info("Failed PomXMLValidationCheck: " + msg);
+										listOfFailures.add(new FailedCheck(component, msg));
+									}
+									if (!mavenCentralDeployTaskConfiguration.getDisableHasGroup() && !hasGroup) {
+										String msg = asset.name() + " does not have the project group specified!";
+										log.info("Failed PomXMLValidationCheck: " + msg);
+										listOfFailures.add(new FailedCheck(component, msg));
+									}
+									if (!mavenCentralDeployTaskConfiguration.getDisableHasArtifact() && !hasArtifact) {
+										String msg = asset.name() + " does not have the artifact specified!";
+										log.info("Failed PomXMLValidationCheck: " + msg);
+										listOfFailures.add(new FailedCheck(component, msg));
+									}
+									if (!mavenCentralDeployTaskConfiguration.getDisableHasVersion() && !hasVersion) {
+										String msg = asset.name() + " does not have the project version specified!";
+										log.info("Failed PomXMLValidationCheck: " + msg);
+										listOfFailures.add(new FailedCheck(component, msg));
+									}
+									if (!mavenCentralDeployTaskConfiguration.getDisableHasSnapshotVersion() && hasSnapshotVersion) {
+										String msg = asset.name() + " contains a dependency on a SNAPSHOT artifact!";
+										log.info("Failed PomXMLValidationCheck: " + msg);
+										listOfFailures.add(new FailedCheck(component, msg));
+									}
 								}
 
 							} catch (IOException e) {

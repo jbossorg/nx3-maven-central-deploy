@@ -15,16 +15,18 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
     public static final String DISABLE_HAS_PROJECT = "disableHasProject";
     public static final String DISABLE_HAS_SCM = "disableHasScm";
     public static final String DISABLE_HAS_LICENSE = "disableHasLicense";
-    public static final String DISABLE_HAS_PROJECT_NAME = "disableHasProjectname";
-    public static final String DISABLE_HAS_DEVELOPER_INFO = "disableHasDeveloperinfo";
+    public static final String DISABLE_HAS_PROJECT_NAME = "disableHasProjectName";
+    public static final String DISABLE_HAS_DEVELOPER_INFO = "disableHasDeveloperInfo";
     public static final String DISABLE_HAS_PROJECT_DESCRIPTION = "disableHasProjectDescription";
     public static final String DISABLE_HAS_PROJECT_URL = "disableHasProjectUrl";
     public static final String DISABLE_HAS_GROUP = "disableHasGroup";
     public static final String DISABLE_HAS_ARTIFACT = "disableHasArtifact";
     public static final String DISABLE_HAS_VERSION = "disableHasVersion";
-    public static final String DISABLE_HAS_SNAPSHOT_VERSION = "disableHasSnapshotversion";
-    public static final String DISABLE_HAS_CHECKSUMS = "disableHasChecksums";
-    public static final String DISABLE_HAS_SOURCE_CODES = "disableHasSourcecodes";
+    public static final String DISABLE_HAS_SNAPSHOT_VERSION = "disableHasSnapshotVersion";
+    public static final String DISABLE_HAS_CHECKSUMS_MD5 = "disableHasChecksumsMD5";
+
+    public static final String DISABLE_HAS_CHECKSUMS_SHA1 = "disableHasChecksumsSHA1";
+    public static final String DISABLE_HAS_SOURCE_CODES = "disableHasSourceCodes";
     public static final String DISABLE_HAS_JAVADOC = "disableHasJavadoc";
 
 
@@ -106,8 +108,12 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
         return getBoolean(DISABLE_HAS_SNAPSHOT_VERSION, false);
     }
 
-    public Boolean getDisableHasChecksums() {
-        return getBoolean(DISABLE_HAS_CHECKSUMS, false);
+    public Boolean getDisableHasChecksumsMD5() {
+        return getBoolean(DISABLE_HAS_CHECKSUMS_MD5, false);
+    }
+
+    public Boolean getDisableHasChecksumsSHA1() {
+        return getBoolean(DISABLE_HAS_CHECKSUMS_SHA1, false);
     }
 
     public Boolean getDisableHasSourceCodes() {

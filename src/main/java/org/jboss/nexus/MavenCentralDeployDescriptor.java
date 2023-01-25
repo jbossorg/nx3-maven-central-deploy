@@ -72,34 +72,131 @@ public class MavenCentralDeployDescriptor
     @DefaultMessage("A file name, where you will be able to find reports from deployments.")
     String plainTextReportOutputFileHelp();
 
-  }
+    @DefaultMessage("Disable project checking")
+    String disableHasProjectLabel();
 
-//
-//  private  final RepositoryCombobox repository ;
-//
-//  private  final CheckboxFormField dryRun ;
-//
-//  private final CheckboxFormField  markArtifactsTransferred;
-//
-//  private final StringTextFormField filter ;
+    @DefaultMessage("Disables checking, whether project element is present in pom.xml files. You should really not consider disabling this check.")
+    String disableHasProjectHelp();
+
+    @DefaultMessage("Disable SCM checking")
+    String disableHasSCMLabel();
+
+    @DefaultMessage("Disables checking, whether there is a section in pom.xml file, that contains information about source code repository such as git, svn or similar.")
+    String disableHasSCMHelp();
+
+    @DefaultMessage("Disable license checking")
+    String disableHasLicenseLabel();
+
+    @DefaultMessage("Disables check of license in pom.xml files.")
+    String disableHasLicenseHelp();
+
+    @DefaultMessage("Disables project name checking")
+    String disableHasProjectNameLabel();
+
+    @DefaultMessage("Disables of checking of project name in pom.xml files.")
+    String disableHasProjectNameHelp();
+
+    @DefaultMessage("Disable developer info checking")
+    String disableHasDeveloperInfoLabel();
+
+    @DefaultMessage("Disables the check, whether there is a developer information in the pom.xml files.")
+    String disableHasDeveloperInfoHelp();
+
+    @DefaultMessage("Disable project description checking")
+    String disableHasProjectDescriptionLabel();
+
+    @DefaultMessage("Disables of pom.xml check, that searches for developer information.")
+    String disableHasProjectDescriptionHelp();
+
+    @DefaultMessage("Disable URL checking")
+    String disableHasProjectURLLabel();
+
+    @DefaultMessage("Disables the test of project URL in pom.xml files.")
+    String disableHasProjectURLHelp();
+
+    @DefaultMessage("Disable group checking")
+    String disableHasGroupLabel();
+
+    @DefaultMessage("Disables the check, that searches for project group coordinate. You should really not consider disabling this check.")
+    String disableHasGroupHelp();
+
+    @DefaultMessage("Disable artifact checking")
+    String disableHasArtifactLabel();
+
+    @DefaultMessage("Disables the check, that searches for project artifact coordinate. You should really not consider disabling this check.")
+    String disableHasArtifactHelp();
+
+    @DefaultMessage("Disable version checking")
+    String disableHasVersionLabel();
+
+    @DefaultMessage("Disables the check, that searches for project version coordinate. You should really not consider disabling this check.")
+    String disableHasVersionHelp();
+
+    @DefaultMessage("Disable snapshot version checking")
+    String disableHasSnapshotVersionLabel();
+
+    @DefaultMessage("If you are releasing a release artifact, it should never depend on any snapshot artifact. You have been warned.")
+    String disableHasSnapshotVersionHelp();
+
+    @DefaultMessage("Disable MD5 checksum checking")
+    String disableHasChecksumMD5Label();
+
+    @DefaultMessage("Disables MD5 checksum file checking.")
+    String disableHasChecksumMD5Help();
+
+    @DefaultMessage("Disable SHA1 checksum checking")
+    String disableHasChecksumSHA1Label();
+
+    @DefaultMessage("Disables SHA1 checksum file checking")
+    String disableHasChecksumSHA1Help();
+
+    @DefaultMessage("Disable source code checking")
+    String disableHasSourceCodeLabel();
+
+    @DefaultMessage("Disables the check of the presence of source code files.")
+    String disableHasSourceCodeHelp();
+
+    @DefaultMessage("Disable JavaDoc checking")
+    String disableHasJavaDocLabel();
+
+    @DefaultMessage("Disables checks of JavaDoc files")
+    String disableHasJavaDocHelp();
+  }
 
   private static final Messages messages = I18N.create(Messages.class);
 
   @Inject
   public MavenCentralDeployDescriptor() {
-    // filter, repository, deploy username, deploy password, deploy URL, source tag, done tag
-    // dry-run
-    // tests: JavaDoc, Sources, md5+sha1, sha256, sha512, license, project name and description, developer, scm, snapshot dependency
 
     super(TYPE_ID, MavenCentralDeployTask.class, "Maven Central Deployment", TaskDescriptorSupport.VISIBLE,
             TaskDescriptorSupport.EXPOSED,
-            (new RepositoryCombobox(MavenCentralDeployTaskConfiguration.REPOSITORY, messages.repositoryLabel(), messages.repositoryHelp(), FormField.MANDATORY)).includingAnyOfFormats("maven2"),
-            (new CheckboxFormField(MavenCentralDeployTaskConfiguration.DRY_RUN, messages.dryRunLabel(), messages.dryRunHelp(), FormField.OPTIONAL)).withInitialValue(true),
-            (new CheckboxFormField(MavenCentralDeployTaskConfiguration.MARK_ARTIFACTS, messages.markArtifactsAfterRunLabel(), messages.markArtifactsAfterRunHelp(), FormField.OPTIONAL)).withInitialValue(false),
+            new TextAreaFormField(MavenCentralDeployTaskConfiguration.LATEST_STATUS, messages.latestResultsLabel(), messages.latestResultsHelp(), FormField.OPTIONAL, null, true ),
+            new RepositoryCombobox(MavenCentralDeployTaskConfiguration.REPOSITORY, messages.repositoryLabel(), messages.repositoryHelp(), FormField.MANDATORY).includingAnyOfFormats("maven2"),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DRY_RUN, messages.dryRunLabel(), messages.dryRunHelp(), FormField.OPTIONAL).withInitialValue(true),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.MARK_ARTIFACTS, messages.markArtifactsAfterRunLabel(), messages.markArtifactsAfterRunHelp(), FormField.OPTIONAL).withInitialValue(false),
             new StringTextFormField(MavenCentralDeployTaskConfiguration.FILTER, messages.filterLabel(), messages.filterHelp(), FormField.OPTIONAL),
+
             new StringTextFormField(MavenCentralDeployTaskConfiguration.PLAIN_TEXT_REPORT_OUTPUT_FILE, messages.plainTextReportOutputFileLabel(), messages.plainTextReportOutputFileHelp(), FormField.OPTIONAL),
-            new TextAreaFormField(MavenCentralDeployTaskConfiguration.LATEST_STATUS, messages.latestResultsLabel(), messages.latestResultsHelp(), FormField.OPTIONAL, null, true )
-            );
+            
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_NAME, messages.disableHasProjectNameLabel(), messages.disableHasProjectNameHelp(), false),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_DESCRIPTION, messages.disableHasProjectDescriptionLabel(), messages.disableHasProjectDescriptionHelp(), false),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_URL, messages.disableHasProjectURLLabel(), messages.disableHasProjectURLHelp(), false),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SCM, messages.disableHasSCMLabel(), messages.disableHasSCMHelp(), false),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_DEVELOPER_INFO, messages.disableHasDeveloperInfoLabel(), messages.disableHasDeveloperInfoHelp(), false),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_LICENSE, messages.disableHasLicenseLabel(), messages.disableHasLicenseHelp(), false),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SNAPSHOT_VERSION, messages.disableHasSnapshotVersionLabel(), messages.disableHasSnapshotVersionHelp(), false),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SOURCE_CODES, messages.disableHasSourceCodeLabel(), messages.disableHasSourceCodeHelp(), false),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_JAVADOC, messages.disableHasJavaDocLabel(), messages.disableHasJavaDocHelp(), false),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_CHECKSUMS_MD5, messages.disableHasChecksumMD5Label(), messages.disableHasChecksumMD5Help(), false),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_CHECKSUMS_SHA1, messages.disableHasChecksumSHA1Label(), messages.disableHasChecksumSHA1Help(), false),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT, messages.disableHasProjectLabel(), messages.disableHasProjectHelp(), false),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_GROUP, messages.disableHasGroupLabel(), messages.disableHasGroupHelp(), false),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_ARTIFACT, messages.disableHasArtifactLabel(), messages.disableHasArtifactHelp(), false),
+            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_VERSION, messages.disableHasVersionLabel(), messages.disableHasVersionHelp(), false)
+    );
+    
+
+
 
   }
 

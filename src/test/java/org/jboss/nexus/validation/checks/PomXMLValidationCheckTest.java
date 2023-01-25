@@ -367,9 +367,63 @@ public class PomXMLValidationCheckTest {
 
 		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 		assertTrue( errorExist("some/SomeProject.pom contains a dependency on a SNAPSHOT artifact!"));
-
 	}
 
+	@Test
+	public void validateComponentProjectMissing() {
+		prepareInputStream("<notProject />");
+
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+
+		assertTrue(errorExist("some/SomeProject.pom does not have required project root!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have source code repository specified (scm)!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have any license specified!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have the project name specified!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have any developer information specified!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have the project description specified!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have the project URL specified!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have the project group specified!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have the artifact specified!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have the project version specified!"));
+	}
+
+	@Test
+	public void validateComponentAllButProjectMissing() {
+		prepareInputStream("<project />");
+
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+
+		assertFalse(errorExist("some/SomeProject.pom does not have required project root!"));
+		assertTrue(errorExist("some/SomeProject.pom does not have source code repository specified (scm)!"));
+		assertTrue(errorExist("some/SomeProject.pom does not have any license specified!"));
+		assertTrue(errorExist("some/SomeProject.pom does not have the project name specified!"));
+		assertTrue(errorExist("some/SomeProject.pom does not have any developer information specified!"));
+		assertTrue(errorExist("some/SomeProject.pom does not have the project description specified!"));
+		assertTrue(errorExist("some/SomeProject.pom does not have the project URL specified!"));
+		assertTrue(errorExist("some/SomeProject.pom does not have the project group specified!"));
+		assertTrue(errorExist("some/SomeProject.pom does not have the artifact specified!"));
+		assertTrue(errorExist("some/SomeProject.pom does not have the project version specified!"));
+	}
+	@Test
+	public void validateComponentDisableTest() {
+
+		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT, true);
+		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SCM, true);
+		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_LICENSE, true);
+		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_NAME, true);
+		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_DEVELOPER_INFO, true);
+		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_DESCRIPTION, true);
+		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_URL, true);
+		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_GROUP, true);
+		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_ARTIFACT, true);
+		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_VERSION, true);
+		prepareInputStream("<project />");
+
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+
+		assertTrue(failedCheckList.isEmpty());
+
+	}
 
 
 }

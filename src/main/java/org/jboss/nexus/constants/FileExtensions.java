@@ -14,4 +14,17 @@ public class FileExtensions {
 
 	public static final String EXTENSION_POM = ".pom";
 
+	public static final String EXTENSION_SOURCES = "-sources.jar";
+	public static final String EXTENSION_JAVADOC = "-javadoc.jar";
+
+	public static final String EXTENSION_JAR = ".jar";
+
+	public static final String EXTENSION_WAR = ".war";
+
+	public static final String EXTENSION_EAR = ".ear";
+
+
+
+
+
 }
