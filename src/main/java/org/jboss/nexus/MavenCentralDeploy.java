@@ -17,6 +17,7 @@ import org.sonatype.nexus.repository.manager.RepositoryManager;
 import org.sonatype.nexus.repository.query.PageResult;
 import org.sonatype.nexus.repository.query.QueryOptions;
 import org.sonatype.nexus.repository.storage.*;
+import org.sonatype.nexus.transaction.Transactional;
 
 
 import java.util.*;
@@ -58,6 +59,7 @@ public class MavenCentralDeploy extends ComponentSupport {
     private static final int SEARCH_ASSET_PAGE_SIZE = 2; // FIXME: 07.12.2022 so small for testing purposes only. Make it 30+
 
 
+   @Transactional()
     public void processDeployment(MavenCentralDeployTaskConfiguration configuration) {
         // TODO: 15.11.2022  define the business logic
         log.info("Deploying content.....");

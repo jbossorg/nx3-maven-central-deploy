@@ -56,7 +56,7 @@ public class MavenCentralDeployDescriptor
     @DefaultMessage("Filter")
     String filterLabel();
 
-    @DefaultMessage("Filter to select artifacts")
+    @DefaultMessage("Filter to just some artifacts. Format of the field is <b>group</b>=XYZ&<b>name</b>=YZW&<b>version</b>=ZWA&<b>tag=TTT&<b>tagAttr</b>=attribute<>!=AAA. If you omit the field, a match in a group or artifact or version will be searched for. Tag attribute allows logical operations < > = !=")
     String filterHelp();
 
 
