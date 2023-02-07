@@ -1,10 +1,17 @@
 package org.jboss.nexus;
 
+import com.sonatype.nexus.tags.orient.OrientTag;
+import com.sonatype.nexus.tags.orient.TagComponent;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.sonatype.nexus.common.collect.NestedAttributesMap;
 import org.sonatype.nexus.repository.storage.Component;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.when;
@@ -15,6 +22,10 @@ public class FilterTest {
 
 	@Mock
 	private Component component;
+
+	@Mock
+	private TagComponent tagComponent;
+
 
 	@Test
 	public void parseFilterString() {
@@ -38,6 +49,19 @@ public class FilterTest {
 		when(component.name()).thenReturn("nexus");
 		when(component.version()).thenReturn("2.3.1");
 		assertTrue(tested.checkComponent(component));
+
+
+		tested = Filter.parseFilterString("artifact=nexus&version=2.3.1");
+		assertTrue(tested.checkComponent(component));
+
+		tested = Filter.parseFilterString("group=org.jboss&version=2.3.1");
+		assertTrue(tested.checkComponent(component));
+
+		tested = Filter.parseFilterString("group=org.jboss&artifact=nexus");
+		assertTrue(tested.checkComponent(component));
+
+		tested = Filter.parseFilterString("group=com.redhat&artifact=nexus&version=2.3.1");
+		assertFalse(tested.checkComponent(component));
 
 		tested = Filter.parseFilterString("group=com.redhat&artifact=nexus&version=2.3.1");
 		assertFalse(tested.checkComponent(component));
@@ -71,13 +95,107 @@ public class FilterTest {
 
 		tested = Filter.parseFilterString("group=org.jboss&artifact=nexus&version <> 2.3.1");
 		assertFalse(tested.checkComponent(component));
+	}
 
+	@Test(expected = RuntimeException.class)
+	public void checkComponentTagsUnsupported() {
+		Filter tested = Filter.parseFilterString("tag=DEPLOYED");
+		try {
+			tested.checkComponent(component); // mocked class not compatible with TagComponent
+		} catch (RuntimeException e) {
+			assertEquals("Filter error: attempt to filter based on a tag or tagAttr. Tags are only supported in NXRM3 Professional.", e.getMessage());
+			throw e;
+		}
+	}
+
+	@Test(expected = RuntimeException.class)
+	public void checkComponentTagAttrsUnsupported() {
+		Filter tested = Filter.parseFilterString("tagAttr=OS=macOS");
+		try {
+			tested.checkComponent(component); // mocked class not compatible with TagComponent
+		} catch (RuntimeException e) {
+			assertEquals("Filter error: attempt to filter based on a tag or tagAttr. Tags are only supported in NXRM3 Professional.", e.getMessage());
+			throw e;
+		}
+	}
+
+	@Test
+	public void checkComponentTags() {
+		Filter tested = Filter.parseFilterString("tag=DEPLOYED");
+		assertFalse(tested.checkComponent(tagComponent));
+
+		HashSet<OrientTag> tags = new HashSet<>();
+		OrientTag tag = new OrientTag();
+		tag.name("DEPLOYED");
+		tags.add(tag);
+
+		when(tagComponent.tags()).thenReturn(tags);
+		assertTrue(tested.checkComponent(tagComponent));
+
+		tested = Filter.parseFilterString("tag>=DEPLOYED");
+		assertTrue(tested.checkComponent(tagComponent));
+
+		tested = Filter.parseFilterString("tag>DEPLOYED");
+		assertFalse(tested.checkComponent(tagComponent));
+
+		tested = Filter.parseFilterString("tag>=Z");
+		assertFalse(tested.checkComponent(tagComponent));
+
+		tested = Filter.parseFilterString("tag>=A");
+		assertTrue(tested.checkComponent(tagComponent));
+	}
+
+	@Test
+	public void checkComponentTagAttr() {
+		Filter tested = Filter.parseFilterString("tagAttr=OS=macOS");
+		assertFalse("No tag attributes", tested.checkComponent(tagComponent));
+
+		HashSet<OrientTag> tags = new HashSet<>();
+
+		OrientTag tag = new OrientTag();
+		tag.name("DEPLOYED_EMPTY").attributes(new NestedAttributesMap());
+		tags.add(tag);
+
+		Map<String, Object> attributes = new HashMap<>();
+		attributes.put("OS", "macOS");
+		attributes.put("build", "23");
+		attributes.put("java-vm", "11");
+
+		tag = new OrientTag();
+		tag.name("DEPLOYED_MULTIPLE").attributes(new NestedAttributesMap("attributes", attributes));
+		tags.add(tag);
+
+		when(tagComponent.tags()).thenReturn(tags);
+
+		// ------------
+
+		tested = Filter.parseFilterString("tagAttr=OS=macOS");
+		assertTrue("Equals", tested.checkComponent(tagComponent));
+
+		tested = Filter.parseFilterString("tagAttr=OS<=macOS");
+		assertTrue("less or equal", tested.checkComponent(tagComponent));
+
+		tested = Filter.parseFilterString("tagAttr=OS>=macOS");
+		assertTrue("more or equal", tested.checkComponent(tagComponent));
+
+		tested = Filter.parseFilterString("tagAttr=OS<macOS");
+		assertFalse("lesser", tested.checkComponent(tagComponent));
+
+		tested = Filter.parseFilterString("tagAttr=OS>macOS");
+		assertFalse("", tested.checkComponent(tagComponent));
+
+
+		tested = Filter.parseFilterString("tagAttr=build>0");
+		assertTrue("greater", tested.checkComponent(tagComponent));
+
+		tested = Filter.parseFilterString("tagAttr=build<25");
+		assertTrue("smaller", tested.checkComponent(tagComponent));
 	}
 
 
 
 
-	
+
 	@Test
 	public void parseFilterStringAll() {
 		Filter tested = Filter.parseFilterString("group=org.jboss&artifact=nexus&version>=2.3.1&tag=TO_DEPLOY&tagAttr=OS<>MacOS");
@@ -129,7 +247,6 @@ public class FilterTest {
 		}
 
 	}
-
 
 	@Test
 	public void parseFilterStringUnspecified() {

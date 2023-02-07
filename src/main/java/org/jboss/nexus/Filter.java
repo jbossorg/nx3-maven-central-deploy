@@ -1,5 +1,7 @@
 package org.jboss.nexus;
 
+import com.sonatype.nexus.tags.orient.OrientTag;
+import com.sonatype.nexus.tags.orient.TagComponent;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -73,7 +75,7 @@ public class Filter {
 	static class LogicalOperation {
 		private LogicalOperation() {}
 
-		enum Operator {EQ, NE, LT, GT, LE, GE, NOOP};
+		enum Operator {EQ, NE, LT, GT, LE, GE, NOOP}
 
 		String attribute;
 		String value;
@@ -283,11 +285,34 @@ public class Filter {
 			if(!FunctionMapping.resolve(getVersionOperation(), component.version(), getVersion()))
 				return false;
 
-		if(StringUtils.isNotEmpty(getTag())) // fixme get tag
-				return false;
+		// NXRM3 Professional tagging
+		if(TagComponent.class.isAssignableFrom(component.getClass())) {
 
-		// fixme get tagAttr
+			if (StringUtils.isNotEmpty(getTag()))
+				if(((TagComponent)component).tags().stream().noneMatch( t -> FunctionMapping.resolve(getTagOperation(), t.name(), getTag())))
+					return false;
 
+			if (StringUtils.isNotEmpty(getTagAttr())) {
+				boolean found = false;
+
+				for(OrientTag tag : ((TagComponent)component).tags()) {
+					Object object = tag.attributes().get(getTagAttr());
+					if (object != null &&  String.class.isAssignableFrom(object.getClass())) {
+						found = FunctionMapping.resolve(getTagAttrOperation(), (String) object, getTagAttrValue());
+						if(found)
+							break;
+					}
+				}
+
+				return found;
+			}
+
+		} else {
+			// requested filter on tags while tags are not supported
+			if(StringUtils.isNotEmpty(getTag()) || StringUtils.isNotEmpty(getTagAttr())) {
+				throw new RuntimeException("Filter error: attempt to filter based on a tag or tagAttr. Tags are only supported in NXRM3 Professional.");
+			}
+		}
 		return true;
 	}
 
@@ -321,11 +346,11 @@ public class Filter {
 		}
 
 		private static boolean LT(String s1, String s2) {
-			return s1.compareTo(s2) > 0;
+			return s1.compareTo(s2) < 0;
 		}
 
 		private static boolean GT(String s1, String s2) {
-			return s1.compareTo(s2) < 0;
+			return s1.compareTo(s2) > 0;
 		}
 
 		private static boolean LE(String s1, String s2) {

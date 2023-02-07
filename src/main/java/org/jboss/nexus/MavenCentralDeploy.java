@@ -1,6 +1,5 @@
 package org.jboss.nexus;
 
-import javax.enterprise.inject.spi.CDI;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -8,7 +7,6 @@ import javax.inject.Singleton;
 import org.jboss.nexus.validation.checks.CentralValidation;
 import org.jboss.nexus.validation.checks.FailedCheck;
 import org.jboss.nexus.validation.reporting.TestReportCapability;
-import org.jboss.nexus.validation.reporting.TestReportCapabilityDescriptorParent;
 import org.sonatype.goodies.common.ComponentSupport;
 import org.sonatype.nexus.blobstore.api.BlobStoreManager;
 import org.sonatype.nexus.repository.Repository;
@@ -17,11 +15,9 @@ import org.sonatype.nexus.repository.manager.RepositoryManager;
 import org.sonatype.nexus.repository.query.PageResult;
 import org.sonatype.nexus.repository.query.QueryOptions;
 import org.sonatype.nexus.repository.storage.*;
-import org.sonatype.nexus.transaction.Transactional;
 
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -30,24 +26,21 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Singleton
 public class MavenCentralDeploy extends ComponentSupport {
 
-    private RepositoryManager repositoryManager;
+    private final RepositoryManager repositoryManager;
 
-    private BrowseService browseService;
+    private final BrowseService browseService;
 
-
-    private BucketStore bucketStore;
-
-    private BlobStoreManager blobStoreManager;
+    private final BlobStoreManager blobStoreManager;
 
     private final Set<CentralValidation> validations;
 
     private final Set<TestReportCapability> reports;
 
+    @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
-    public MavenCentralDeploy(RepositoryManager repositoryManager, BrowseService browseService, BucketStore bucketStore, BlobStoreManager blobStoreManager, Set<CentralValidation> validations, Set<TestReportCapability> reports) {
+    public MavenCentralDeploy(RepositoryManager repositoryManager, BrowseService browseService, BlobStoreManager blobStoreManager, Set<CentralValidation> validations, Set<TestReportCapability> reports) {
         this.repositoryManager = checkNotNull(repositoryManager);
         this.browseService = checkNotNull(browseService);
-        this.bucketStore = checkNotNull(bucketStore);
         this.blobStoreManager = checkNotNull(blobStoreManager);
         this.validations = checkNotNull(validations);
         checkArgument(!validations.isEmpty());
@@ -56,11 +49,8 @@ public class MavenCentralDeploy extends ComponentSupport {
     }
 
     private static final int SEARCH_COMPONENT_PAGE_SIZE = 10;
-    private static final int SEARCH_ASSET_PAGE_SIZE = 2; // FIXME: 07.12.2022 so small for testing purposes only. Make it 30+
 
-
-   @Transactional()
-    public void processDeployment(MavenCentralDeployTaskConfiguration configuration) {
+   public void processDeployment(MavenCentralDeployTaskConfiguration configuration) {
         // TODO: 15.11.2022  define the business logic
         log.info("Deploying content.....");
 
@@ -69,7 +59,8 @@ public class MavenCentralDeploy extends ComponentSupport {
 
         Repository releases = repositoryManager.get(checkNotNull(configuration.getRepository(), "Repository not configured for the task!"));
 
-        QueryOptions queryOptions =  new QueryOptions(configuration.getFilter(), "id", "asc", 0, SEARCH_COMPONENT_PAGE_SIZE, null, false);
+       Filter filter = Filter.parseFilterString(configuration.getFilter());
+        QueryOptions queryOptions =  new QueryOptions(filter.getSearchString(), "id", "asc", 0, SEARCH_COMPONENT_PAGE_SIZE, null, false);
         // TODO: 10.01.2023 add time filter to remove already updated stuff
         
         
@@ -79,21 +70,22 @@ public class MavenCentralDeploy extends ComponentSupport {
 
         List<FailedCheck> listOfFailures = new ArrayList<>();
 
+        List<Component> toDeploy = new ArrayList<>();
+
        // validation
        while(!result.getResults().isEmpty()) {
-
            for (Component component : result.getResults()) {
-               log.info("Validating component: " + component.toStringExternal());
 
+              if(filter.checkComponent(component)) {
+                 log.info("Validating component: " + component.toStringExternal());
+                 toDeploy.add(component);
 
+                 PageResult<Asset> assetsInside = browseService.browseComponentAssets(releases, component);
 
-               PageResult<Asset> assetsInside = browseService.browseComponentAssets(releases, component);
-
-
-               for(CentralValidation validation : validations) {
-                   validation.validateComponent(configuration, component, assetsInside.getResults(), listOfFailures);
-               }
-
+                 for (CentralValidation validation : validations) {
+                    validation.validateComponent(configuration, component, assetsInside.getResults(), listOfFailures);
+                 }
+              }
            }
 
           queryOptions = new QueryOptions(queryOptions.getFilter(), queryOptions.getSortProperty(), queryOptions.getSortDirection(), counter_component ,queryOptions.getLimit(), null, false);
@@ -112,7 +104,7 @@ public class MavenCentralDeploy extends ComponentSupport {
            response.append("\n- ").append(listOfFailures.size()).append(" problems found!");
 
            for(TestReportCapability report : reports) {
-              report.createReport(configuration, listOfFailures, result.getTotal());
+              report.createReport(configuration, listOfFailures, toDeploy.size());
            }
 
 
