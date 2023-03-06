@@ -1,6 +1,5 @@
 package org.jboss.nexus.validation.checks;
 
-import org.jetbrains.annotations.NotNull;
 import org.sonatype.nexus.repository.storage.Component;
 
 import java.util.Objects;
@@ -25,6 +24,7 @@ public class FailedCheck {
     public String getProblem() {
         return problem;
     }
+
 
     @Override
     public boolean equals(Object o) {

@@ -15,6 +15,8 @@ package org.jboss.nexus;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import org.eclipse.sisu.Nullable;
+import org.jboss.nexus.tagging.MCDTagSetupCapability;
 import org.sonatype.nexus.logging.task.TaskLogging;
 import org.sonatype.nexus.scheduling.Cancelable;
 import org.sonatype.nexus.scheduling.TaskConfiguration;
@@ -31,10 +33,12 @@ public class MavenCentralDeployTask
     implements Cancelable
 {
   private final MavenCentralDeploy mavenCentralDeploy;
+  private final MCDTagSetupCapability mcdTagSetupCapability;
 
   @Inject
-  public MavenCentralDeployTask(final MavenCentralDeploy mavenCentralDeploy) {
+  public MavenCentralDeployTask(final MavenCentralDeploy mavenCentralDeploy, @Nullable final MCDTagSetupCapability mcdTagSetupCapability) {
     this.mavenCentralDeploy = checkNotNull(mavenCentralDeploy);
+    this.mcdTagSetupCapability = mcdTagSetupCapability;
   }
 
   @Override

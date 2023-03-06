@@ -68,13 +68,13 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- new stuff -->
         <dependency>
             <groupId>org.sonatype.nexus</groupId>
-            <artifactId>nexus-capability</artifactId>
+            <artifactId>nexus-repository-content</artifactId>
             <scope>provided</scope>
         </dependency>
 
+        <!-- new stuff -->
         <dependency>
             <groupId>org.sonatype.nexus</groupId>
             <artifactId>nexus-capability</artifactId>

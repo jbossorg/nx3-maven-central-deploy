@@ -168,7 +168,7 @@ public class MavenCentralDeployDescriptor
   @Inject
   public MavenCentralDeployDescriptor() {
 
-    super(TYPE_ID, MavenCentralDeployTask.class, "Maven Central Deployment", TaskDescriptorSupport.VISIBLE,
+    super(TYPE_ID, MavenCentralDeployTask.class, messages.name(), TaskDescriptorSupport.VISIBLE,
             TaskDescriptorSupport.EXPOSED,
             new TextAreaFormField(MavenCentralDeployTaskConfiguration.LATEST_STATUS, messages.latestResultsLabel(), messages.latestResultsHelp(), FormField.OPTIONAL, null, true ),
             new RepositoryCombobox(MavenCentralDeployTaskConfiguration.REPOSITORY, messages.repositoryLabel(), messages.repositoryHelp(), FormField.MANDATORY).includingAnyOfFormats("maven2"),
@@ -194,12 +194,5 @@ public class MavenCentralDeployDescriptor
             new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_ARTIFACT, messages.disableHasArtifactLabel(), messages.disableHasArtifactHelp(), false),
             new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_VERSION, messages.disableHasVersionLabel(), messages.disableHasVersionHelp(), false)
     );
-    
-
-
-
   }
-
-
-
 }
