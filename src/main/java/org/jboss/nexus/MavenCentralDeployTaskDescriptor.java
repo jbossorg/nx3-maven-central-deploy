@@ -23,7 +23,7 @@ import org.sonatype.nexus.scheduling.TaskDescriptorSupport;
 
 @Named
 @Singleton
-public class MavenCentralDeployDescriptor
+public class MavenCentralDeployTaskDescriptor
     extends TaskDescriptorSupport
 {
   public static final String TYPE_ID = "mvn.central.deploy";
@@ -48,7 +48,7 @@ public class MavenCentralDeployDescriptor
 
 
     @DefaultMessage("Mark Completed")
-    String markArtifactsAfterRunLabel();
+    String markArtifactsAfterRunLabel(); // TODO: 06.03.2023  
 
     @DefaultMessage("Uncheck while doing repeated testing. If checked, the processed artifacts are marked as deployed. With dry-run on it may be used for the initial marking of artifacts as deployed before you installed this plugin.")
     String markArtifactsAfterRunHelp();
@@ -60,17 +60,18 @@ public class MavenCentralDeployDescriptor
     String filterHelp();
 
 
+    @DefaultMessage("Task variables")
+    String variablesLabel();
+
+    @DefaultMessage("Variables in property file format, that will be shared across the reports and tests to identify your test (eg. project name, task identification etc.).")
+    String variablesHelp();
+
+
     @DefaultMessage("Latest Results")
     String latestResultsLabel();
 
     @DefaultMessage("Text for latest results")
     String latestResultsHelp();
-
-    @DefaultMessage("Plain-text reports file")
-    String plainTextReportOutputFileLabel();
-
-    @DefaultMessage("A file name, where you will be able to find reports from deployments.")
-    String plainTextReportOutputFileHelp();
 
     @DefaultMessage("Disable project checking")
     String disableHasProjectLabel();
@@ -166,7 +167,7 @@ public class MavenCentralDeployDescriptor
   private static final Messages messages = I18N.create(Messages.class);
 
   @Inject
-  public MavenCentralDeployDescriptor() {
+  public MavenCentralDeployTaskDescriptor() {
 
     super(TYPE_ID, MavenCentralDeployTask.class, messages.name(), TaskDescriptorSupport.VISIBLE,
             TaskDescriptorSupport.EXPOSED,
@@ -175,9 +176,8 @@ public class MavenCentralDeployDescriptor
             new CheckboxFormField(MavenCentralDeployTaskConfiguration.DRY_RUN, messages.dryRunLabel(), messages.dryRunHelp(), FormField.OPTIONAL).withInitialValue(true),
             new CheckboxFormField(MavenCentralDeployTaskConfiguration.MARK_ARTIFACTS, messages.markArtifactsAfterRunLabel(), messages.markArtifactsAfterRunHelp(), FormField.OPTIONAL).withInitialValue(false),
             new StringTextFormField(MavenCentralDeployTaskConfiguration.FILTER, messages.filterLabel(), messages.filterHelp(), FormField.OPTIONAL),
+            new TextAreaFormField(MavenCentralDeployTaskConfiguration.VARIABLES, messages.variablesLabel(), messages.variablesHelp(), FormField.OPTIONAL),
 
-            new StringTextFormField(MavenCentralDeployTaskConfiguration.PLAIN_TEXT_REPORT_OUTPUT_FILE, messages.plainTextReportOutputFileLabel(), messages.plainTextReportOutputFileHelp(), FormField.OPTIONAL),
-            
             new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_NAME, messages.disableHasProjectNameLabel(), messages.disableHasProjectNameHelp(), false),
             new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_DESCRIPTION, messages.disableHasProjectDescriptionLabel(), messages.disableHasProjectDescriptionHelp(), false),
             new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_URL, messages.disableHasProjectURLLabel(), messages.disableHasProjectURLHelp(), false),

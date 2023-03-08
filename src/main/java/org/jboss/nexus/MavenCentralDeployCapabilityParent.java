@@ -7,7 +7,7 @@ import javax.inject.Inject;
 public abstract class MavenCentralDeployCapabilityParent<ConfigT extends MavenCentralDeployCapabilityConfigurationParent> extends CapabilitySupport<ConfigT> {
 
 	@Inject
-	private MavenCentralDeploy mavenCentralDeploy;
+	protected MavenCentralDeploy mavenCentralDeploy;
 
 	@Override
 	protected void configure(ConfigT config)  {
@@ -29,4 +29,5 @@ public abstract class MavenCentralDeployCapabilityParent<ConfigT extends MavenCe
 	protected void onRemove(ConfigT config) {
 		mavenCentralDeploy.unregisterConfiguration(config);
 	}
+
 }

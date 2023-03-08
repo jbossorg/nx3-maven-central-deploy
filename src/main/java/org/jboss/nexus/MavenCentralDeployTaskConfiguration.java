@@ -12,6 +12,8 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
     public static final String MARK_ARTIFACTS = "markArtifacts";
     public static final String FILTER = "filter";
 
+    public static final String VARIABLES = "variables";
+
     public static final String DISABLE_HAS_PROJECT = "disableHasProject";
     public static final String DISABLE_HAS_SCM = "disableHasScm";
     public static final String DISABLE_HAS_LICENSE = "disableHasLicense";
@@ -30,10 +32,9 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
     public static final String DISABLE_HAS_JAVADOC = "disableHasJavadoc";
 
 
-
-    public static final String PLAIN_TEXT_REPORT_OUTPUT_FILE = "ptOutputFile";
-
     public static final String LATEST_STATUS = "latest_status";
+
+    public static final String RUN_NUMBER = "run_number";
 
     public MavenCentralDeployTaskConfiguration() {
     }
@@ -124,19 +125,31 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
         return getBoolean(DISABLE_HAS_JAVADOC, false);
     }
 
+    public String getVariables() {
+        return getString(VARIABLES);
+    }
+
+    @SuppressWarnings("unused")
     public String getLatestStatus() {
         return getString(LATEST_STATUS);
+    }
+
+    /** Number of the last run
+     *
+     * @return last run number
+     */
+    public Integer getRunNumber() {
+        return getInteger(RUN_NUMBER, 0);
+    }
+
+    /** Increases run number by one.
+     */
+    public void increaseRunNumber() {
+        setInteger(RUN_NUMBER, getRunNumber()+1);
     }
 
     public void setLatestStatus(String latestStatus) {
         setString(LATEST_STATUS, latestStatus);
     }
 
-    /** Returns file name for plain text
-     *
-     * @return file name or null
-     */
-    public String getPlainTextReportOutputFile() {
-        return getString(PLAIN_TEXT_REPORT_OUTPUT_FILE);
-    }
 }

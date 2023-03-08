@@ -1,6 +1,7 @@
 package org.jboss.nexus.validation.reporting;
 
-import org.sonatype.nexus.capability.CapabilityConfigurationSupport;
+import org.jboss.nexus.MavenCentralDeployCapabilityConfigurationParent;
 
-public class TestReportCapabilityConfigurationParent extends CapabilityConfigurationSupport {
+public class TestReportCapabilityConfigurationParent extends MavenCentralDeployCapabilityConfigurationParent {
+
 }

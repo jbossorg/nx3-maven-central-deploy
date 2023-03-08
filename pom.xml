@@ -81,6 +81,19 @@
             <scope>provided</scope>
         </dependency>
 
+        <!--
+        <dependency>
+            <groupId>org.sonatype.nexus</groupId>
+            <artifactId>nexus-base</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        -->
+
+        <dependency>
+            <groupId>org.apache.velocity</groupId>
+            <artifactId>velocity-engine-core</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.sonatype.nexus.plugins</groupId>
             <artifactId>nexus-tags-plugin</artifactId>

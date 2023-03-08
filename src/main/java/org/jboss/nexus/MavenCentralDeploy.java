@@ -6,7 +6,6 @@ import javax.inject.Singleton;
 
 import com.sonatype.nexus.tags.Tag;
 import com.sonatype.nexus.tags.TagStore;
-import com.sonatype.nexus.tags.orient.TagComponent;
 import com.sonatype.nexus.tags.service.TagService;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.nexus.tagging.MCDTagSetupConfiguration;
@@ -23,6 +22,7 @@ import org.sonatype.nexus.repository.manager.RepositoryManager;
 import org.sonatype.nexus.repository.query.PageResult;
 import org.sonatype.nexus.repository.query.QueryOptions;
 import org.sonatype.nexus.repository.storage.*;
+import org.sonatype.nexus.scheduling.CancelableHelper;
 
 
 import java.util.*;
@@ -58,8 +58,7 @@ public class MavenCentralDeploy extends ComponentSupport {
         this.reports = reports;
         checkArgument(!reports.isEmpty());
         this.tagStore = tagStore; // I expect this may be null in the community version
-      this.tagService = tagService;
-
+        this.tagService = tagService;
     }
 
     private static final int SEARCH_COMPONENT_PAGE_SIZE = 10;
@@ -69,84 +68,118 @@ public class MavenCentralDeploy extends ComponentSupport {
 
         checkNotNull(configuration, "Configuration was not found");
 
+        configuration.increaseRunNumber();
 
-        Repository repository = repositoryManager.get(checkNotNull(configuration.getRepository(), "Repository not configured for the task!"));
+        StringBuilder response = new StringBuilder();
 
-       Filter filter = Filter.parseFilterString(configuration.getFilter());
-       QueryOptions queryOptions =  new QueryOptions(filter.getSearchString(), "id", "asc", 0, SEARCH_COMPONENT_PAGE_SIZE, null, false);
+        try {
+          Repository repository = repositoryManager.get(checkNotNull(configuration.getRepository(), "Repository not configured for the task!"));
+
+          Filter filter = Filter.parseFilterString(configuration.getFilter());
+          QueryOptions queryOptions = new QueryOptions(filter.getSearchString(), "id", "asc", 0, SEARCH_COMPONENT_PAGE_SIZE, null, false);
 
 
-       // TODO: 10.01.2023 add time filter to remove already updated stuff
-        
-        
-        PageResult<Component> result = browseService.browseComponents(repository, queryOptions);
+          // TODO: 10.01.2023 add time filter to remove already updated stuff
+          PageResult<Component> result = browseService.browseComponents(repository, queryOptions);
 
-        int counter_component = SEARCH_COMPONENT_PAGE_SIZE-1;
+          int counter_component = SEARCH_COMPONENT_PAGE_SIZE - 1;
 
-        List<FailedCheck> listOfFailures = new ArrayList<>();
+          List<FailedCheck> listOfFailures = new ArrayList<>();
 
-        List<Component> toDeploy = new ArrayList<>();
+          List<Component> toDeploy = new ArrayList<>();
 
-       // validation
-       while(!result.getResults().isEmpty()) {
-           for (Component component : result.getResults()) {
+          // validation
+          while (!result.getResults().isEmpty()) {
+             CancelableHelper.checkCancellation();
+             for (Component component : result.getResults()) {
 
-              if(filter.checkComponent(component)) {
-                 log.info("Validating component: " + component.toStringExternal());
-                 toDeploy.add(component);
 
-                 PageResult<Asset> assetsInside = browseService.browseComponentAssets(repository, component);
+                if (filter.checkComponent(component)) {
+                   log.info("Validating component: " + component.toStringExternal());
+                   toDeploy.add(component);
 
-                 for (CentralValidation validation : validations) {
-                    validation.validateComponent(configuration, component, assetsInside.getResults(), listOfFailures);
-                 }
-              }
-           }
+                   PageResult<Asset> assetsInside = browseService.browseComponentAssets(repository, component);
 
-          queryOptions = new QueryOptions(queryOptions.getFilter(), queryOptions.getSortProperty(), queryOptions.getSortDirection(), counter_component ,queryOptions.getLimit(), null, false);
-          result = browseService.browseComponents(repository, queryOptions);
-          counter_component += SEARCH_COMPONENT_PAGE_SIZE;
-       }
+                   for (CentralValidation validation : validations) {
+                      validation.validateComponent(configuration, component, assetsInside.getResults(), listOfFailures);
+                   }
+                }
+             }
 
-       StringBuilder response = new StringBuilder("Processed ").append(result.getTotal()).append(" components.");
+             queryOptions = new QueryOptions(queryOptions.getFilter(), queryOptions.getSortProperty(), queryOptions.getSortDirection(), counter_component, queryOptions.getLimit(), null, false);
+             result = browseService.browseComponents(repository, queryOptions);
+             counter_component += SEARCH_COMPONENT_PAGE_SIZE;
+          }
 
-       if(listOfFailures.isEmpty()) {
+          MCDTagSetupConfiguration mcdTagSetupConfiguration = findConfigurationForPlugin(MCDTagSetupConfiguration.class);
+          response.append("Processed ").append(result.getTotal()).append(" components.");
 
-           // TODO: 10.01.2023 Go ahead with publishing
+          if (listOfFailures.isEmpty()) {
+             if (!configuration.getDryRun()) {
+                toDeploy.forEach(this::publishArtifact);
+             }
 
-          response.append("\n- no errors were found.");
-       } else {
-           response.append("\n- ").append(listOfFailures.size()).append(" problems found!");
+             final String publishedTag;
+             if (configuration.getMarkArtifacts() && mcdTagSetupConfiguration != null && StringUtils.isNotBlank((publishedTag = mcdTagSetupConfiguration.getDeployedTagName()))) {
+                if (tagStore == null || tagService == null) {
+                   log.error("Cannot mark failed artifacts! This version of Nexus does not support tagging.");
+                } else {
+                   log.info("Tagging " + listOfFailures.size() + " artifacts.");
+                   verifyTag(publishedTag, mcdTagSetupConfiguration.getDeployedTagAttributes());
 
-           for(TestReportCapability report : reports) {
-              report.createReport(configuration, listOfFailures, toDeploy.size());
-           }
+                   toDeploy.forEach(component -> {
+                      if (log.isDebugEnabled())
+                         log.debug("Tagging failed artifact: " + component.toStringExternal());
 
-           MCDTagSetupConfiguration mcdTagSetupConfiguration = findConfigurationForPlugin(MCDTagSetupConfiguration.class);
-           final String failedTagName;
-           if(mcdTagSetupConfiguration != null && StringUtils.isNotBlank((failedTagName = mcdTagSetupConfiguration.getFailedTagName()))) {
-              if(tagStore == null || tagService == null) {
-                 log.error("Cannot mark failed artifacts! This version of Nexus does not support tagging.");
-              } else {
-                 log.info("Tagging " + listOfFailures.size() + " failures.");
+                      //noinspection ConstantConditions
+                      tagService.associateById(publishedTag, repository, component.getEntityMetadata().getId());
+                   });
+                }
+             }
 
-                 verifyTag(failedTagName, mcdTagSetupConfiguration.getFailedTagAttributes());
+             response.append("\n- no errors were found.");
 
-                 listOfFailures.stream().map(FailedCheck::getComponent).distinct().filter(component -> TagComponent.class.isAssignableFrom(component.getClass())).forEach(component -> {
+             if (configuration.getDryRun())
+                response.append("\n- the deployment was a dry run (no actual publishing).");
+          } else {
+             response.append("\n- ").append(listOfFailures.size()).append(" problems found!");
 
-                     if(log.isDebugEnabled())
-                        log.debug("Tagging failed artifact: "+component.toStringExternal());
+             for (TestReportCapability report : reports) {
+                report.createReport(configuration, listOfFailures, toDeploy.size());
+             }
 
-                    //noinspection ConstantConditions
-                    tagService.associateById(failedTagName, repository, component.getEntityMetadata().getId());
-                 });
-              }
-           }
-       }
+             final String failedTagName;
+             if (mcdTagSetupConfiguration != null && StringUtils.isNotBlank((failedTagName = mcdTagSetupConfiguration.getFailedTagName()))) {
+                if (tagStore == null || tagService == null) {
+                   log.error("Cannot mark failed artifacts! This version of Nexus does not support tagging.");
+                } else {
+                   log.info("Tagging " + listOfFailures.size() + " failures.");
 
-       configuration.setLatestStatus(response.toString());
-       if(!listOfFailures.isEmpty())
-           throw new RuntimeException("Validations failed"); // throw an exception so the task is reported as failed
+                   verifyTag(failedTagName, mcdTagSetupConfiguration.getFailedTagAttributes());
+
+                   listOfFailures.stream().map(FailedCheck::getComponent).distinct().forEach(component -> {
+
+                      if (log.isDebugEnabled())
+                         log.debug("Tagging failed artifact: " + component.toStringExternal());
+
+                      //noinspection ConstantConditions
+                      tagService.associateById(failedTagName, repository, component.getEntityMetadata().getId());
+                   });
+                }
+             }
+
+             throw new RuntimeException("Validations failed!"); // throw an exception so the task is reported as failed
+          }
+        } catch (RuntimeException e) {
+          if(response.length()>0)
+             response.append('\n');
+
+          response.append(e.getMessage());
+
+          throw e;
+        } finally {
+          configuration.setLatestStatus(response.toString());
+        }
        
 //
 //        PageResult<Asset> assets = browseService.browseAssets(repository, queryOptions);
@@ -173,11 +206,6 @@ public class MavenCentralDeploy extends ComponentSupport {
 //        }
 
 
-    }
-
-    public void cancelDeployment() {
-        // TODO: 15.11.2022 cancel running process deployment
-        log.warn("Deploying got canceled.");
     }
 
    /** Verifies, whether the tag of given name exists. If not, the tag is created. Also, the function ensures the attributes defined by tagAttributes of this tag exist and have the right value.
@@ -256,6 +284,14 @@ public class MavenCentralDeploy extends ComponentSupport {
     public <T extends MavenCentralDeployCapabilityConfigurationParent> T findConfigurationForPlugin(Class<T> configurationClass  ) {
        //noinspection unchecked
        return  (T)registeredConfigurations.get(configurationClass);
+    }
+
+    private void publishArtifact(Component component) {
+       // TODO: 06.03.2023 push the content to Maven Central
+
+
+
+
     }
 }
 
