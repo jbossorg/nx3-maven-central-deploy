@@ -28,6 +28,7 @@ public abstract class MavenCentralDeployCapabilityParent<ConfigT extends MavenCe
 	@Override
 	protected void onRemove(ConfigT config) {
 		mavenCentralDeploy.unregisterConfiguration(config);
+
 	}
 
 }

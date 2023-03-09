@@ -25,7 +25,7 @@ public class TemplateRenderingHelper {
 	public static final String RUN = "run";
 
 	/** Name for the name of the task */
-	public static final String TASK_NAME = "task";
+	public static final String TASK_NAME = "name";
 
 //	private final VelocityEngineProvider velocityEngineProvider;
 

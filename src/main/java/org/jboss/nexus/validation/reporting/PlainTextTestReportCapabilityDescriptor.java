@@ -6,6 +6,7 @@ import org.sonatype.nexus.capability.CapabilityType;
 import org.sonatype.nexus.formfields.CheckboxFormField;
 import org.sonatype.nexus.formfields.FormField;
 import org.sonatype.nexus.formfields.StringTextFormField;
+import org.sonatype.nexus.formfields.TextAreaFormField;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -43,6 +44,12 @@ public class PlainTextTestReportCapabilityDescriptor extends TestReportCapabilit
 		@DefaultMessage("If checked, the output will be appended to the file. Otherwise with each deployment the file gets replaced. Beware the file size!")
 		String appendFileHelp();
 
+		@DefaultMessage("Export template")
+		String reportTemplateLabel();
+
+		@DefaultMessage("Velocity template for the output.")
+		String reportTemplateHelp();
+
 		@DefaultMessage("Plugin to complement Maven Central Deployment tasks. It adds logging of errors to a plain text file.")
 		String about();
 	}
@@ -54,7 +61,8 @@ public class PlainTextTestReportCapabilityDescriptor extends TestReportCapabilit
 	private static final List<FormField> formFields = new ArrayList<>();
 	static {
 		formFields.add(new StringTextFormField(PlainTextTestReportCapabilityConfiguration.FILE_NAME, messages.textDirLabel(), messages.textDirHelp(), FormField.MANDATORY));
-		formFields.add(new CheckboxFormField(PlainTextTestReportCapabilityConfiguration.APPEND_FILE, messages.appendFileLabel(), messages.appendFileHelp(), FormField.OPTIONAL));
+		formFields.add(new CheckboxFormField(PlainTextTestReportCapabilityConfiguration.APPEND_FILE, messages.appendFileLabel(), messages.appendFileHelp(), FormField.OPTIONAL).withInitialValue(true));
+		formFields.add(new TextAreaFormField(PlainTextTestReportCapabilityConfiguration.REPORT_TEMPLATE, messages.reportTemplateLabel(), messages.reportTemplateHelp(), FormField.MANDATORY).withInitialValue(PlainTextTestReportCapabilityConfiguration.DEFAULT_TEMPLATE));
 	}
 
 	public PlainTextTestReportCapabilityDescriptor() {
@@ -84,7 +92,7 @@ public class PlainTextTestReportCapabilityDescriptor extends TestReportCapabilit
 	}
 
 	@Override
-	protected String renderAbout() throws Exception {
+	protected String renderAbout() {
 		return messages.about();
 	}
 }
