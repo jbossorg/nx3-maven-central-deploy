@@ -18,15 +18,26 @@ import javax.inject.Singleton;
 
 import org.sonatype.goodies.i18n.I18N;
 import org.sonatype.goodies.i18n.MessageBundle;
+import org.sonatype.nexus.capability.Tag;
+import org.sonatype.nexus.capability.Taggable;
 import org.sonatype.nexus.formfields.*;
 import org.sonatype.nexus.scheduling.TaskDescriptorSupport;
+
+import java.util.Collections;
+import java.util.Set;
 
 @Named
 @Singleton
 public class MavenCentralDeployTaskDescriptor
-    extends TaskDescriptorSupport
+    extends TaskDescriptorSupport implements Taggable
 {
   public static final String TYPE_ID = "mvn.central.deploy";
+  public static final String CATEGORY = "MVN Central";
+
+  @Override
+  public Set<Tag> getTags() {
+    return Collections.singleton(Tag.categoryTag(CATEGORY));
+  }
 
   private interface Messages
           extends MessageBundle
@@ -194,5 +205,10 @@ public class MavenCentralDeployTaskDescriptor
             new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_ARTIFACT, messages.disableHasArtifactLabel(), messages.disableHasArtifactHelp(), false),
             new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_VERSION, messages.disableHasVersionLabel(), messages.disableHasVersionHelp(), false)
     );
+  }
+
+  @Override
+  public boolean allowConcurrentRun() {
+    return false; // todo to be on a safe side for now
   }
 }

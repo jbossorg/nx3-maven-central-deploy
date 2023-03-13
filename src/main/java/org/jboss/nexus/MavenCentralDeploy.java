@@ -40,7 +40,7 @@ public class MavenCentralDeploy extends ComponentSupport {
 
     private final Set<CentralValidation> validations;
 
-    private final Set<TestReportCapability> reports;
+    private final Set<TestReportCapability<?>> reports;
 
     private final TagStore tagStore;
 
@@ -50,7 +50,7 @@ public class MavenCentralDeploy extends ComponentSupport {
 
    @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
-    public MavenCentralDeploy(RepositoryManager repositoryManager, BrowseService browseService, Set<CentralValidation> validations, Set<TestReportCapability> reports, @Nullable TagStore tagStore,  @Nullable TagService tagService) {
+    public MavenCentralDeploy(RepositoryManager repositoryManager, BrowseService browseService, Set<CentralValidation> validations, Set<TestReportCapability<?>> reports, @Nullable TagStore tagStore,  @Nullable TagService tagService) {
         this.repositoryManager = checkNotNull(repositoryManager);
         this.browseService = checkNotNull(browseService);
         this.validations = checkNotNull(validations);
@@ -144,7 +144,7 @@ public class MavenCentralDeploy extends ComponentSupport {
           } else {
              response.append("\n- ").append(listOfFailures.size()).append(" problems found!");
 
-             for (TestReportCapability report : reports) {
+             for (TestReportCapability<?> report : reports) {
                 report.createReport(configuration, listOfFailures, toDeploy.size());
              }
 

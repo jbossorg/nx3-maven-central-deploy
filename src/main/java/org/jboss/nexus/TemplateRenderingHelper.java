@@ -3,14 +3,14 @@ package org.jboss.nexus;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.jboss.nexus.validation.checks.FailedCheck;
 import org.jetbrains.annotations.NotNull;
+import org.sonatype.nexus.repository.storage.Component;
+import org.sonatype.nexus.repository.storage.DefaultComponent;
 
 import javax.inject.Named;
 import java.io.*;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /** Class to generate template parameters for Velocity rendering
  *
@@ -88,4 +88,34 @@ public class TemplateRenderingHelper {
 		}
 	}
 
+	private static final List<FailedCheck> failedChecks ;
+	static {
+		Component component1 = new DefaultComponent().group("org.jboss.failed").name("failed-1").version("1.2.3").format("maven2");
+		Component component2 = new DefaultComponent().group("org.jboss.failed").name("failed-2").version("1.2.3").format("maven2");
+		Component component3 = new DefaultComponent().group("org.something.failed").name("another").version("3.2.1").format("maven2");
+
+		List<FailedCheck> list = new ArrayList<>();
+
+		list.add(new FailedCheck(component1, "org/jboss/failed/failed-1/1.2.3/failed-1-1.2.3.pom parsing error: ParseError at [row,col]:[1,104]" +
+			 "Message: XML document structures must start and end within the same entity." ));
+
+		list.add(new FailedCheck(component1, "org/jboss/failed/failed-1/1.2.3/failed-1-1.2.3.pom does not have the project group specified!" ));
+
+		list.add(new FailedCheck(component2, "org/jboss/failed/failed-2/1.2.3/failed-1-1.2.3.pom does not have the project group specified!" ));
+
+		list.add(new FailedCheck(component3, "org/something/failed/another/3.2.1/another-3.2.1.pom does not have the project name specified!" ));
+		list.add(new FailedCheck(component3, "org/something/failed/another/3.2.1/another-3.2.1.pom does not have the project description specified!" ));
+		list.add(new FailedCheck(component3, "org/something/failed/another/3.2.1/another-3.2.1.pom does not have the project URL specified!" ));
+
+		failedChecks = Collections.unmodifiableList(list);
+	}
+
+
+	/** Generates a list of fictive test error failures so it is possible to test the templates.
+	 *
+	 * @return fictive report
+	 */
+	public static List<FailedCheck> generateFictiveErrors() {
+		return failedChecks;
+	}
 }

@@ -3,6 +3,7 @@ package org.jboss.nexus.validation.reporting;
 import org.sonatype.goodies.i18n.I18N;
 import org.sonatype.goodies.i18n.MessageBundle;
 import org.sonatype.nexus.capability.CapabilityType;
+import org.sonatype.nexus.capability.Taggable;
 import org.sonatype.nexus.formfields.CheckboxFormField;
 import org.sonatype.nexus.formfields.FormField;
 import org.sonatype.nexus.formfields.StringTextFormField;
@@ -10,26 +11,23 @@ import org.sonatype.nexus.formfields.TextAreaFormField;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.jboss.nexus.validation.reporting.PlainTextTestReportCapabilityDescriptor.TYPE_ID;
 import static org.sonatype.nexus.capability.CapabilityType.capabilityType;
 
 @Named(TYPE_ID)
 @Singleton
-public class PlainTextTestReportCapabilityDescriptor extends TestReportCapabilityDescriptorParent {
+public class PlainTextTestReportCapabilityDescriptor extends TestReportCapabilityDescriptorParent implements Taggable {
 
 	public static final String TYPE_ID = "nx3Deploy.textReport";
 
 	public static final CapabilityType TYPE = capabilityType(TYPE_ID);
 
-
 	private interface Messages
 		 extends MessageBundle {
 
-		@DefaultMessage("Maven Central Deployment Plugin - Plaintext Error Report")
+		@DefaultMessage("MCD - Plaintext Error Report")
 		String name();
 
 		@DefaultMessage("Report File Name")
@@ -92,7 +90,8 @@ public class PlainTextTestReportCapabilityDescriptor extends TestReportCapabilit
 	}
 
 	@Override
-	protected String renderAbout() {
+	public String renderAbout() {
 		return messages.about();
 	}
+
 }

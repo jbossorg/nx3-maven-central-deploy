@@ -4,22 +4,22 @@ import org.sonatype.goodies.i18n.I18N;
 import org.sonatype.goodies.i18n.MessageBundle;
 import org.sonatype.nexus.capability.CapabilityDescriptorSupport;
 import org.sonatype.nexus.capability.CapabilityType;
+import org.sonatype.nexus.capability.Tag;
+import org.sonatype.nexus.capability.Taggable;
 import org.sonatype.nexus.formfields.FormField;
 import org.sonatype.nexus.formfields.StringTextFormField;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import static org.jboss.nexus.MavenCentralDeployTaskDescriptor.CATEGORY;
 import static org.jboss.nexus.tagging.MCDTagSetupDescriptor.TYPE_ID;
 
 @SuppressWarnings("rawtypes")
 @Singleton
 @Named(TYPE_ID)
-public class MCDTagSetupDescriptor extends CapabilityDescriptorSupport<MCDTagSetupConfiguration> {
+public class MCDTagSetupDescriptor extends CapabilityDescriptorSupport<MCDTagSetupConfiguration> implements Taggable {
 
 	public MCDTagSetupDescriptor() {
 		setExposed(true);
@@ -43,7 +43,7 @@ public class MCDTagSetupDescriptor extends CapabilityDescriptorSupport<MCDTagSet
 	private interface Messages
 		 extends MessageBundle {
 
-		@DefaultMessage("Maven Central Deployment - Tags Setup")
+		@DefaultMessage("MCD - Tags Setup")
 		String name();
 
 		@DefaultMessage("Successfully Deployed Artifact Tag Name")
@@ -100,5 +100,10 @@ public class MCDTagSetupDescriptor extends CapabilityDescriptorSupport<MCDTagSet
 	@Override
 	protected MCDTagSetupConfiguration createConfig(Map<String, String> properties) {
 		return new MCDTagSetupConfiguration(properties);
+	}
+
+	@Override
+	public Set<Tag> getTags() {
+		return Collections.singleton(Tag.categoryTag(CATEGORY));
 	}
 }

@@ -1,17 +1,18 @@
 package org.jboss.nexus.validation.reporting;
 
-import org.sonatype.nexus.capability.CapabilityDescriptor;
-import org.sonatype.nexus.capability.CapabilityDescriptorSupport;
-import org.sonatype.nexus.capability.CapabilityIdentity;
-import org.sonatype.nexus.capability.CapabilityType;
+import org.sonatype.nexus.capability.*;
 import org.sonatype.nexus.formfields.FormField;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import static org.jboss.nexus.MavenCentralDeployTaskDescriptor.CATEGORY;
 
 @SuppressWarnings("rawtypes")
-public abstract class TestReportCapabilityDescriptorParent extends CapabilityDescriptorSupport<TestReportCapabilityConfigurationParent> {
+public abstract class TestReportCapabilityDescriptorParent extends CapabilityDescriptorSupport<TestReportCapabilityConfigurationParent> implements Taggable {
 
     public TestReportCapabilityDescriptorParent(List<FormField> formFields) {
         this.formFields = formFields;
@@ -35,13 +36,8 @@ public abstract class TestReportCapabilityDescriptorParent extends CapabilityDes
     }
 
     @Override
-    public String about() {
+    public String renderAbout() {
         return "Report for failed Maven Central Deployment: "+ getClass().getName();
-    }
-
-    @Override
-    public void validate(@Nullable CapabilityIdentity id, Map<String, String> properties, ValidationMode validationMode) {
-        // nothing yet
     }
 
     @Override
@@ -52,5 +48,10 @@ public abstract class TestReportCapabilityDescriptorParent extends CapabilityDes
     @Override
     public boolean isDuplicated(@Nullable CapabilityIdentity id, Map<String, String> properties) {
         return false;
+    }
+
+    @Override
+    public Set<Tag> getTags() {
+        return Collections.singleton(Tag.categoryTag(CATEGORY));
     }
 }
