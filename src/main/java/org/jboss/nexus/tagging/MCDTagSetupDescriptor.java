@@ -8,6 +8,7 @@ import org.sonatype.nexus.capability.Tag;
 import org.sonatype.nexus.capability.Taggable;
 import org.sonatype.nexus.formfields.FormField;
 import org.sonatype.nexus.formfields.StringTextFormField;
+import org.sonatype.nexus.formfields.TextAreaFormField;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -55,7 +56,7 @@ public class MCDTagSetupDescriptor extends CapabilityDescriptorSupport<MCDTagSet
 		@DefaultMessage("Successfully Deployed Artifact Tag Attributes")
 		String deployedTagAttributesLabel();
 
-		@DefaultMessage("Comma separated list of attributes in format attribute=value of tag attributes, that will be assigned to the tag.")
+		@DefaultMessage("List of attributes in format attribute=value of tag attributes, that will be assigned to the tag. Multiple attributes are divided by a newline (property file like format). You may use ${variable} from the deployment task.")
 		String deployedTagAttributesHelp();
 
 		@DefaultMessage("Tag Name for Validation Failed Artifacts")
@@ -67,7 +68,7 @@ public class MCDTagSetupDescriptor extends CapabilityDescriptorSupport<MCDTagSet
 		@DefaultMessage("Tag Attributes for Validation Failed Artifacts")
 		String failedTagAttributesLabel();
 
-		@DefaultMessage("Comma separated list of attributes in format attribute=value of tag attributes, that will be assigned to the tag.")
+		@DefaultMessage("List of attributes in format attribute=value of tag attributes, that will be assigned to the tag. Multiple attributes are divided by a newline (property file like format). You may use ${variable} from the deployment task.")
 		String failedTagAttributesHelp();
 
 		@DefaultMessage("Setup names of the tags, that will be used for marking artifacts on successful and failed deployments to Maven Central. Tagging only works if you have NX3 Professional.")
@@ -80,9 +81,9 @@ public class MCDTagSetupDescriptor extends CapabilityDescriptorSupport<MCDTagSet
 	static {
 		List<FormField> initializeFormFields = new ArrayList<>(4);
 		initializeFormFields.add(new StringTextFormField(MCDTagSetupConfiguration.DEPLOYED_TAG_NAME, messages.deployedTagNameLabel(), messages.deployedTagNameHelp(), FormField.OPTIONAL));
-		initializeFormFields.add(new StringTextFormField(MCDTagSetupConfiguration.DEPLOYED_TAG_ATTRIBUTES, messages.deployedTagAttributesLabel(), messages.deployedTagAttributesHelp(), FormField.OPTIONAL));
+		initializeFormFields.add(new TextAreaFormField(MCDTagSetupConfiguration.DEPLOYED_TAG_ATTRIBUTES, messages.deployedTagAttributesLabel(), messages.deployedTagAttributesHelp(), FormField.OPTIONAL));
 		initializeFormFields.add(new StringTextFormField(MCDTagSetupConfiguration.FAILED_TAG_NAME, messages.failedTagNameLabel(), messages.failedTagNameHelp(), FormField.OPTIONAL));
-		initializeFormFields.add(new StringTextFormField(MCDTagSetupConfiguration.FAILED_TAG_ATTRIBUTES, messages.failedTagAttributesLabel(), messages.failedTagAttributesHelp(), FormField.OPTIONAL));
+		initializeFormFields.add(new TextAreaFormField(MCDTagSetupConfiguration.FAILED_TAG_ATTRIBUTES, messages.failedTagAttributesLabel(), messages.failedTagAttributesHelp(), FormField.OPTIONAL));
 
 		formFields = Collections.unmodifiableList(initializeFormFields);
 	}

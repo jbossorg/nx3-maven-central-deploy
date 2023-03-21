@@ -102,7 +102,7 @@ public class MavenCentralDeployTaskDescriptor
     @DefaultMessage("Disables check of license in pom.xml files.")
     String disableHasLicenseHelp();
 
-    @DefaultMessage("Disables project name checking")
+    @DefaultMessage("Disable project name checking")
     String disableHasProjectNameLabel();
 
     @DefaultMessage("Disables of checking of project name in pom.xml files.")
@@ -206,9 +206,9 @@ public class MavenCentralDeployTaskDescriptor
             new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_VERSION, messages.disableHasVersionLabel(), messages.disableHasVersionHelp(), false)
     );
   }
-
-  @Override
-  public boolean allowConcurrentRun() {
-    return false; // todo to be on a safe side for now
-  }
+//
+//  @Override
+//  public boolean allowConcurrentRun() {
+//    return false; // todo to be on a safe side for now
+//  }
 }

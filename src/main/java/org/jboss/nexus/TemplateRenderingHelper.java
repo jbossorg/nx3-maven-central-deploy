@@ -5,6 +5,11 @@ import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.jboss.nexus.validation.checks.FailedCheck;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.sonatype.nexus.common.entity.Entity;
+import org.sonatype.nexus.common.entity.EntityId;
+import org.sonatype.nexus.common.entity.EntityMetadata;
+import org.sonatype.nexus.common.entity.EntityVersion;
 import org.sonatype.nexus.repository.storage.Component;
 import org.sonatype.nexus.repository.storage.DefaultComponent;
 
@@ -26,13 +31,6 @@ public class TemplateRenderingHelper {
 
 	/** Name for the name of the task */
 	public static final String TASK_NAME = "name";
-
-//	private final VelocityEngineProvider velocityEngineProvider;
-
-//	@Inject
-//	public TemplateRenderingHelper(VelocityEngineProvider velocityEngineProvider) {
-//		this.velocityEngineProvider = checkNotNull(velocityEngineProvider);
-//	}
 
 	public Map<String, Object>  generateTemplateParameters(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration) {
 		Map<String, Object> result = new HashMap<>();
@@ -88,11 +86,65 @@ public class TemplateRenderingHelper {
 		}
 	}
 
+	public static class FictiveComponent extends DefaultComponent {
+
+		public FictiveComponent() {
+			counter++;
+		}
+
+		private static int counter = 0;
+		@Override
+		public int hashCode() {
+			return Objects.hash(group(), name(), version(), format());
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if(obj.getClass() != FictiveComponent.class)
+				return false;
+
+			if(obj == this)
+				return true;
+
+			FictiveComponent that = (FictiveComponent) obj;
+
+			return  Objects.equals(group(), that.group()) && Objects.equals(name(), that.name()) && Objects.equals(version(), version()) && Objects.equals(format(), that.format());
+		}
+
+		@Nullable
+		@Override
+		public EntityMetadata getEntityMetadata() {
+			return new EntityMetadata() {
+				@NotNull
+				@Override
+				public EntityId getId() {
+					return () -> ""+ FictiveComponent.counter;
+				}
+
+				@NotNull
+				@Override
+				public EntityVersion getVersion() {
+					return FictiveComponent.this::requireVersion;
+				}
+
+				@Override
+				public <T> Optional<Class<T>> getEntityType() {
+					return Optional.empty();
+				}
+
+				@Override
+				public <T extends Entity> Optional<T> getEntity() {
+					return Optional.empty();
+				}
+			};
+		}
+	}
+
 	private static final List<FailedCheck> failedChecks ;
 	static {
-		Component component1 = new DefaultComponent().group("org.jboss.failed").name("failed-1").version("1.2.3").format("maven2");
-		Component component2 = new DefaultComponent().group("org.jboss.failed").name("failed-2").version("1.2.3").format("maven2");
-		Component component3 = new DefaultComponent().group("org.something.failed").name("another").version("3.2.1").format("maven2");
+		Component component1 = new FictiveComponent().group("org.jboss.failed").name("failed-1").version("1.2.3").format("maven2");
+		Component component2 = new FictiveComponent().group("org.jboss.failed").name("failed-2").version("1.2.3").format("maven2");
+		Component component3 = new FictiveComponent().group("org.something.failed").name("another").version("3.2.1").format("maven2");
 
 		List<FailedCheck> list = new ArrayList<>();
 
@@ -111,7 +163,7 @@ public class TemplateRenderingHelper {
 	}
 
 
-	/** Generates a list of fictive test error failures so it is possible to test the templates.
+	/** Generates a list of fictive test error failures, so it is possible to test the templates.
 	 *
 	 * @return fictive report
 	 */

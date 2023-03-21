@@ -25,9 +25,10 @@ import org.sonatype.nexus.repository.storage.*;
 import org.sonatype.nexus.scheduling.CancelableHelper;
 
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.*;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Named
@@ -47,16 +48,17 @@ public class MavenCentralDeploy extends ComponentSupport {
 
     private final TagService tagService;
 
+    private final TemplateRenderingHelper templateRenderingHelper;
+
 
    @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
-    public MavenCentralDeploy(RepositoryManager repositoryManager, BrowseService browseService, Set<CentralValidation> validations, Set<TestReportCapability<?>> reports, @Nullable TagStore tagStore,  @Nullable TagService tagService) {
+    public MavenCentralDeploy(RepositoryManager repositoryManager, BrowseService browseService, Set<CentralValidation> validations, Set<TestReportCapability<?>> reports, @Nullable TagStore tagStore, @Nullable TagService tagService, TemplateRenderingHelper templateRenderingHelper) {
         this.repositoryManager = checkNotNull(repositoryManager);
         this.browseService = checkNotNull(browseService);
         this.validations = checkNotNull(validations);
-        checkArgument(!validations.isEmpty());
+        this.templateRenderingHelper = checkNotNull(templateRenderingHelper);
         this.reports = reports;
-        checkArgument(!reports.isEmpty());
         this.tagStore = tagStore; // I expect this may be null in the community version
         this.tagService = tagService;
     }
@@ -71,6 +73,8 @@ public class MavenCentralDeploy extends ComponentSupport {
         configuration.increaseRunNumber();
 
         StringBuilder response = new StringBuilder();
+
+        Map<String, Object> templateVariables = templateRenderingHelper.generateTemplateParameters(configuration);
 
         try {
           Repository repository = repositoryManager.get(checkNotNull(configuration.getRepository(), "Repository not configured for the task!"));
@@ -88,31 +92,32 @@ public class MavenCentralDeploy extends ComponentSupport {
 
           List<Component> toDeploy = new ArrayList<>();
 
-          // validation
-          while (!result.getResults().isEmpty()) {
-             CancelableHelper.checkCancellation();
-             for (Component component : result.getResults()) {
+          if(result != null ) {
+             // validation
+             while (!result.getResults().isEmpty()) {
+                CancelableHelper.checkCancellation();
+                for (Component component : result.getResults()) {
 
+                   if (filter.checkComponent(component)) {
+                      log.info("Validating component: " + component.toStringExternal());
+                      toDeploy.add(component);
 
-                if (filter.checkComponent(component)) {
-                   log.info("Validating component: " + component.toStringExternal());
-                   toDeploy.add(component);
+                      PageResult<Asset> assetsInside = browseService.browseComponentAssets(repository, component);
 
-                   PageResult<Asset> assetsInside = browseService.browseComponentAssets(repository, component);
-
-                   for (CentralValidation validation : validations) {
-                      validation.validateComponent(configuration, component, assetsInside.getResults(), listOfFailures);
+                      for (CentralValidation validation : validations) {
+                         validation.validateComponent(configuration, component, assetsInside.getResults(), listOfFailures);
+                      }
                    }
                 }
-             }
 
-             queryOptions = new QueryOptions(queryOptions.getFilter(), queryOptions.getSortProperty(), queryOptions.getSortDirection(), counter_component, queryOptions.getLimit(), null, false);
-             result = browseService.browseComponents(repository, queryOptions);
-             counter_component += SEARCH_COMPONENT_PAGE_SIZE;
+                queryOptions = new QueryOptions(queryOptions.getFilter(), queryOptions.getSortProperty(), queryOptions.getSortDirection(), counter_component, queryOptions.getLimit(), null, false);
+                result = browseService.browseComponents(repository, queryOptions);
+                counter_component += SEARCH_COMPONENT_PAGE_SIZE;
+             }
           }
 
           MCDTagSetupConfiguration mcdTagSetupConfiguration = findConfigurationForPlugin(MCDTagSetupConfiguration.class);
-          response.append("Processed ").append(result.getTotal()).append(" components.");
+          response.append("Processed ").append(toDeploy.size()).append(" components.");
 
           if (listOfFailures.isEmpty()) {
              if (!configuration.getDryRun()) {
@@ -122,10 +127,12 @@ public class MavenCentralDeploy extends ComponentSupport {
              final String publishedTag;
              if (configuration.getMarkArtifacts() && mcdTagSetupConfiguration != null && StringUtils.isNotBlank((publishedTag = mcdTagSetupConfiguration.getDeployedTagName()))) {
                 if (tagStore == null || tagService == null) {
-                   log.error("Cannot mark failed artifacts! This version of Nexus does not support tagging.");
+                   String msg = "Cannot mark synchronized artifacts! This version of Nexus does not support tagging.";
+                   log.error(msg);
+                   response.append("\n- Warning: ").append(msg);
                 } else {
                    log.info("Tagging " + listOfFailures.size() + " artifacts.");
-                   verifyTag(publishedTag, mcdTagSetupConfiguration.getDeployedTagAttributes());
+                   verifyTag(publishedTag, mcdTagSetupConfiguration.getDeployedTagAttributes(), templateVariables);
 
                    toDeploy.forEach(component -> {
                       if (log.isDebugEnabled())
@@ -149,13 +156,15 @@ public class MavenCentralDeploy extends ComponentSupport {
              }
 
              final String failedTagName;
-             if (mcdTagSetupConfiguration != null && StringUtils.isNotBlank((failedTagName = mcdTagSetupConfiguration.getFailedTagName()))) {
+             if (configuration.getMarkArtifacts() && mcdTagSetupConfiguration != null && StringUtils.isNotBlank((failedTagName = mcdTagSetupConfiguration.getFailedTagName()))) {
                 if (tagStore == null || tagService == null) {
-                   log.error("Cannot mark failed artifacts! This version of Nexus does not support tagging.");
+                   String msg = "Cannot mark failed artifacts! This version of Nexus does not support tagging.";
+                   log.error(msg);
+                   response.append("\n- Warning: ").append(msg);
                 } else {
                    log.info("Tagging " + listOfFailures.size() + " failures.");
 
-                   verifyTag(failedTagName, mcdTagSetupConfiguration.getFailedTagAttributes());
+                   verifyTag(failedTagName, mcdTagSetupConfiguration.getFailedTagAttributes(), templateVariables);
 
                    listOfFailures.stream().map(FailedCheck::getComponent).distinct().forEach(component -> {
 
@@ -180,31 +189,6 @@ public class MavenCentralDeploy extends ComponentSupport {
         } finally {
           configuration.setLatestStatus(response.toString());
         }
-       
-//
-//        PageResult<Asset> assets = browseService.browseAssets(repository, queryOptions);
-//
-//        for(Asset asset : assets.getResults()) {
-//            log.info(asset.name());
-//
-//            BlobRef blobRef = asset.blobRef();
-//
-//
-//            BlobStore blobStore = blobStoreManager.get(Objects.requireNonNull(blobRef).getStore());
-//            Blob blob = blobStore.get(Objects.requireNonNull(blobRef).getBlobId());
-//
-//            StringBuilder stringBuilder = new StringBuilder();
-//            try(BufferedInputStream is = new BufferedInputStream(Objects.requireNonNull(blob).getInputStream())) {
-//                int read;
-//                while((read = is.read()) != -1 )
-//                    stringBuilder.append( (char)read );
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//
-//            stringBuilder.toString();
-//        }
-
 
     }
 
@@ -213,22 +197,19 @@ public class MavenCentralDeploy extends ComponentSupport {
     * @param tagName name of the tag to get
     * @param tagAttributes possible tag attributes, that need to be set
     */
-    private void verifyTag(@NotNull String tagName, @Nullable String tagAttributes) {
+     void verifyTag(@NotNull final String tagName, @Nullable String tagAttributes, @NotNull final Map<String, Object> taskConfiguration) {
       Tag result = tagStore.get(tagName); // TODO: 02.03.2023 Junit testing
 
       Map<String, Object> attributes = new HashMap<>();
       if(StringUtils.isNotBlank(tagAttributes)) {
-         String[] attrArray= tagAttributes.trim().split("\\s*,\\s*");
-         for (String attr : attrArray) {
-            int index;
-            if((index = attr.indexOf('='))>-1) {
-               // attribute has a value
-               String attrName = attr.substring(0, index-1).trim();
-               String attrValue = attr.substring(index+1).trim();
 
-               attributes.put(attrName, attrValue);
-            } else {
-               log.warn("Tag "+ tagName+ " has incorrectly defined attribute - missing value: "+attr);
+         try(StringReader stringReader = new StringReader(tagAttributes)) {
+            try {
+               Properties properties = new Properties();
+               properties.load(stringReader);
+               properties.forEach((key, value) -> attributes.put((templateRenderingHelper.render((String)key, taskConfiguration)), (templateRenderingHelper.render((String)value, taskConfiguration))));
+            } catch (IOException e) {
+               log.error("MavenCentralDeploy::verifyTag: error reading tag attributes from "+tagAttributes);
             }
          }
       }
@@ -286,7 +267,7 @@ public class MavenCentralDeploy extends ComponentSupport {
        return  (T)registeredConfigurations.get(configurationClass);
     }
 
-    private void publishArtifact(Component component) {
+    void publishArtifact(Component component) {
        // TODO: 06.03.2023 push the content to Maven Central
 
 
