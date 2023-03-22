@@ -197,7 +197,8 @@ public class MavenCentralDeploy extends ComponentSupport {
     * @param tagName name of the tag to get
     * @param tagAttributes possible tag attributes, that need to be set
     */
-     void verifyTag(@NotNull final String tagName, @Nullable String tagAttributes, @NotNull final Map<String, Object> taskConfiguration) {
+     void verifyTag(@NotNull String tagName, @Nullable String tagAttributes, @NotNull final Map<String, Object> taskConfiguration) {
+      tagName = templateRenderingHelper.render(tagName, taskConfiguration);
       Tag result = tagStore.get(tagName); // TODO: 02.03.2023 Junit testing
 
       Map<String, Object> attributes = new HashMap<>();
@@ -220,13 +221,10 @@ public class MavenCentralDeploy extends ComponentSupport {
       } else {
          for(String key: attributes.keySet()) {
             result.attributes().set(key, attributes.get(key));
-            tagStore.update(result);
          }
+         tagStore.update(result);
       }
-
     }
-
-
 
     private final HashMap<Class<? extends MavenCentralDeployCapabilityConfigurationParent>, MavenCentralDeployCapabilityConfigurationParent> registeredConfigurations = new HashMap<>();
 
@@ -269,9 +267,6 @@ public class MavenCentralDeploy extends ComponentSupport {
 
     void publishArtifact(Component component) {
        // TODO: 06.03.2023 push the content to Maven Central
-
-
-
 
     }
 }

@@ -89,8 +89,10 @@ public class TemplateRenderingHelper {
 	public static class FictiveComponent extends DefaultComponent {
 
 		public FictiveComponent() {
-			counter++;
+			id = ++counter;
 		}
+
+		private final int id;
 
 		private static int counter = 0;
 		@Override
@@ -118,7 +120,7 @@ public class TemplateRenderingHelper {
 				@NotNull
 				@Override
 				public EntityId getId() {
-					return () -> ""+ FictiveComponent.counter;
+					return () -> ""+ FictiveComponent.this.id;
 				}
 
 				@NotNull

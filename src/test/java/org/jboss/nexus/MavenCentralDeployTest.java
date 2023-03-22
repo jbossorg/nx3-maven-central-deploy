@@ -1,5 +1,6 @@
 package org.jboss.nexus;
 
+import com.sonatype.nexus.tags.Tag;
 import com.sonatype.nexus.tags.TagStore;
 import com.sonatype.nexus.tags.service.TagService;
 import org.jboss.nexus.tagging.MCDTagSetupConfiguration;
@@ -7,12 +8,14 @@ import org.jboss.nexus.validation.checks.CentralValidation;
 import org.jboss.nexus.validation.checks.FailedCheck;
 import org.jboss.nexus.validation.reporting.TestReportCapability;
 import org.jetbrains.annotations.NotNull;
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.sonatype.nexus.common.collect.NestedAttributesMap;
 import org.sonatype.nexus.common.entity.EntityId;
 import org.sonatype.nexus.common.entity.EntityMetadata;
 import org.sonatype.nexus.repository.Repository;
@@ -107,13 +110,13 @@ public class MavenCentralDeployTest{
     }
 
     /** The validation class, that always returns errors no matter what input it gets. */
+    @SuppressWarnings("NewClassNamingConvention")
     private static class AutoFailValidation extends CentralValidation {
         @Override
         public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<Asset> assets, @NotNull List<FailedCheck> listOfFailures) {
              listOfFailures.addAll(TemplateRenderingHelper.generateFictiveErrors());
         }
     }
-
 
     private void mockBrowseComponents() {
         PageResult<Component> pageResult = new PageResult<>(1, Collections.singletonList(testComponent));
@@ -293,23 +296,137 @@ public class MavenCentralDeployTest{
 
     @Test
     public void verifyTagEmpty() {
+        // TODO: 21.03.2023 what was this?
+    }
 
-        // TODO: 21.03.2023
+    private static class TestTag implements Tag {
+
+        private String name;
+        private NestedAttributesMap attributes;
+
+        private final DateTime firstCreated;
+
+        private DateTime lastUpdated;
+
+        public TestTag() {
+            this.firstCreated = new DateTime();
+        }
+
+        @Override
+        public String name() {
+            return name;
+        }
+
+        @Override
+        public Tag name(String s) {
+            this.name = s;
+            this.lastUpdated = new DateTime();
+            return this;
+        }
+
+        @Override
+        public NestedAttributesMap attributes() {
+            return attributes;
+        }
+
+        @Override
+        public Tag attributes(NestedAttributesMap nestedAttributesMap) {
+            this.attributes = nestedAttributesMap;
+            this.lastUpdated = new DateTime();
+            return this;
+        }
+
+        @Override
+        public DateTime firstCreated() {
+            return firstCreated;
+        }
+
+        @Override
+        public DateTime lastUpdated() {
+            return lastUpdated;
+        }
     }
 
     @Test
-    public void verifyTagNoAttribute() {
-        // TODO: 21.03.2023
+    public void verifyTagDoesNotExist() {
+        final String tagName = "myTag";
+
+        Tag testTag = new TestTag();
+        when(tagStore.newTag()).thenReturn(testTag);
+
+        mavenCentralDeploy.verifyTag(tagName, null, new TemplateRenderingHelper().generateTemplateParameters(testConfiguration));
+
+        verify(tagStore).create(same(testTag));
+        assertTrue(testTag.attributes().isEmpty());
+    }
+
+    @Test
+    public void verifyTagExistingTag() {
+        final String tagName = "myTag";
+
+        Tag testTag = new TestTag().attributes(new NestedAttributesMap());
+        when(tagStore.get(tagName)).thenReturn(testTag);
+
+        mavenCentralDeploy.verifyTag(tagName, null, new TemplateRenderingHelper().generateTemplateParameters(testConfiguration));
+
+        verify(tagStore, never()).create(same(testTag));
+        verify(tagStore).update(same(testTag));
+        assertTrue(testTag.attributes().isEmpty());
+    }
+
+
+    @Test
+    public void verifyTagWithAttribute() {
+        final String tagName = "myTag";
+
+        Tag testTag = new TestTag();
+        when(tagStore.newTag()).thenReturn(testTag);
+
+        mavenCentralDeploy.verifyTag(tagName, "attribute=value", new TemplateRenderingHelper().generateTemplateParameters(testConfiguration));
+
+        verify(tagStore).create(same(testTag));
+
+        assertEquals(1, testTag.attributes().size());
+        assertTrue(testTag.attributes().contains("attribute"));
+        assertEquals("value", testTag.attributes().get("attribute"));
     }
 
     @Test
     public void verifyTagMultipleAttributes() {
-        // TODO: 21.03.2023
+        final String tagName = "myTag";
+
+        Tag testTag = new TestTag();
+        when(tagStore.newTag()).thenReturn(testTag);
+
+        mavenCentralDeploy.verifyTag(tagName, "attribute=value\n# comment here! \nanother=anotherValue", new TemplateRenderingHelper().generateTemplateParameters(testConfiguration));
+
+        verify(tagStore).create(same(testTag));
+
+        assertEquals(2, testTag.attributes().size());
+        assertTrue(testTag.attributes().contains("attribute"));
+        assertEquals("value", testTag.attributes().get("attribute"));
+        assertTrue(testTag.attributes().contains("another"));
+        assertEquals("anotherValue", testTag.attributes().get("another"));
     }
 
     @Test
-    public void verifyTagTemplateAttribute() {
-        // TODO: 21.03.2023
-    }
+    public void verifyTagTemplateTagName() {
+        final String tagName = "myTag-$variable1 and ${variable2}";
 
+        Tag testTag = new TestTag();
+        when(tagStore.newTag()).thenReturn(testTag);
+
+        final Map<String, Object> taskConfiguration = new HashMap<>();
+        taskConfiguration.put("variable1", "value1");
+        taskConfiguration.put("variable2", "value2");
+
+        mavenCentralDeploy.verifyTag(tagName, "attribute=$variable1\n# comment here! \nanother=${variable2}", taskConfiguration);
+
+        assertEquals(2, testTag.attributes().size());
+        assertTrue(testTag.attributes().contains("attribute"));
+        assertEquals("value1", testTag.attributes().get("attribute"));
+        assertTrue(testTag.attributes().contains("another"));
+        assertEquals("value2", testTag.attributes().get("another"));
+        assertEquals("myTag-value1 and value2", testTag.name());
+    }
 }
