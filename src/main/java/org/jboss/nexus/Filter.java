@@ -7,16 +7,47 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.sonatype.nexus.repository.storage.Component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 
 public class Filter {
 
-	private String group, artifact, version, tag, tagAttr, tagAttrValue;
+	private String group, artifact, version, tag;
 
-	private LogicalOperation.Operator versionOperation, tagOperation, tagAttrOperation;
+	private LogicalOperation.Operator versionOperation, tagOperation;
+
+	private final List<TagAttributeExpression> tagAttributeOperations = new ArrayList<>();
 
 	private String unspecified;
+
+	/** A class to hold information about tag operation
+	 *
+	 */
+	static class TagAttributeExpression {
+		public TagAttributeExpression(String tagAttr, String tagAttrValue, LogicalOperation.Operator tagAttrOperation) {
+			this.tagAttr = tagAttr;
+			this.tagAttrValue = tagAttrValue;
+			this.tagAttrOperation = tagAttrOperation;
+		}
+
+		private final String tagAttr, tagAttrValue;
+		private final LogicalOperation.Operator tagAttrOperation;
+
+		public String getTagAttr() {
+			return tagAttr;
+		}
+
+		public String getTagAttrValue() {
+			return tagAttrValue;
+		}
+
+		public LogicalOperation.Operator getTagAttrOperation() {
+			return tagAttrOperation;
+		}
+	}
+
 
 	public static Filter parseFilterString(@Nullable String filterString) throws ParseException {
 		Filter result = new Filter();
@@ -59,9 +90,7 @@ public class Filter {
 							if (operation.getOperator() == LogicalOperation.Operator.NOOP) {
 								throw new ParseException("Incorrect filter expression: Missing operator in tagAttr: " + token);
 							}
-							result.tagAttrOperation = operation.getOperator();
-							result.tagAttr = operation.getAttribute();
-							result.tagAttrValue = operation.getValue();
+							result.tagAttributeOperations.add(new TagAttributeExpression(operation.getAttribute(), operation.getValue(), operation.getOperator()));
 							break;
 						} else
 							throw new ParseException("Incorrect filter expression: allowed fields are group, artifact, name, version, tag, tagAttr: "+token); // FIXME: 02.02.2023 maybe not the right text
@@ -198,22 +227,6 @@ public class Filter {
 	}
 
 
-	/** Returns tag attribute of the artifact to be searched for.
-	 *
-	 * @return tag attribute
-	 */	public String getTagAttr() {
-		return tagAttr;
-	}
-
-	/** Returns value of the tag attribute to be checked.
-	 *
-	 * @return tag attribute value
-	 */
-	public String getTagAttrValue() {
-		return tagAttrValue;
-	}
-
-
 	/** Returns value for search without logical operators.
 	 *
 	 * @return value for unspecified search
@@ -238,13 +251,15 @@ public class Filter {
 		return tagOperation;
 	}
 
-	/** Logical operation to be used for checking on tag attribute.
+
+	/** Returns possible tag attribute expressions
 	 *
-	 * @return {@link LogicalOperation.Operator#operator} value
+	 * @return list of attribute expressions to be validated
 	 */
-	public LogicalOperation.Operator getTagAttrOperation() {
-		return tagAttrOperation;
+	public List<TagAttributeExpression> getTagAttributeOperations() {
+		return tagAttributeOperations;
 	}
+
 
 	/** Returns string, that will be searched for by Nexus based on the filter setting to narrow the selection of artifacts.
 	 *
@@ -292,24 +307,27 @@ public class Filter {
 				if(((TagComponent)component).tags().stream().noneMatch( t -> FunctionMapping.resolve(getTagOperation(), t.name(), getTag())))
 					return false;
 
-			if (StringUtils.isNotEmpty(getTagAttr())) {
-				boolean found = false;
-
-				for(OrientTag tag : ((TagComponent)component).tags()) {
-					Object object = tag.attributes().get(getTagAttr());
-					if (object != null &&  String.class.isAssignableFrom(object.getClass())) {
-						found = FunctionMapping.resolve(getTagAttrOperation(), (String) object, getTagAttrValue());
-						if(found)
-							break;
+			if (!tagAttributeOperations.isEmpty() ) {
+				for(TagAttributeExpression tagAttributeExpression : tagAttributeOperations) {
+					boolean found = false;
+					for (OrientTag tag : ((TagComponent) component).tags()) {
+						Object object = tag.attributes().get(tagAttributeExpression.tagAttr);
+						if (object != null && String.class.isAssignableFrom(object.getClass())) {
+							found = FunctionMapping.resolve(tagAttributeExpression.tagAttrOperation, (String) object, tagAttributeExpression.tagAttrValue);
+							if (found)
+								break;
+						}
 					}
+					if(!found)
+						return false;
 				}
 
-				return found;
+				return true;
 			}
 
 		} else {
 			// requested filter on tags while tags are not supported
-			if(StringUtils.isNotEmpty(getTag()) || StringUtils.isNotEmpty(getTagAttr())) {
+			if(StringUtils.isNotEmpty(getTag()) || !tagAttributeOperations.isEmpty()) {
 				throw new RuntimeException("Filter error: attempt to filter based on a tag or tagAttr. Tags are only supported in NXRM3 Professional.");
 			}
 		}

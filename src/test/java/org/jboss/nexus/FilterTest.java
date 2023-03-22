@@ -11,6 +11,7 @@ import org.sonatype.nexus.repository.storage.Component;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -190,11 +191,13 @@ public class FilterTest {
 
 		tested = Filter.parseFilterString("tagAttr=build<25");
 		assertTrue("smaller", tested.checkComponent(tagComponent));
+
+		tested = Filter.parseFilterString("tagAttr=build<25&tagAttr=OS=macOS");
+		assertTrue("Multiple attributes matches", tested.checkComponent(tagComponent));
+
+		tested = Filter.parseFilterString("tagAttr=build<25&tagAttr=OS=Windows");
+		assertFalse("Multiple attributes does not match", tested.checkComponent(tagComponent));
 	}
-
-
-
-
 
 	@Test
 	public void parseFilterStringAll() {
@@ -206,9 +209,13 @@ public class FilterTest {
 		assertEquals(Filter.LogicalOperation.Operator.GE, tested.getVersionOperation());
 		assertEquals("TO_DEPLOY", tested.getTag());
 		assertEquals(Filter.LogicalOperation.Operator.EQ, tested.getTagOperation());
-		assertEquals("OS", tested.getTagAttr());
-		assertEquals(Filter.LogicalOperation.Operator.NE, tested.getTagAttrOperation());
-		assertEquals("MacOS", tested.getTagAttrValue());
+
+
+		List<Filter.TagAttributeExpression> tagExpressions = tested.getTagAttributeOperations();
+		assertEquals(1, tagExpressions.size());
+		assertEquals("OS", tagExpressions.get(0).getTagAttr());
+		assertEquals(Filter.LogicalOperation.Operator.NE, tagExpressions.get(0).getTagAttrOperation());
+		assertEquals("MacOS", tagExpressions.get(0).getTagAttrValue());
 	}
 
 	@Test
@@ -221,9 +228,12 @@ public class FilterTest {
 		assertEquals(Filter.LogicalOperation.Operator.GE, tested.getVersionOperation());
 		assertEquals("TO_DEPLOY", tested.getTag());
 		assertEquals(Filter.LogicalOperation.Operator.EQ, tested.getTagOperation());
-		assertEquals("OS", tested.getTagAttr());
-		assertEquals(Filter.LogicalOperation.Operator.NE, tested.getTagAttrOperation());
-		assertEquals("MacOS", tested.getTagAttrValue());
+
+		List<Filter.TagAttributeExpression> tagExpressions = tested.getTagAttributeOperations();
+		assertEquals(1, tagExpressions.size());
+		assertEquals("OS", tagExpressions.get(0).getTagAttr());
+		assertEquals(Filter.LogicalOperation.Operator.NE, tagExpressions.get(0).getTagAttrOperation());
+		assertEquals("MacOS", tagExpressions.get(0).getTagAttrValue());
 	}
 
 	@Test(expected = Filter.ParseException.class)
@@ -259,9 +269,7 @@ public class FilterTest {
 		assertNull(tested.getVersionOperation());
 		assertNull(tested.getTag());
 		assertNull(tested.getTagOperation());
-		assertNull(tested.getTagAttr());
-		assertNull(tested.getTagAttrOperation());
-		assertNull(tested.getTagAttrValue());
+		assertTrue(tested.getTagAttributeOperations().isEmpty());
 	}
 
 	@Test(expected = Filter.ParseException.class)
