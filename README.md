@@ -170,12 +170,12 @@ Common variables will be present in all reporting capabilities. On top of these 
 | name     | Name of the deployment task.                                                                |
 | run      | The number of the current deployment. Each deployment attempt increases this number by one. |
 
-In the reports you will work with FailedCheck object, that holds information about single verification failure.  
+In your reports you will work with FailedCheck objects, that each holds information about a single verification failure.  
 ##### FailedCheck Object Structure
-| Property  | Type      | Description                                    |
-|-----------|-----------|------------------------------------------------|
-| component | Component | The identification of artifact with an error   |
-| problem   | String    | The human readable description of the problem. |
+| Property  | Type      | Description                                               |
+|-----------|-----------|-----------------------------------------------------------|
+| component | Component | The identification of the artifact with an error.         |
+| problem   | String    | The human readable description of the validation failure. |
 
 ##### Component Object Structure
 | Property/          | Type   | Description                                                                      |
@@ -194,7 +194,7 @@ In the reports you will work with FailedCheck object, that holds information abo
 | repository | Nexus repository name.                                                  |
 
 # Extending nx3-maven-central-deploy by Your Tests and Reports
-nx3-maven-central-deploy was designed with the emphasis of the possibility to enhance checking and reporting capability. If you want to implement **your own validation(s)**, you can create a plugin, that extends **org.jboss.nexus.validation.checks.CentralValidation** class. In order to add your own **reaction** on a failed deployment, implement a capability, that extends **org.jboss.nexus.validation.reporting.TestReportCapability**.  
+nx3-maven-central-deploy was designed with the emphasis of the extendability of checking and reporting capability. If you want to implement **your own validation(s)**, you can create a plugin, that extends **org.jboss.nexus.validation.checks.CentralValidation** class. In order to add your own **reaction** on a failed deployment, implement a capability, that extends **org.jboss.nexus.validation.reporting.TestReportCapability**.  
 
 In both cases nx3-maven-central-deploy will use the dependency injection to add your capability to the process of validation or error reporting based on the parent class you extended. You do not need to worry about registering it or similar. An example plugins will be added later, so you would be able to easily extend the test/reporting contract with your own logic. 
 
