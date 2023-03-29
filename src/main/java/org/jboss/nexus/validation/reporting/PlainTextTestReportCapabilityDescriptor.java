@@ -52,7 +52,7 @@ public class PlainTextTestReportCapabilityDescriptor extends TestReportCapabilit
 		String about();
 	}
 
-	private static final PlainTextTestReportCapabilityDescriptor.Messages messages = I18N.create(PlainTextTestReportCapabilityDescriptor.Messages.class);
+	private static final Messages messages = I18N.create(PlainTextTestReportCapabilityDescriptor.Messages.class);
 
 
 	@SuppressWarnings("rawtypes")
