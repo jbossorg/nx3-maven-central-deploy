@@ -65,7 +65,7 @@ public class JiraTestReportServerInformationTest {
 	@Test
 	public void findProjectIDReal() {
 		tested = new JiraTestReportServerInformation();
-		tested.setJiraConnectionInformation("https://issues.stage.redhat.com", null, "Mzk1NjI0ODQ2MjUxOtn4WO/W1MFmmDk2iuXICGPTjTTZ", null,"squid.corp.redhat.com", 3128); // fixme credentials remove!
+		tested.setJiraConnectionInformation("https://issues.stage.redhat.com", null, "", null,"squid.corp.redhat.com", 3128); // fixme credentials remove!
 
 		tested.tryJira();
 		// TODO: 28.03.2023 remove this!!!!!!
