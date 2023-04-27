@@ -1,5 +1,7 @@
-package org.jboss.nexus.validation.reporting;
+package org.jboss.nexus.validation.reporting.plaintext;
 
+import org.jboss.nexus.validation.reporting.TestReportCapabilityConfigurationParent;
+import org.jboss.nexus.validation.reporting.TestReportCapabilityDescriptorParent;
 import org.sonatype.goodies.i18n.I18N;
 import org.sonatype.goodies.i18n.MessageBundle;
 import org.sonatype.nexus.capability.CapabilityType;
@@ -13,7 +15,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.*;
 
-import static org.jboss.nexus.validation.reporting.PlainTextTestReportCapabilityDescriptor.TYPE_ID;
+import static org.jboss.nexus.validation.reporting.plaintext.PlainTextTestReportCapabilityDescriptor.TYPE_ID;
 import static org.sonatype.nexus.capability.CapabilityType.capabilityType;
 
 @Named(TYPE_ID)

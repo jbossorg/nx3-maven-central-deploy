@@ -177,7 +177,6 @@ public class MavenCentralDeployTaskDescriptor
 
   private static final Messages messages = I18N.create(Messages.class);
 
-  @Inject
   public MavenCentralDeployTaskDescriptor() {
 
     super(TYPE_ID, MavenCentralDeployTask.class, messages.name(), TaskDescriptorSupport.VISIBLE,

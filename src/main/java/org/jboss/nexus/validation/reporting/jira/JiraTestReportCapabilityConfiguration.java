@@ -1,6 +1,11 @@
-package org.jboss.nexus.validation.reporting;
+package org.jboss.nexus.validation.reporting.jira;
 
-public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityConfigurationParent{
+import org.jboss.nexus.validation.reporting.TestReportCapabilityConfigurationParent;
+import org.sonatype.nexus.formfields.StringTextFormField;
+
+import java.util.Map;
+
+public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityConfigurationParent {
 
 	public static final String JIRA_BASE_URL = "jira.base.url";
 
@@ -16,12 +21,12 @@ public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityC
 
 	public static final String PROJECT = "project";
 
-	public static final String SEVERITY = "severity";
-	
 	public static final String SUMMARY = "summary";
 	
 	public static final String DESCRIPTION = "description";
-	
+
+	public static final String ISSUE_TYPE = "issue.type";
+
 	public static final String LABELS = "labels";
 	
 	public static final String PRIORITY = "priority";
@@ -33,11 +38,43 @@ public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityC
 	public static final String REPORTER = "reporter";
 	
 	public static final String COMPONENTS = "components";
-	
-	public static final String ISSUE_TYPE= "issue.type";
-	
 
-	public static class IssueDescription {
+
+	public JiraTestReportCapabilityConfiguration() {
+		defaultJiraConfiguration = new JiraConfiguration();
+	}
+	
+	public JiraTestReportCapabilityConfiguration(Map<String, String> properties) {
+		defaultJiraConfiguration = new JiraConfiguration(properties);
+	}
+
+	public static class JiraConfiguration {
+		
+		public JiraConfiguration() {}
+		
+		public JiraConfiguration(Map<String, String> properties) {
+			setJiraBaseUrl(properties.get(JiraTestReportCapabilityConfiguration.JIRA_BASE_URL));
+			setProxyHost(properties.get(JiraTestReportCapabilityConfiguration.PROXY_HOST));
+
+			String proxyPort = properties.get(JiraTestReportCapabilityConfiguration.PROXY_PORT);
+			if(proxyPort != null)
+				setProxyPort(Integer.valueOf(proxyPort));
+
+			setUserName(properties.get(JiraTestReportCapabilityConfiguration.USER_NAME));
+			setPassword(properties.get(JiraTestReportCapabilityConfiguration.USER_PASSWORD));
+			setToken(properties.get(JiraTestReportCapabilityConfiguration.TOKEN));
+			setProject(properties.get(JiraTestReportCapabilityConfiguration.PROJECT));
+			setSummary(properties.get(JiraTestReportCapabilityConfiguration.SUMMARY));
+			setDescription(properties.get(JiraTestReportCapabilityConfiguration.DESCRIPTION));
+			setIssueType(properties.get(JiraTestReportCapabilityConfiguration.ISSUE_TYPE));
+			setComponents(properties.get(JiraTestReportCapabilityConfiguration.COMPONENTS));
+			setLabels(properties.get(JiraTestReportCapabilityConfiguration.LABELS));
+			setPriority(properties.get(JiraTestReportCapabilityConfiguration.PRIORITY));
+			setSecurity(properties.get(JiraTestReportCapabilityConfiguration.SECURITY));
+			setAssignee(properties.get(JiraTestReportCapabilityConfiguration.ASSIGNEE));
+			setReporter(properties.get(JiraTestReportCapabilityConfiguration.REPORTER));
+			
+		}
 
 		private String jiraBaseUrl;
 
@@ -57,9 +94,9 @@ public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityC
 
 		private String description;
 
-		private String labels;
+		private String issueType;
 
-		private String severity;
+		private String labels;
 
 		private String priority;
 
@@ -68,6 +105,8 @@ public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityC
 		private String assignee;
 
 		private String reporter;
+		
+		private String components;
 
 		/** Gets base URL of Jira.
 		 *
@@ -197,6 +236,22 @@ public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityC
 			this.description = description;
 		}
 
+		/** Gets the type of the issue
+		 *
+		 * @return issue type
+		 */
+		public String getIssueType() {
+			return issueType;
+		}
+
+		/** Sets the issue type.
+		 *
+		 * @param issueType issue type number or name
+		 */
+		public void setIssueType(String issueType) {
+			this.issueType = issueType;
+		}
+
 		/** Comma separated list of labels. Velocity variables are allowed.
 		 *
 		 * @return null or list of labels
@@ -207,22 +262,6 @@ public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityC
 
 		public void setLabels(String labels) {
 			this.labels = labels;
-		}
-
-		/** ID or name of the severity field.
-		 *
-		 * @return ID or name of the security field
-		 */
-		public String getSeverity() {
-			return severity;
-		}
-
-		/** Set the severity of the ticket.
-		 *
-		 * @param severity severity ID or name
-		 */
-		public void setSeverity(String severity) {
-			this.severity = severity;
 		}
 
 		/** ID or name of the priority.
@@ -288,8 +327,31 @@ public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityC
 		public void setReporter(String reporter) {
 			this.reporter = reporter;
 		}
+
+		/** Components
+		 * 
+		 * @return comma separated list of components
+		 */
+		public String getComponents() {
+			return components;
+		}
+
+		/** Sets components.
+		 * 
+		 * @param components comma separated list of components
+		 */
+		public void setComponents(String components) {
+			this.components = components;
+		}
+	} 
+	
+	private final JiraConfiguration defaultJiraConfiguration;
+
+	/** Returns default Jira configuration
+	 *
+	 * @return
+	 */
+	public JiraConfiguration getDefaultJiraConfiguration() {
+		return defaultJiraConfiguration;
 	}
-	
-	
-	
 }

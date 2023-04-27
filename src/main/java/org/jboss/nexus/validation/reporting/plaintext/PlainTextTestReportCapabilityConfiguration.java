@@ -1,4 +1,6 @@
-package org.jboss.nexus.validation.reporting;
+package org.jboss.nexus.validation.reporting.plaintext;
+
+import org.jboss.nexus.validation.reporting.TestReportCapabilityConfigurationParent;
 
 import java.util.Map;
 

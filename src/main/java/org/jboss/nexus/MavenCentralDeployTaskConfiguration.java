@@ -32,9 +32,9 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
     public static final String DISABLE_HAS_JAVADOC = "disableHasJavadoc";
 
 
-    public static final String LATEST_STATUS = "latest_status";
+    public static final String LATEST_STATUS = "latestStatus";
 
-    public static final String RUN_NUMBER = "run_number";
+    public static final String RUN_NUMBER = "runNumber";
 
     public MavenCentralDeployTaskConfiguration() {
     }

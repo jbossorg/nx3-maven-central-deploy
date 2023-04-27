@@ -1,10 +1,11 @@
-package org.jboss.nexus.validation.reporting;
+package org.jboss.nexus.validation.reporting.plaintext;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
 import org.jboss.nexus.MavenCentralDeployTaskDescriptor;
 import org.jboss.nexus.TemplateRenderingHelper;
 import org.jboss.nexus.validation.checks.FailedCheck;
+import org.jboss.nexus.validation.reporting.TestReportCapability;
 import org.sonatype.nexus.scheduling.TaskInfo;
 import org.sonatype.nexus.scheduling.TaskScheduler;
 
@@ -16,7 +17,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Named(PlainTextTestReportCapabilityDescriptor.TYPE_ID)
-public class PlainTextTestReportCapability extends TestReportCapability<PlainTextTestReportCapabilityConfiguration>  {
+public class PlainTextTestReportCapability extends TestReportCapability<PlainTextTestReportCapabilityConfiguration> {
 
 	@Inject
 	private TemplateRenderingHelper templateHelper;

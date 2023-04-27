@@ -1,0 +1,165 @@
+package org.jboss.nexus.validation.reporting.jira;
+
+import org.jboss.nexus.validation.reporting.TestReportCapabilityConfigurationParent;
+import org.jboss.nexus.validation.reporting.TestReportCapabilityDescriptorParent;
+import org.sonatype.goodies.i18n.I18N;
+import org.sonatype.goodies.i18n.MessageBundle;
+import org.sonatype.nexus.capability.CapabilityType;
+import org.sonatype.nexus.formfields.*;
+
+import javax.inject.Named;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+/** This capability configures default information for all Jira Tasks
+ *
+ */
+@Named(JiraTestReportCapabilityDescriptor.TYPE_ID)
+public class JiraTestReportCapabilityDescriptor extends TestReportCapabilityDescriptorParent {
+	public static final String TYPE_ID = "nx3Deploy.jira.report";
+
+	private static final CapabilityType CAPABILITY_TYPE = CapabilityType.capabilityType(TYPE_ID);
+
+
+	private interface Messages
+		 extends MessageBundle {
+
+		@DefaultMessage("Jira base URL")
+		String jiraBaseUrlLabel();
+		@DefaultMessage("Base URL of for any Jira operation, e.g https://issues.company.org")
+		String jiraBaseUrlHelp();
+
+		@DefaultMessage("Proxy host")
+		String proxyHostLabel();
+		@DefaultMessage("Host name or IP of the proxy server if your company uses one.")
+		String proxyHostHelp();
+
+		@DefaultMessage("Proxy port")
+		String proxyPortLabel();
+		@DefaultMessage("Port number of your proxy server if your company uses one. 3128 is the default.")
+		String proxyPortHelp();
+
+		@DefaultMessage("Username")
+		String userNameLabel();
+		@DefaultMessage("Username for authentication for Jira operations. Use only if your Jira server uses basic authentication.")
+		String userNameHelp();
+
+		@DefaultMessage("Password")
+		 String passwordLabel();
+		@DefaultMessage("Password for authentication for Jira operations. Use only if your Jira server uses basic authentication.")
+		 String passwordHelp();
+
+		@DefaultMessage("Authentication token")
+		String tokenLabel();
+		@DefaultMessage("Token for authenticating in Jira using personal access tokens (recommended by Atlassian).")
+		String tokenHelp();
+
+		@DefaultMessage("Project")
+		String projectLabel();
+		@DefaultMessage("Project ID or project key for creating the issues.")
+		String projectHelp();
+
+		@DefaultMessage("Summary")
+		String summaryLabel();
+		@DefaultMessage("Issue summary for the newly created issues. Velocity template variables are allowed.")
+		String summaryHelp();
+
+		@DefaultMessage("Description")
+		String descriptionLabel();
+		@DefaultMessage("Description of the fields. This template will be used for creating the error report.")
+		String descriptionHelp();
+
+		@DefaultMessage("Issue type")
+		 String issueTypeLabel();
+		@DefaultMessage("ID or name of the issue type")
+		 String issueTypeHelp();
+
+		@DefaultMessage("Components")
+		String componentsLabel();
+		@DefaultMessage("Comma separated list of components to be applied on the ticket. Velocity templating support.")
+		String componentsHelp();
+
+		@DefaultMessage("Labels")
+		String labelsLabel();
+		@DefaultMessage("Comma separated list of labels to be applied on the ticket. Velocity templating support.")
+		String labelsHelp();
+
+		@DefaultMessage("Priority")
+		String priorityLabel();
+		@DefaultMessage("Priority of the issue. ID or name.")
+		String priorityHelp();
+
+		@DefaultMessage("Security")
+		 String securityLabel();
+		@DefaultMessage("Security level of the created issue.")
+		 String securityHelp();
+
+		@DefaultMessage("Assignee")
+		 String assigneeLabel();
+		@DefaultMessage("The person to be assigned the newly created ticket. ")
+		 String assigneeHelp();
+
+		@DefaultMessage("Reporter")
+		String reporterLabel();
+		@DefaultMessage("If there is a requirement of setting a specific reporter, use this field. ")
+		String reporterHelp();
+
+
+		@DefaultMessage("Bug")
+		String defaultIssueType();
+
+		@DefaultMessage("Maven Central Synchronization Validation Error")
+		String defaultIssueSummary();
+
+
+		@DefaultMessage("MCD - Jira Reports Default Configuration")
+		String name();
+	}
+
+	private static final Messages messages = I18N.create(JiraTestReportCapabilityDescriptor.Messages.class);
+
+
+	@SuppressWarnings("rawtypes")
+	static List<FormField> formFields = new ArrayList<>();
+
+	static {
+		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.JIRA_BASE_URL, messages.jiraBaseUrlLabel(), messages.jiraBaseUrlHelp(), true));
+		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.PROXY_HOST, messages.proxyHostLabel(), messages.proxyHostHelp(), false));
+		formFields.add(new NumberTextFormField(JiraTestReportCapabilityConfiguration.PROXY_PORT, messages.proxyPortLabel(), messages.proxyPortHelp(), false  ).withInitialValue(3128));
+		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.USER_NAME, messages.userNameLabel(), messages.userNameHelp(), false));
+		formFields.add(new PasswordFormField(JiraTestReportCapabilityConfiguration.USER_PASSWORD, messages.passwordLabel(), messages.passwordHelp(), false ));
+		formFields.add(new PasswordFormField(JiraTestReportCapabilityConfiguration.TOKEN, messages.tokenLabel(), messages.tokenHelp(), false));
+		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.PROJECT, messages.projectLabel(), messages.projectHelp(), true));
+		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.SUMMARY, messages.summaryLabel(), messages.summaryHelp(), true).withInitialValue(messages.defaultIssueSummary()));
+		formFields.add(new TextAreaFormField(JiraTestReportCapabilityConfiguration.DESCRIPTION, messages.descriptionLabel(), messages.descriptionHelp(), true));
+		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.ISSUE_TYPE, messages.issueTypeLabel(), messages.issueTypeHelp(), true).withInitialValue(messages.defaultIssueType()));
+		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.COMPONENTS, messages.componentsLabel(), messages.componentsHelp(), false));
+		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.LABELS, messages.labelsLabel(), messages.labelsHelp(), false));
+		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.PRIORITY, messages.priorityLabel(), messages.priorityHelp(), false));
+		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.SECURITY, messages.securityLabel(), messages.securityHelp(), false));
+		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.ASSIGNEE, messages.assigneeLabel(), messages.assigneeHelp(), false));
+		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.REPORTER, messages.reporterLabel(), messages.reporterHelp(), false));
+	}
+
+
+	public JiraTestReportCapabilityDescriptor() {
+		super(formFields);
+	}
+
+	@Override
+	public CapabilityType type() {
+		return CAPABILITY_TYPE;
+	}
+
+	@Override
+	public String name() {
+		return messages.name();
+	}
+
+	@Override
+	protected TestReportCapabilityConfigurationParent createConfig(Map<String, String> properties) {
+		return new JiraTestReportCapabilityConfiguration(properties);
+	}
+}
