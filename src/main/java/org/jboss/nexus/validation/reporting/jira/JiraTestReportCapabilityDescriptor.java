@@ -24,85 +24,101 @@ public class JiraTestReportCapabilityDescriptor extends TestReportCapabilityDesc
 
 
 	private interface Messages
-		 extends MessageBundle {
+			extends MessageBundle {
 
 		@DefaultMessage("Jira base URL")
 		String jiraBaseUrlLabel();
+
 		@DefaultMessage("Base URL of for any Jira operation, e.g https://issues.company.org")
 		String jiraBaseUrlHelp();
 
 		@DefaultMessage("Proxy host")
 		String proxyHostLabel();
+
 		@DefaultMessage("Host name or IP of the proxy server if your company uses one.")
 		String proxyHostHelp();
 
 		@DefaultMessage("Proxy port")
 		String proxyPortLabel();
+
 		@DefaultMessage("Port number of your proxy server if your company uses one. 3128 is the default.")
 		String proxyPortHelp();
 
 		@DefaultMessage("Username")
 		String userNameLabel();
+
 		@DefaultMessage("Username for authentication for Jira operations. Use only if your Jira server uses basic authentication.")
 		String userNameHelp();
 
 		@DefaultMessage("Password")
-		 String passwordLabel();
+		String passwordLabel();
+
 		@DefaultMessage("Password for authentication for Jira operations. Use only if your Jira server uses basic authentication.")
-		 String passwordHelp();
+		String passwordHelp();
 
 		@DefaultMessage("Authentication token")
 		String tokenLabel();
+
 		@DefaultMessage("Token for authenticating in Jira using personal access tokens (recommended by Atlassian).")
 		String tokenHelp();
 
 		@DefaultMessage("Project")
 		String projectLabel();
+
 		@DefaultMessage("Project ID or project key for creating the issues.")
 		String projectHelp();
 
 		@DefaultMessage("Summary")
 		String summaryLabel();
+
 		@DefaultMessage("Issue summary for the newly created issues. Velocity template variables are allowed.")
 		String summaryHelp();
 
 		@DefaultMessage("Description")
 		String descriptionLabel();
-		@DefaultMessage("Description of the fields. This template will be used for creating the error report.")
+
+		@DefaultMessage("Issue description. This template will be used for creating the error report.")
 		String descriptionHelp();
 
 		@DefaultMessage("Issue type")
-		 String issueTypeLabel();
+		String issueTypeLabel();
+
 		@DefaultMessage("ID or name of the issue type")
-		 String issueTypeHelp();
+		String issueTypeHelp();
 
 		@DefaultMessage("Components")
 		String componentsLabel();
+
 		@DefaultMessage("Comma separated list of components to be applied on the ticket. Velocity templating support.")
 		String componentsHelp();
 
 		@DefaultMessage("Labels")
 		String labelsLabel();
-		@DefaultMessage("Comma separated list of labels to be applied on the ticket. Velocity templating support.")
+
+		@DefaultMessage("Comma separated list of labels to be applied on the ticket. Velocity templating support. Beware: Jira does not allow spaces inside labels even if you enclose the label in quotes!")
 		String labelsHelp();
 
 		@DefaultMessage("Priority")
 		String priorityLabel();
+
 		@DefaultMessage("Priority of the issue. ID or name.")
 		String priorityHelp();
 
 		@DefaultMessage("Security")
-		 String securityLabel();
+		String securityLabel();
+
 		@DefaultMessage("Security level of the created issue.")
-		 String securityHelp();
+		String securityHelp();
 
 		@DefaultMessage("Assignee")
-		 String assigneeLabel();
+		String assigneeLabel();
+
 		@DefaultMessage("The person to be assigned the newly created ticket. ")
-		 String assigneeHelp();
+		String assigneeHelp();
 
 		@DefaultMessage("Reporter")
 		String reporterLabel();
+
 		@DefaultMessage("If there is a requirement of setting a specific reporter, use this field. ")
 		String reporterHelp();
 
@@ -112,6 +128,12 @@ public class JiraTestReportCapabilityDescriptor extends TestReportCapabilityDesc
 
 		@DefaultMessage("Maven Central Synchronization Validation Error")
 		String defaultIssueSummary();
+
+		@DefaultMessage("Issue main template")
+		String templateLabel();
+
+		@DefaultMessage("Main template for creating the issue. For generating the actual report use Description field rather than this one. ")
+		String templateHelp();
 
 
 		@DefaultMessage("MCD - Jira Reports Default Configuration")
@@ -133,7 +155,7 @@ public class JiraTestReportCapabilityDescriptor extends TestReportCapabilityDesc
 		formFields.add(new PasswordFormField(JiraTestReportCapabilityConfiguration.TOKEN, messages.tokenLabel(), messages.tokenHelp(), false));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.PROJECT, messages.projectLabel(), messages.projectHelp(), true));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.SUMMARY, messages.summaryLabel(), messages.summaryHelp(), true).withInitialValue(messages.defaultIssueSummary()));
-		formFields.add(new TextAreaFormField(JiraTestReportCapabilityConfiguration.DESCRIPTION, messages.descriptionLabel(), messages.descriptionHelp(), true));
+		formFields.add(new TextAreaFormField(JiraTestReportCapabilityConfiguration.DESCRIPTION, messages.descriptionLabel(), messages.descriptionHelp(), true)); // TODO: 07.06.2023 add default template to report in Jira! 
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.ISSUE_TYPE, messages.issueTypeLabel(), messages.issueTypeHelp(), true).withInitialValue(messages.defaultIssueType()));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.COMPONENTS, messages.componentsLabel(), messages.componentsHelp(), false));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.LABELS, messages.labelsLabel(), messages.labelsHelp(), false));
@@ -141,6 +163,7 @@ public class JiraTestReportCapabilityDescriptor extends TestReportCapabilityDesc
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.SECURITY, messages.securityLabel(), messages.securityHelp(), false));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.ASSIGNEE, messages.assigneeLabel(), messages.assigneeHelp(), false));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.REPORTER, messages.reporterLabel(), messages.reporterHelp(), false));
+		formFields.add(new TextAreaFormField(JiraTestReportCapabilityConfiguration.TEMPLATE, messages.templateLabel(), messages.templateHelp(), true));
 	}
 
 

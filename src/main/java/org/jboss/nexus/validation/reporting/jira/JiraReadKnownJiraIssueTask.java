@@ -35,11 +35,14 @@ public class JiraReadKnownJiraIssueTask extends TaskSupport {
 			throw new RuntimeException(msg);
 		}
 
-		jiraTestReportServerInformation.tryJiraIssue(taskConfiguration);
-
-		getConfiguration().setString(JiraReadKnownJiraIssueTaskConfiguration.LATEST_RESULT, taskConfiguration.getLatestResult());
-
-		return "OK";
+		try {
+			jiraTestReportServerInformation.tryJiraIssue(taskConfiguration);
+			getConfiguration().setString(JiraReadKnownJiraIssueTaskConfiguration.LATEST_RESULT, taskConfiguration.getLatestResult());
+			return "OK";
+		} catch (Exception e) {
+			getConfiguration().setString(JiraReadKnownJiraIssueTaskConfiguration.LATEST_RESULT, "Error retrieving Jira issue: "+e.getMessage());
+			throw e;
+		}
 	}
 
 	@Override

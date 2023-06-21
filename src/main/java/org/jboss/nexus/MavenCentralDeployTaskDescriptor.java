@@ -21,6 +21,7 @@ import org.sonatype.goodies.i18n.MessageBundle;
 import org.sonatype.nexus.capability.Tag;
 import org.sonatype.nexus.capability.Taggable;
 import org.sonatype.nexus.formfields.*;
+import org.sonatype.nexus.scheduling.Task;
 import org.sonatype.nexus.scheduling.TaskDescriptorSupport;
 
 import java.util.Collections;
@@ -67,7 +68,7 @@ public class MavenCentralDeployTaskDescriptor
     @DefaultMessage("Filter")
     String filterLabel();
 
-    @DefaultMessage("Filter to just some artifacts. Format of the field is <b>group</b>=XYZ&<b>name</b>=YZW&<b>version</b>=ZWA&<b>tag=TTT&<b>tagAttr</b>=attribute<>!=AAA. If you omit the field, a match in a group or artifact or version will be searched for. Tag attribute allows logical operations < > = !=")
+    @DefaultMessage("Filter to just some artifacts. Format of the field is <b>group</b>=XYZ&<b>name</b>=YZW&<b>version</b>=ZWA&<b>tag</b>=TTT&<b>tagAttr</b>=attribute!=AAA. If you omit the field, a match in a group or artifact or version will be searched for. Tag attribute allows logical operations &lt; &gt; &lt;= &gt;= = != &lt;&gt;")
     String filterHelp();
 
 
@@ -177,37 +178,41 @@ public class MavenCentralDeployTaskDescriptor
 
   private static final Messages messages = I18N.create(Messages.class);
 
+  @SuppressWarnings("rawtypes")
+  protected static final FormField[] taskFields = {
+          new TextAreaFormField(MavenCentralDeployTaskConfiguration.LATEST_STATUS, messages.latestResultsLabel(), messages.latestResultsHelp(), FormField.OPTIONAL, null, true ),
+          new RepositoryCombobox(MavenCentralDeployTaskConfiguration.REPOSITORY, messages.repositoryLabel(), messages.repositoryHelp(), FormField.MANDATORY).includingAnyOfFormats("maven2"),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DRY_RUN, messages.dryRunLabel(), messages.dryRunHelp(), FormField.OPTIONAL).withInitialValue(true),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.MARK_ARTIFACTS, messages.markArtifactsAfterRunLabel(), messages.markArtifactsAfterRunHelp(), FormField.OPTIONAL).withInitialValue(false),
+          new StringTextFormField(MavenCentralDeployTaskConfiguration.FILTER, messages.filterLabel(), messages.filterHelp(), FormField.OPTIONAL),
+          new TextAreaFormField(MavenCentralDeployTaskConfiguration.VARIABLES, messages.variablesLabel(), messages.variablesHelp(), FormField.OPTIONAL),
+
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_NAME, messages.disableHasProjectNameLabel(), messages.disableHasProjectNameHelp(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_DESCRIPTION, messages.disableHasProjectDescriptionLabel(), messages.disableHasProjectDescriptionHelp(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_URL, messages.disableHasProjectURLLabel(), messages.disableHasProjectURLHelp(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SCM, messages.disableHasSCMLabel(), messages.disableHasSCMHelp(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_DEVELOPER_INFO, messages.disableHasDeveloperInfoLabel(), messages.disableHasDeveloperInfoHelp(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_LICENSE, messages.disableHasLicenseLabel(), messages.disableHasLicenseHelp(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SNAPSHOT_VERSION, messages.disableHasSnapshotVersionLabel(), messages.disableHasSnapshotVersionHelp(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SOURCE_CODES, messages.disableHasSourceCodeLabel(), messages.disableHasSourceCodeHelp(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_JAVADOC, messages.disableHasJavaDocLabel(), messages.disableHasJavaDocHelp(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_CHECKSUMS_MD5, messages.disableHasChecksumMD5Label(), messages.disableHasChecksumMD5Help(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_CHECKSUMS_SHA1, messages.disableHasChecksumSHA1Label(), messages.disableHasChecksumSHA1Help(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT, messages.disableHasProjectLabel(), messages.disableHasProjectHelp(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_GROUP, messages.disableHasGroupLabel(), messages.disableHasGroupHelp(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_ARTIFACT, messages.disableHasArtifactLabel(), messages.disableHasArtifactHelp(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_VERSION, messages.disableHasVersionLabel(), messages.disableHasVersionHelp(), false)
+  };
+
   public MavenCentralDeployTaskDescriptor() {
 
     super(TYPE_ID, MavenCentralDeployTask.class, messages.name(), TaskDescriptorSupport.VISIBLE,
-            TaskDescriptorSupport.EXPOSED,
-            new TextAreaFormField(MavenCentralDeployTaskConfiguration.LATEST_STATUS, messages.latestResultsLabel(), messages.latestResultsHelp(), FormField.OPTIONAL, null, true ),
-            new RepositoryCombobox(MavenCentralDeployTaskConfiguration.REPOSITORY, messages.repositoryLabel(), messages.repositoryHelp(), FormField.MANDATORY).includingAnyOfFormats("maven2"),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DRY_RUN, messages.dryRunLabel(), messages.dryRunHelp(), FormField.OPTIONAL).withInitialValue(true),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.MARK_ARTIFACTS, messages.markArtifactsAfterRunLabel(), messages.markArtifactsAfterRunHelp(), FormField.OPTIONAL).withInitialValue(false),
-            new StringTextFormField(MavenCentralDeployTaskConfiguration.FILTER, messages.filterLabel(), messages.filterHelp(), FormField.OPTIONAL),
-            new TextAreaFormField(MavenCentralDeployTaskConfiguration.VARIABLES, messages.variablesLabel(), messages.variablesHelp(), FormField.OPTIONAL),
-
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_NAME, messages.disableHasProjectNameLabel(), messages.disableHasProjectNameHelp(), false),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_DESCRIPTION, messages.disableHasProjectDescriptionLabel(), messages.disableHasProjectDescriptionHelp(), false),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT_URL, messages.disableHasProjectURLLabel(), messages.disableHasProjectURLHelp(), false),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SCM, messages.disableHasSCMLabel(), messages.disableHasSCMHelp(), false),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_DEVELOPER_INFO, messages.disableHasDeveloperInfoLabel(), messages.disableHasDeveloperInfoHelp(), false),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_LICENSE, messages.disableHasLicenseLabel(), messages.disableHasLicenseHelp(), false),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SNAPSHOT_VERSION, messages.disableHasSnapshotVersionLabel(), messages.disableHasSnapshotVersionHelp(), false),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SOURCE_CODES, messages.disableHasSourceCodeLabel(), messages.disableHasSourceCodeHelp(), false),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_JAVADOC, messages.disableHasJavaDocLabel(), messages.disableHasJavaDocHelp(), false),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_CHECKSUMS_MD5, messages.disableHasChecksumMD5Label(), messages.disableHasChecksumMD5Help(), false),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_CHECKSUMS_SHA1, messages.disableHasChecksumSHA1Label(), messages.disableHasChecksumSHA1Help(), false),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT, messages.disableHasProjectLabel(), messages.disableHasProjectHelp(), false),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_GROUP, messages.disableHasGroupLabel(), messages.disableHasGroupHelp(), false),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_ARTIFACT, messages.disableHasArtifactLabel(), messages.disableHasArtifactHelp(), false),
-            new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_VERSION, messages.disableHasVersionLabel(), messages.disableHasVersionHelp(), false)
+            TaskDescriptorSupport.EXPOSED, taskFields
     );
   }
-//
-//  @Override
-//  public boolean allowConcurrentRun() {
-//    return false; // todo to be on a safe side for now
-//  }
+
+  public MavenCentralDeployTaskDescriptor(String id, Class<? extends Task> type, String name, boolean visible, boolean exposed, FormField... formFields) {
+    super(id, type, name, visible, exposed, formFields);
+  }
+
 }

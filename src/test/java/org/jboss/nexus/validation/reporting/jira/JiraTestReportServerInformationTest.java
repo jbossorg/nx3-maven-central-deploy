@@ -11,6 +11,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -25,7 +26,7 @@ public class JiraTestReportServerInformationTest {
 	JiraTestReportServerInformation tested;
 
 	@Mock
-	private URLConnection mockedURLConnection;
+	private HttpURLConnection mockedURLConnection;
 
 
 	@Before
@@ -34,7 +35,7 @@ public class JiraTestReportServerInformationTest {
 		tested.setJiraConnectionInformation("https://issues.something.org", null, "someToken", null, null, null);
 
 		try {
-			when(tested.buildConnection(anyString())).thenReturn(mockedURLConnection);
+			doReturn(mockedURLConnection).when(tested).buildConnection(anyString());
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -63,28 +64,129 @@ public class JiraTestReportServerInformationTest {
 	}
 
 
-	//@Test
-	public void findProjectIDReal() {
+	@Test
+	public void findSecurityIDReal() {
 		tested = new JiraTestReportServerInformation(new JiraTestReportCapabilityDescriptor());
 		tested.setJiraConnectionInformation("https://issues.stage.redhat.com", null, "", null,"squid.corp.redhat.com", 3128); // fixme credentials remove!
 
 		// tested.tryJira();
 
-		tested.findComponentID("CGW", "Plugin");
+		tested.findSecurityLevelID("NEXUS", "Red Hat Internal");
 
 
 		// TODO: 28.03.2023 remove this!!!!!!
 	}
 
+
+	private static final String jiraSecurityResponse = "{\n" +
+			"  \"levels\" : [ {\n" +
+			"    \"self\" : \"https://issues.organization.com/rest/api/2/securitylevel/101\",\n" +
+			"    \"id\" : \"101\",\n" +
+			"    \"description\" : \"Only Company employees and contractors\",\n" +
+			"    \"name\" : \"Company Internal\"\n" +
+			"  }, {\n" +
+			"    \"self\" : \"https://issues.organizations.com/rest/api/2/securitylevel/303\",\n" +
+			"    \"id\" : \"303\",\n" +
+			"    \"description\" : \"Only persons responsible to resolve security issues\",\n" +
+			"    \"name\" : \"Security Issue\"\n" +
+			"  } ]\n" +
+			"}";
+
 	@Test
-	public void findProjectID() throws IOException {
-		final String json = "{\n" +
-				"   \"id\": \"1234\",\n" +
-				"   \"key\": \"KEY\",\n" +
-				"   \"name\": \"Jira Project\"\n" +
+	public void findSecurityLevelIDNumeric() throws IOException {
+
+		Integer result = tested.findSecurityLevelID("NEXUS", "123456");
+		assertEquals((Integer)123456, result);
+
+		verify(mockedURLConnection, never()).getInputStream(); // just the number should be used
+	}
+
+	@Test
+	public void findSecurityLevelID() throws IOException {
+
+		when(mockedURLConnection.getInputStream())
+				.thenReturn(new ByteArrayInputStream(jiraProjectResponse.getBytes(StandardCharsets.UTF_8)))
+				.thenReturn(new ByteArrayInputStream(jiraSecurityResponse.getBytes(StandardCharsets.UTF_8)));
+
+		Integer result = tested.findSecurityLevelID("NEXUS", "Company Internal");
+		assertEquals((Integer)101, result);
+
+		tested.findSecurityLevelID("NEXUS", "Company Internal");
+		tested.findSecurityLevelID("NEXUS", "Security Issue");
+
+		verify(mockedURLConnection, times(2)).getInputStream(); // should be cached
+	}
+
+	@Test
+	public void findSecurityLevelIDMultipleProjects() throws IOException {
+		final String projectAnotherResponse = "{\n" +
+				"   \"id\": \"777\",\n" +
+				"   \"key\": \"ANOTHER\",\n" +
+				"   \"name\": \"Another Project\"\n" +
 				"}";
 
-		when(mockedURLConnection.getInputStream()).thenReturn(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
+		final String anotherSecurityResponse = "{\n" +
+				"  \"levels\" : [ {\n" +
+				"    \"self\" : \"https://issues.organization.com/rest/api/2/securitylevel/404\",\n" +
+				"    \"id\" : \"404\",\n" +
+				"    \"description\" : \"Only Company employees and contractors\",\n" +
+				"    \"name\" : \"Company Internal\"\n" +
+				"  }, {\n" +
+				"    \"self\" : \"https://issues.organizations.com/rest/api/2/securitylevel/909\",\n" +
+				"    \"id\" : \"909\",\n" +
+				"    \"description\" : \"Only persons responsible to resolve security issues\",\n" +
+				"    \"name\" : \"Security Issue\"\n" +
+				"  } ]\n" +
+				"}";
+
+		when(mockedURLConnection.getInputStream())
+				.thenReturn(new ByteArrayInputStream(jiraProjectResponse.getBytes(StandardCharsets.UTF_8)))
+				.thenReturn(new ByteArrayInputStream(jiraSecurityResponse.getBytes(StandardCharsets.UTF_8)))
+				.thenReturn(new ByteArrayInputStream(projectAnotherResponse.getBytes(StandardCharsets.UTF_8)))
+				.thenReturn(new ByteArrayInputStream(anotherSecurityResponse.getBytes(StandardCharsets.UTF_8)));
+
+		Integer result = tested.findSecurityLevelID("NEXUS", "Company Internal");
+		assertEquals((Integer)101, result);
+
+		result = tested.findSecurityLevelID("ANOTHER", "Company Internal");
+
+		assertEquals((Integer) 101, tested.findSecurityLevelID("NEXUS", "Company Internal"));
+		assertEquals((Integer) 303, tested.findSecurityLevelID("NEXUS", "Security Issue"));
+		assertEquals((Integer) 404, tested.findSecurityLevelID("ANOTHER", "Company Internal"));
+		assertEquals((Integer) 909, tested.findSecurityLevelID("ANOTHER", "Security Issue"));
+
+		verify(mockedURLConnection, times(4)).getInputStream(); // should be cached
+	}
+
+	@Test(expected = RuntimeException.class)
+	public void findSecurityLevelIDNotFound() throws IOException {
+
+		when(mockedURLConnection.getInputStream())
+				.thenReturn(new ByteArrayInputStream(jiraProjectResponse.getBytes(StandardCharsets.UTF_8)))
+				.thenReturn(new ByteArrayInputStream(jiraSecurityResponse.getBytes(StandardCharsets.UTF_8)));
+
+		try {
+			tested.findSecurityLevelID("NEXUS", "Red Hat Internal");
+		} catch (RuntimeException e) {
+			assertEquals("Security level Red Hat Internal was not found for project NEXUS!", e.getMessage());
+			throw e;
+		}
+	}
+	// TODO: 14.06.2023  test security levels
+
+	// TODO: 21.06.2023 test issue types
+
+	private static final String jiraProjectResponse = "{\n" +
+			"   \"id\": \"1234\",\n" +
+			"   \"key\": \"KEY\",\n" +
+			"   \"name\": \"Jira Project\"\n" +
+			"}";
+
+	@Test
+	public void findProjectID() throws IOException {
+
+
+		when(mockedURLConnection.getInputStream()).thenReturn(new ByteArrayInputStream(jiraProjectResponse.getBytes(StandardCharsets.UTF_8)));
 
 		int id = tested.findProjectID("KEY");
 		assertEquals(1234, id);
@@ -330,6 +432,12 @@ public class JiraTestReportServerInformationTest {
 			"    \"description\" : \"Nexus 2 has reach end of support and so we need to migrate to the newer product line (Nexus 3). Things to consider\\r\\n\\r\\n- replacing staging suite\\r\\n- SSO\\r\\n- high availability\\r\\n- Maven Central synchronization\\r\\n- Maven Central statistics\\r\\n- splitting people to projects\\r\\n\",\n" +
 			"    \"customfield_12314040\" : null,\n" +
 			"    \"timetracking\" : { },\n" +
+			"    \"security\" : {\n" +
+			"        \"self\" : \"https://issues.stage.redhat.com/rest/api/2/securitylevel/10291\",\n" +
+			"        \"id\" : \"12569\",\n" +
+			"        \"description\" : \"Only Red Hat employees and contractors\",\n" +
+			"        \"name\" : \"Red Hat Internal\"\n" +
+			"      },\n"+
 			"    \"customfield_12320842\" : null,\n" +
 			"    \"archiveddate\" : null,\n" +
 			"    \"customfield_12310440\" : null,\n" +
@@ -438,7 +546,7 @@ public class JiraTestReportServerInformationTest {
 
 
 	@Test(expected = RuntimeException.class)
-	public void tryJiraIssueMissingIssue() throws IOException {
+	public void tryJiraIssueMissingIssue() {
 		JiraReadKnownJiraIssueTaskConfiguration configuration = new JiraReadKnownJiraIssueTaskConfiguration();
 
 		try {
@@ -451,7 +559,6 @@ public class JiraTestReportServerInformationTest {
 
 	@Test(expected = RuntimeException.class)
 	public void tryJiraIssueMissingJiraConfiguration() {
-		// TODO: 27.04.2023
 		tested = new JiraTestReportServerInformation(new JiraTestReportCapabilityDescriptor());
 		JiraReadKnownJiraIssueTaskConfiguration configuration = new JiraReadKnownJiraIssueTaskConfiguration();
 		configuration.setIssue("ISSUE-333");
@@ -483,8 +590,64 @@ public class JiraTestReportServerInformationTest {
 	}
 
 	@Test
+	public void tryJiraIssueLabelsNoLabels() throws IOException {
+		String json = "{\"fields\": {" +
+				"\"fixVersions\" : []" +
+				"}}";
+		when(mockedURLConnection.getInputStream()).thenReturn(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
+
+		JiraReadKnownJiraIssueTaskConfiguration configuration = new JiraReadKnownJiraIssueTaskConfiguration();
+		configuration.setIssue("ISSUE-333");
+		configuration.setUseVelocityVariables(true);
+
+		configuration.setWipeNullFields(false);
+		tested.tryJiraIssue(configuration);
+
+		assertFalse( configuration.getLatestResult().contains("${labels}") );
+		assertFalse( configuration.getLatestResult().contains("\"labels\"") );
+	}
+
+	@Test
+	public void tryJiraIssueLabelsPresentButEmpty() throws IOException {
+		String json = "{\"fields\": {" +
+				"\"fixVersions\" : [  ]," +
+				"\"labels\" : [       ]" +
+				"}}";
+		when(mockedURLConnection.getInputStream()).thenReturn(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
+
+		JiraReadKnownJiraIssueTaskConfiguration configuration = new JiraReadKnownJiraIssueTaskConfiguration();
+		configuration.setIssue("ISSUE-333");
+		configuration.setUseVelocityVariables(true);
+
+		configuration.setWipeNullFields(false);
+		tested.tryJiraIssue(configuration);
+
+		assertTrue( configuration.getLatestResult().contains("${labels}") );
+		assertTrue( configuration.getLatestResult().contains("\"labels\"") );
+	}
+
+	@Test
+	public void tryJiraIssueLabelsPresentMultiple() throws IOException {
+		String json = "{\"fields\": {" +
+				"\"fixVersions\" : [  ]," +
+				"\"labels\" : [ \"label1\", \"label2\"      ]" +
+				"}}";
+		when(mockedURLConnection.getInputStream()).thenReturn(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
+
+		JiraReadKnownJiraIssueTaskConfiguration configuration = new JiraReadKnownJiraIssueTaskConfiguration();
+		configuration.setIssue("ISSUE-333");
+		configuration.setUseVelocityVariables(true);
+
+		configuration.setWipeNullFields(false);
+		tested.tryJiraIssue(configuration);
+
+		assertTrue( configuration.getLatestResult().contains("\"label1\", \"label2\" ${labels}") );
+		assertTrue( configuration.getLatestResult().contains("\"labels\"") );
+	}
+
+
+	@Test
 	public void tryJiraIssueUseVelocityVariables() throws IOException {
-		// TODO: 27.04.2023
 		when(mockedURLConnection.getInputStream()).thenReturn(new ByteArrayInputStream(ISSUE_RESPONSE.getBytes(StandardCharsets.UTF_8)));
 
 		JiraReadKnownJiraIssueTaskConfiguration configuration = new JiraReadKnownJiraIssueTaskConfiguration();
@@ -494,7 +657,7 @@ public class JiraTestReportServerInformationTest {
 		tested.tryJiraIssue(configuration);
 
 		// FIXME: 27.04.2023 proper variable names here!
-		final String[] variables = {"${project-id}", "${issue-type-id}", "${priority-id}", "${reporter-id}", "${assignee-id}", "${summary}", "${description}"};
+		final String[] variables = {"${project_id}", "${issue_type_id}", "${priority_id}", "${reporter}", "${assignee}", "${summary}", "${description}", "${security_level_id}", "${labels}"};
 
 		final String result = configuration.getLatestResult();
 		assertTrue(Arrays.stream(variables).noneMatch(result::contains));

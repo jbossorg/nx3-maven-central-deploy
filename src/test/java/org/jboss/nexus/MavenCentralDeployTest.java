@@ -142,11 +142,12 @@ public class MavenCentralDeployTest{
             verify(mavenCentralDeploy, never()).publishArtifact(any());
 
             ArgumentCaptor<List> failedCaptor = ArgumentCaptor.forClass(List.class);
-            ArgumentCaptor<Long> longCaptor = ArgumentCaptor.forClass(Long.class);
+            ArgumentCaptor<Map> templateVariablesCaptor = ArgumentCaptor.forClass(Map.class);
 
-            verify(report).createReport(eq(testConfiguration), failedCaptor.capture(), longCaptor.capture());
+            verify(report).createReport(eq(testConfiguration), failedCaptor.capture(), templateVariablesCaptor.capture());
 
-            assertEquals(1L, longCaptor.getValue().longValue());
+            Map templateVariables = templateVariablesCaptor.getValue();
+            assertEquals(1L, templateVariables.get(TemplateRenderingHelper.PROCESSED));
             List<FailedCheck> failedChecksSource = TemplateRenderingHelper.generateFictiveErrors();
             List<FailedCheck> failedChecksResult = failedCaptor.getValue();
             assertEquals(failedChecksSource.size(), failedChecksResult.size());
@@ -170,7 +171,7 @@ public class MavenCentralDeployTest{
         mavenCentralDeploy.processDeployment(testConfiguration);
 
         verify(mavenCentralDeploy, never()).publishArtifact(testComponent);
-        verify(report, never()).createReport(any(), any(), anyLong());
+        verify(report, never()).createReport(any(), any(), any());
     }
 
     @Test
@@ -185,7 +186,7 @@ public class MavenCentralDeployTest{
         mavenCentralDeploy.processDeployment(testConfiguration);
 
         verify(mavenCentralDeploy).publishArtifact(testComponent); // deployed once
-        verify(report, never()).createReport(any(), any(), anyLong());
+        verify(report, never()).createReport(any(), any(), any());
     }
 
 
@@ -354,7 +355,7 @@ public class MavenCentralDeployTest{
         Tag testTag = new TestTag();
         when(tagStore.newTag()).thenReturn(testTag);
 
-        mavenCentralDeploy.verifyTag(tagName, null, new TemplateRenderingHelper().generateTemplateParameters(testConfiguration));
+        mavenCentralDeploy.verifyTag(tagName, null, new TemplateRenderingHelper().generateTemplateParameters(testConfiguration, new ArrayList<>(), 5));
 
         verify(tagStore).create(same(testTag));
         assertTrue(testTag.attributes().isEmpty());
@@ -367,7 +368,7 @@ public class MavenCentralDeployTest{
         Tag testTag = new TestTag().attributes(new NestedAttributesMap());
         when(tagStore.get(tagName)).thenReturn(testTag);
 
-        mavenCentralDeploy.verifyTag(tagName, null, new TemplateRenderingHelper().generateTemplateParameters(testConfiguration));
+        mavenCentralDeploy.verifyTag(tagName, null, new TemplateRenderingHelper().generateTemplateParameters(testConfiguration, new ArrayList<>(), 5));
 
         verify(tagStore, never()).create(same(testTag));
         verify(tagStore).update(same(testTag));
@@ -382,7 +383,7 @@ public class MavenCentralDeployTest{
         Tag testTag = new TestTag();
         when(tagStore.newTag()).thenReturn(testTag);
 
-        mavenCentralDeploy.verifyTag(tagName, "attribute=value", new TemplateRenderingHelper().generateTemplateParameters(testConfiguration));
+        mavenCentralDeploy.verifyTag(tagName, "attribute=value", new TemplateRenderingHelper().generateTemplateParameters(testConfiguration, new ArrayList<>(), 5));
 
         verify(tagStore).create(same(testTag));
 
@@ -398,7 +399,7 @@ public class MavenCentralDeployTest{
         Tag testTag = new TestTag();
         when(tagStore.newTag()).thenReturn(testTag);
 
-        mavenCentralDeploy.verifyTag(tagName, "attribute=value\n# comment here! \nanother=anotherValue", new TemplateRenderingHelper().generateTemplateParameters(testConfiguration));
+        mavenCentralDeploy.verifyTag(tagName, "attribute=value\n# comment here! \nanother=anotherValue", new TemplateRenderingHelper().generateTemplateParameters(testConfiguration, new ArrayList<>(), 5));
 
         verify(tagStore).create(same(testTag));
 

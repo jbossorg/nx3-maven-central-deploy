@@ -19,13 +19,38 @@ import java.io.InputStream;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.zip.GZIPInputStream;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.jboss.nexus.validation.reporting.jira.JiraTestReportCapabilityConfiguration.*;
 
 /** Class for deciphering IDs from configuration */
 @Named
 @Singleton
 public class JiraTestReportServerInformation extends ComponentSupport {
+
+	/** Project ID variable name */
+	public static final String PROJECT_ID = "project_id";
+
+	/** Issue type ID variable name */
+	public static final String ISSUE_TYPE_ID = "issue_type_id";
+
+	/** Priority ID variable name */
+	public static final String PRIORITY_ID = "priority_id";
+
+	public static final String SECURITY_LEVEL_ID = "security_level_id";
+
+	/** Wraps variable name with variable identificator so it may be used as a variable in a template.
+	 *
+	 * @param variableName name of the variable
+	 *
+	 * @return ${variableName}
+	 */
+	private static String variableWrap(@NotNull final String variableName) {
+		return "${"+variableName+'}';
+	};
+
+
 	@Inject
 	public JiraTestReportServerInformation(JiraTestReportCapabilityDescriptor jiraTestReportCapabilityDescriptor) {
 		jiraConfigurationTaskName = checkNotNull(jiraTestReportCapabilityDescriptor).name();
@@ -66,15 +91,14 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 
 	private final Map<String, ProjectInformation> projects = new HashMap<>();
 
-	private final Map<Integer, ProjectInformation> projectsByID = new HashMap<>();
-
 	/** project ID -> Component name -> Component ID   */
 	private final Map<Integer, Map<String, Integer>> components = new HashMap<>();
 
 
 	private final Map<String, String> priorities = new HashMap<>();
+	private final Map<Integer, Map<String, Integer>> securityLevels = new HashMap<>();
 
-	private Map<String, String> users = new HashMap<>();
+	private final Map<String, String> users = new HashMap<>();
 
 	private final ObjectMapper mapper = new ObjectMapper();
 
@@ -125,15 +149,15 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 	 * @return connection prepared to be opened
 	 * @throws IOException if there is a problem with createing the connection
 	 */
-	URLConnection buildConnection(String endpoint) throws IOException {
-		URL url = new URL(this.jiraBaseURL + endpoint);
+	HttpURLConnection buildConnection(String endpoint) throws IOException {
+		URL url = new URL(this.jiraBaseURL.concat(endpoint));
 
-		URLConnection connection;
+		HttpURLConnection connection;
 		if(StringUtils.isBlank(proxyHost)) {
-			connection = url.openConnection();
+			connection = (HttpURLConnection) url.openConnection();
 		} else {
 			Proxy proxy = new Proxy(Proxy.Type.HTTP,  InetSocketAddress.createUnresolved(proxyHost, proxyPort == null ? 3128 : proxyPort));
-			connection = url.openConnection(proxy);
+			connection = (HttpURLConnection) url.openConnection(proxy);
 		}
 		if(StringUtils.isNotBlank(authentication))
 			connection.addRequestProperty("Authorization", authentication);
@@ -141,6 +165,22 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 		connection.addRequestProperty("Accept", "application/json");
 
 		return connection;
+	}
+
+	public static InputStream giveDecompressedErrorStream(HttpURLConnection urlConnection) throws IOException {
+		if("gzip".equalsIgnoreCase(urlConnection.getHeaderField("Content-Encoding"))) {
+			return new GZIPInputStream(urlConnection.getErrorStream());
+		} else
+			return urlConnection.getErrorStream();
+
+	}
+
+	public static InputStream giveDecompressedInputStream(URLConnection urlConnection) throws IOException {
+		if("gzip".equalsIgnoreCase(urlConnection.getHeaderField("Content-Encoding"))) {
+			return new GZIPInputStream(urlConnection.getInputStream());
+		} else
+			return urlConnection.getInputStream();
+
 	}
 
 	/** Finds project ID by its key (or ID). It loads the project information from the Jira server.
@@ -158,7 +198,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 		try {
 			URLConnection connection = buildConnection("/rest/api/latest/project/"+URLEncoder.encode(projectKey, StandardCharsets.UTF_8.name()).replaceAll("\\+", "%20"));
 
-			try (InputStream inputStream = connection.getInputStream()) {
+			try (InputStream inputStream = giveDecompressedInputStream(connection)) {
 				JsonNode jsonNode = mapper.readTree(inputStream);
 
 				if(jsonNode.isEmpty()) {
@@ -186,7 +226,6 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 
 				ProjectInformation result = new ProjectInformation(projectId, key, projectName);
 				projects.put(projectKey, result);
-				projectsByID.put(result.id, result);
 				return result.id;
 			}
 		} catch (MalformedURLException e) {
@@ -204,16 +243,74 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 		}
 	}
 
-	/** Finds security ID.
+	/** Finds securityLevel ID.
 	 *
-	 * @param security security ID or security name
-	 * @return
+	 * @param securityLevel securityLevel ID or securityLevel name
+	 *
+	 * @return security level or null
 	 */
-	public String findSecurityLevelID(String security) {
-		if(StringUtils.isNumeric(security))
-			return security;
+	@SuppressWarnings("DuplicatedCode")
+	public Integer findSecurityLevelID(String project, String securityLevel) {
+		if(StringUtils.isNumeric(securityLevel))
+			return Integer.valueOf(securityLevel);
 
-		return null; // todo
+		Integer projectID = findProjectID(project);
+
+		Map<String, Integer> levels = securityLevels.get(projectID);
+
+		Integer securityID = null;
+
+		if(levels != null) {
+			securityID = levels.get(securityLevel);
+		} else {
+			levels = new HashMap<>();
+			securityLevels.put(projectID, levels);
+		}
+
+		if(securityID != null)
+			return securityID;
+
+		String securityNotFoundMessage = "Security level " + securityLevel + " was not found for project "+project+"!";
+		if(!levels.isEmpty()) {
+			if(!logLimiter.warn(securityNotFoundMessage+" I am trying to refresh the securityLevel list.")) {
+				throw new RuntimeException(securityNotFoundMessage);
+			}
+
+			// maybe if we refresh the list....
+			levels.clear();
+		}
+
+		// read the priorities
+		log.debug("Reading security levels from the server");
+
+		try {
+			URLConnection connection = buildConnection("/rest/api/latest/project/"+findProjectID(project)+"/securitylevel");
+
+			try (InputStream inputStream = giveDecompressedInputStream(connection)) {
+				JsonNode jsonNode = mapper.readTree(inputStream);
+
+				if(jsonNode.isEmpty()) {
+					String msg = "Unable to get information about security levels for project " +project+ ". Response from the server is empty.";
+					logLimiter.error(msg);
+					throw new RuntimeException(msg);
+				}
+
+				@SuppressWarnings("SpellCheckingInspection") final Map<String, Integer> lvls = levels;
+				jsonNode.get("levels").elements().forEachRemaining(node -> lvls.put(node.get("name").asText(), node.get("id").asInt()));
+
+			}
+		} catch (IOException e) {
+			String msg = "Error connecting to Jira server: " + e.getMessage();
+			logLimiter.error(msg);
+			throw new RuntimeException(msg, e);
+		}
+
+		securityID = levels.get(securityLevel);
+		if(securityID != null)
+			return securityID;
+
+		logLimiter.error(securityNotFoundMessage);
+		throw new RuntimeException(securityNotFoundMessage);
 	}
 
 	/** Tries to get the priority id given the priority name or ID.
@@ -250,7 +347,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 		try {
 			URLConnection connection = buildConnection("/rest/api/latest/priority");
 
-			try (InputStream inputStream = connection.getInputStream()) {
+			try (InputStream inputStream = giveDecompressedInputStream(connection)) {
 				JsonNode jsonNode = mapper.readTree(inputStream);
 
 				if(jsonNode.isEmpty()) {
@@ -282,7 +379,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 	 * @param project project name or ID
 	 * @param component if number, it is considered to be the priority ID itself. Otherwise, it is being considered a name and the ID is being searched for.
 	 *
-	 * @return compoenent ID
+	 * @return component ID
 	 *
 	 * @throws RuntimeException if there is an error communicating with the Jira server or the priority is not found.
 	 */
@@ -323,7 +420,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 		try {
 			URLConnection connection = buildConnection("/rest/api/latest/project/"+projectID+"/components");
 
-			try (InputStream inputStream = connection.getInputStream()) {
+			try (InputStream inputStream = giveDecompressedInputStream(connection)) {
 				JsonNode jsonNode = mapper.readTree(inputStream);
 
 				if(!jsonNode.isEmpty()) {
@@ -350,18 +447,15 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 		return null; // todo
 	}
 
-	public String findUserID(String userName) {
-		// fixme maybe not needed
-		return null; // todo
-	}
-
 	private static final String[] rootRemovedFields = {"id", "self", "key", "expand"};
 	private static final String[] fieldsRemovedFields = {"updated", "timespent", "lastViewed", "created", "updated", "votes", "worklog", "progress", "creator", "status", "comment", "archivedby" };
 	private static final String[] projectRemovedFields = {"self", "projectTypeKey", "avatarUrls", "projectCategory"};
 	private static final String[] issueTypeRemovedFields = {"self", "description", "iconUrl", "avatarId"};
 	private static final String[] priorityRemovedFields = {"self", "iconUrl"};
+	private static final String[] securityRemovedFields = {"self", "description", "name"};
 	private static final String[] personRemovedFields = {"self", "emailAddress", "avatarUrls", "displayName", "active", "timeZone"};
 
+	@SuppressWarnings("StatementWithEmptyBody")
 	public void tryJiraIssue(JiraReadKnownJiraIssueTaskConfiguration jiraReadKnownJiraIssueTaskConfiguration) {
 		if(StringUtils.isBlank(jiraBaseURL)) {
 			String message = "Missing link to Jira: Activate and configure "+this.jiraConfigurationTaskName+"!";
@@ -379,7 +473,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 
 		try {
 			URLConnection connection = buildConnection("/rest/api/latest/issue/"+ issue);
-			JsonNode jsonNode = mapper.readTree(connection.getInputStream());
+			JsonNode jsonNode = mapper.readTree(giveDecompressedInputStream(connection));
 			ObjectNode objectNode = jsonNode.deepCopy();
 
 			for(String toRemove : rootRemovedFields) {
@@ -396,8 +490,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
 				fieldNode.remove("project");
 				ObjectNode project = mapper.createObjectNode();
-				project.put("id", "${project-id}"); // FIXME: 24.04.2023 proper value
-				//noinspection SpellCheckingInspection
+				project.put("id", variableWrap(PROJECT_ID)); // FIXME: 24.04.2023 proper value
 				fieldNode.set("project", project);
 			} else {
 				ObjectNode project = (ObjectNode) fieldNode.get("project");
@@ -417,7 +510,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
 				fieldNode.remove("issuetype");
 				ObjectNode issueType = mapper.createObjectNode();
-				issueType.put("id", "${issue-type-id}"); // FIXME: 24.04.2023 proper value
+				issueType.put("id", variableWrap(ISSUE_TYPE_ID));
 				//noinspection SpellCheckingInspection
 				fieldNode.set("issuetype", issueType);
 			} else {
@@ -438,7 +531,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
 				fieldNode.remove("priority");
 				ObjectNode priority = mapper.createObjectNode();
-				priority.put("id", "${priority-id}"); // FIXME: 24.04.2023 proper value
+				priority.put("id", variableWrap(PRIORITY_ID)); // FIXME: 24.04.2023 proper value
 				fieldNode.set("priority", priority);
 			} else {
 				ObjectNode priority = (ObjectNode) fieldNode.get("priority");
@@ -454,18 +547,42 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 				}
 			}
 
-			// add labels
-			// TODO: 24.04.2023 resolve adding labels from variable
+			// add security level
+			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
+				fieldNode.remove("security");
+				ObjectNode security = mapper.createObjectNode();
+				security.put("id", variableWrap(SECURITY_LEVEL_ID));
+				fieldNode.set("security", security);
+			} else {
+				ObjectNode security = (ObjectNode) fieldNode.get("security");
+				if(security.isMissingNode()) {
+					log.error("Missing node - security!");
+					String message = "Unexpected format of returned JSON - missing security!";
+					jiraReadKnownJiraIssueTaskConfiguration.setLatestResult(message);
+					throw new RuntimeException(message);
+				}
+
+				for(String toRemove : securityRemovedFields) {
+					security.remove(toRemove);
+				}
+			}
 
 			// add reporter
 			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
+				String userIdentifierField;
+				ObjectNode reporter = (ObjectNode)fieldNode.get("reporter");
+				if(reporter != null && reporter.get("name") != null) { // end of support for names https://developer.atlassian.com/cloud/jira/platform/deprecation-notice-user-privacy-api-migration-guide/
+					userIdentifierField = "name";
+				} else
+					userIdentifierField = "accountId";
+
 				fieldNode.remove("reporter");
-				ObjectNode reporter = mapper.createObjectNode();
-				reporter.put("id", "${reporter-id}"); // FIXME: 24.04.2023 proper value
+				reporter = mapper.createObjectNode();
+				reporter.put(userIdentifierField, variableWrap(REPORTER));
 				fieldNode.set("reporter", reporter);
 			} else {
-				ObjectNode priority = (ObjectNode) fieldNode.get("reporter");
-				if(priority.isMissingNode()) {
+				ObjectNode reporter = (ObjectNode) fieldNode.get("reporter");
+				if(reporter.isMissingNode()) {
 					log.error("Missing node - reporter!");
 					String message = "Unexpected format of returned JSON - missing reporter!";
 					jiraReadKnownJiraIssueTaskConfiguration.setLatestResult(message);
@@ -473,15 +590,22 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 				}
 
 				for(String toRemove : personRemovedFields) {
-					priority.remove(toRemove);
+					reporter.remove(toRemove);
 				}
 			}
 
 			// add assignee
 			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
+				String userIdentifierField;
+				ObjectNode assignee = (ObjectNode)fieldNode.get("assignee");
+				if(assignee != null && assignee.get("name") != null) { // end of support for names https://developer.atlassian.com/cloud/jira/platform/deprecation-notice-user-privacy-api-migration-guide/
+					userIdentifierField = "name";
+				} else
+					userIdentifierField = "accountId";
+
 				fieldNode.remove("assignee");
-				ObjectNode assignee = mapper.createObjectNode();
-				assignee.put("id", "${assignee-id}"); // FIXME: 24.04.2023 proper value
+				assignee = mapper.createObjectNode();
+				assignee.put(userIdentifierField, variableWrap(ASSIGNEE));
 				fieldNode.set("assignee", assignee);
 			} else {
 				ObjectNode assignee = (ObjectNode) fieldNode.get("assignee");
@@ -517,8 +641,54 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 				}
 			}
 
-			//---------------------------------- this is the END -------------------------------
-			jiraReadKnownJiraIssueTaskConfiguration.setLatestResult(objectNode.toPrettyString());
+			StringBuilder preparedJSON = new StringBuilder(objectNode.toPrettyString());
+			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
+				// add labels
+				JsonNode labels = fieldNode.get("labels");
+				if(labels != null ) {
+					StringBuilder labelsBuilder = new StringBuilder("[ ");
+					if(labels.isEmpty()) {
+						// no additional labels in the template.
+						labelsBuilder.append(variableWrap(LABELS)).append(" ]");
+					} else {
+						// we should combine the new labels with the one(s) in the template
+						labels.forEach(node -> {
+							if(node.isTextual())
+								labelsBuilder.append("\"").append(node.asText()).append("\", ");
+						});
+
+						labelsBuilder.setLength(labelsBuilder.length()-2); // remove the last comma
+
+						labelsBuilder.append(" ").append(variableWrap(LABELS)).append(" ]");
+					}
+
+					int index = preparedJSON.indexOf("\"labels\"") ;
+					if (index > 0) {
+						try {
+							index += 8;  // jump behind the field name
+
+							//noinspection ControlFlowStatementWithoutBraces
+							while (preparedJSON.charAt(++index) != '[') ;
+							int start = index;
+							//noinspection ControlFlowStatementWithoutBraces
+							while (preparedJSON.charAt(++index) != ']') ;
+							index++;
+
+							preparedJSON.replace(start, index, labelsBuilder.toString());
+
+						} catch (IndexOutOfBoundsException e) {
+							log.error("Problem parsing labels in the json - missing [ or ]");
+						}
+
+					}
+
+				}
+
+				// TODO: 24.04.2023 resolve adding labels from variable
+			}
+
+				//---------------------------------- this is the END -------------------------------
+				jiraReadKnownJiraIssueTaskConfiguration.setLatestResult(preparedJSON.toString());
 		} catch (FileNotFoundException e) {
 			String message = "Examining issue "+issue+": Issue was not found in Jira. Check the issue number and your permissions in Jira.";
 			log.warn(message);

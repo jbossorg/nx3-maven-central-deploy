@@ -1,8 +1,10 @@
 package org.jboss.nexus.validation.reporting.jira;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.nexus.validation.reporting.TestReportCapabilityConfigurationParent;
 import org.sonatype.nexus.formfields.StringTextFormField;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityConfigurationParent {
@@ -39,6 +41,8 @@ public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityC
 	
 	public static final String COMPONENTS = "components";
 
+	public static final String TEMPLATE = "template";
+
 
 	public JiraTestReportCapabilityConfiguration() {
 		defaultJiraConfiguration = new JiraConfiguration();
@@ -73,7 +77,66 @@ public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityC
 			setSecurity(properties.get(JiraTestReportCapabilityConfiguration.SECURITY));
 			setAssignee(properties.get(JiraTestReportCapabilityConfiguration.ASSIGNEE));
 			setReporter(properties.get(JiraTestReportCapabilityConfiguration.REPORTER));
-			
+			setTemplate(properties.get(JiraTestReportCapabilityConfiguration.TEMPLATE));
+		}
+
+
+		public Map<String, String> asMap() {
+			HashMap<String, String> result = new HashMap<>();
+
+			if(StringUtils.isNotBlank(getJiraBaseUrl()))
+				result.put(JiraTestReportCapabilityConfiguration.JIRA_BASE_URL, getJiraBaseUrl());
+
+			if(StringUtils.isNotBlank(getProxyHost()))
+				result.put(JiraTestReportCapabilityConfiguration.PROXY_HOST, getProxyHost());
+
+			if(getProxyPort() != null)
+				 result.put(JiraTestReportCapabilityConfiguration.PROXY_PORT, getProxyPort().toString());
+
+			if(StringUtils.isNotBlank(getUserName()))
+				result.put(JiraTestReportCapabilityConfiguration.USER_NAME, getUserName());
+
+			if(StringUtils.isNotBlank(getPassword()))
+				result.put(JiraTestReportCapabilityConfiguration.USER_PASSWORD, getPassword());
+
+			if(StringUtils.isNotBlank(getToken()))
+				result.put(JiraTestReportCapabilityConfiguration.TOKEN, getToken());
+
+			if(StringUtils.isNotBlank(getProject()))
+				result.put(JiraTestReportCapabilityConfiguration.PROJECT, getProject());
+
+			if(StringUtils.isNotBlank(getSummary()))
+				result.put(JiraTestReportCapabilityConfiguration.SUMMARY, getSummary());
+
+			if(StringUtils.isNotBlank(getDescription()))
+				result.put(JiraTestReportCapabilityConfiguration.DESCRIPTION, getDescription());
+
+			if(StringUtils.isNotBlank(getIssueType()))
+				result.put(JiraTestReportCapabilityConfiguration.ISSUE_TYPE, getIssueType());
+
+			if(StringUtils.isNotBlank(getComponents()))
+				result.put(JiraTestReportCapabilityConfiguration.COMPONENTS, getComponents());
+
+			if(StringUtils.isNotBlank(getLabels()))
+				result.put(JiraTestReportCapabilityConfiguration.LABELS, getLabels());
+
+			if(StringUtils.isNotBlank(getPriority()))
+				result.put(JiraTestReportCapabilityConfiguration.PRIORITY, getPriority());
+
+			if(StringUtils.isNotBlank(getSecurity()))
+				result.put(JiraTestReportCapabilityConfiguration.SECURITY, getSecurity());
+
+			if(StringUtils.isNotBlank(getAssignee()))
+				result.put(JiraTestReportCapabilityConfiguration.ASSIGNEE, getAssignee());
+
+			if(StringUtils.isNotBlank(getReporter()))
+				result.put(JiraTestReportCapabilityConfiguration.REPORTER, getReporter());
+
+			if(StringUtils.isNotBlank(getTemplate()))
+				result.put(JiraTestReportCapabilityConfiguration.TEMPLATE, getTemplate());
+
+			return result;
+
 		}
 
 		private String jiraBaseUrl;
@@ -107,6 +170,8 @@ public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityC
 		private String reporter;
 		
 		private String components;
+
+		private String template;
 
 		/** Gets base URL of Jira.
 		 *
@@ -343,7 +408,23 @@ public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityC
 		public void setComponents(String components) {
 			this.components = components;
 		}
-	} 
+
+		/** Gets the template for create JSON.
+		 *
+		 * @return  Velocity template for the REST call to Jira
+		 */
+		public String getTemplate() {
+			return template;
+		}
+
+		/** Sets the template for create JSON.
+		 *
+		 * @param template   Velocity template for the REST call to Jira
+		 */
+		public void setTemplate(String template) {
+			this.template = template;
+		}
+	}
 	
 	private final JiraConfiguration defaultJiraConfiguration;
 

@@ -28,6 +28,7 @@ import org.sonatype.nexus.scheduling.CancelableHelper;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -74,8 +75,6 @@ public class MavenCentralDeploy extends ComponentSupport {
 
         StringBuilder response = new StringBuilder();
 
-        Map<String, Object> templateVariables = templateRenderingHelper.generateTemplateParameters(configuration);
-
         try {
           Repository repository = repositoryManager.get(checkNotNull(configuration.getRepository(), "Repository not configured for the task!"));
 
@@ -119,6 +118,16 @@ public class MavenCentralDeploy extends ComponentSupport {
           MCDTagSetupConfiguration mcdTagSetupConfiguration = findConfigurationForPlugin(MCDTagSetupConfiguration.class);
           response.append("Processed ").append(toDeploy.size()).append(" components.");
 
+            ////////////////////
+            Comparator<FailedCheck> failedCheckComparator = Comparator.comparing((FailedCheck o) -> o.getComponent().requireGroup())
+                    .thenComparing(o -> o.getComponent().name())
+                    .thenComparing(o -> o.getComponent().requireVersion());
+
+            // Add parameters for the template processing
+            List<FailedCheck> errors = listOfFailures.stream().sorted(failedCheckComparator).collect(Collectors.toList());
+            Map<String, Object> templateVariables = templateRenderingHelper.generateTemplateParameters(configuration, errors, toDeploy.size());
+
+
           if (listOfFailures.isEmpty()) {
              if (!configuration.getDryRun()) {
                 toDeploy.forEach(this::publishArtifact);
@@ -152,7 +161,7 @@ public class MavenCentralDeploy extends ComponentSupport {
              response.append("\n- ").append(listOfFailures.size()).append(" problems found!");
 
              for (TestReportCapability<?> report : reports) {
-                report.createReport(configuration, listOfFailures, toDeploy.size());
+                report.createReport(configuration, listOfFailures,  new HashMap<>(templateVariables)); // re-pack template variables so each report may work within its space
              }
 
              final String failedTagName;

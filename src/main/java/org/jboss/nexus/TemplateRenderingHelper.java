@@ -32,11 +32,18 @@ public class TemplateRenderingHelper {
 	/** Name for the name of the task */
 	public static final String TASK_NAME = "name";
 
-	public Map<String, Object>  generateTemplateParameters(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration) {
+	public static final String REPOSITORY = "repository";
+	public static final String ERRORS = "errors";
+	public static final String PROCESSED = "processed";
+
+	public Map<String, Object>  generateTemplateParameters(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, List<FailedCheck> errors, long processed) {
 		Map<String, Object> result = new HashMap<>();
 		result.put(DATE, new Date());
 		result.put(RUN, mavenCentralDeployTaskConfiguration.getRunNumber());
 		result.put(TASK_NAME, mavenCentralDeployTaskConfiguration.getName());
+		result.put(REPOSITORY, mavenCentralDeployTaskConfiguration.getRepository());
+		result.put(ERRORS, errors);
+		result.put(PROCESSED, processed);
 
 		final String variablesString;
 		if(StringUtils.isNotBlank(variablesString = mavenCentralDeployTaskConfiguration.getVariables())) {
@@ -120,7 +127,7 @@ public class TemplateRenderingHelper {
 				@NotNull
 				@Override
 				public EntityId getId() {
-					return () -> ""+ FictiveComponent.this.id;
+					return () -> String.valueOf(FictiveComponent.this.id);
 				}
 
 				@NotNull

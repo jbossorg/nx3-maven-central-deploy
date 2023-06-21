@@ -7,11 +7,8 @@ import org.jboss.nexus.TemplateRenderingHelper;
 import org.jboss.nexus.validation.checks.FailedCheck;
 import org.jboss.nexus.validation.reporting.TestReportCapability;
 import org.sonatype.nexus.scheduling.TaskInfo;
-import org.sonatype.nexus.scheduling.TaskScheduler;
 
-import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,13 +16,9 @@ import java.util.stream.Collectors;
 @Named(PlainTextTestReportCapabilityDescriptor.TYPE_ID)
 public class PlainTextTestReportCapability extends TestReportCapability<PlainTextTestReportCapabilityConfiguration> {
 
-	@Inject
-	private TemplateRenderingHelper templateHelper;
 
-	@Inject
-	private Provider<TaskScheduler> taskSchedulerProvider;
 
-	public void createReport(MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration,  List<FailedCheck> listOfFailures, long processed) {
+	public void createReport(MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration,  List<FailedCheck> listOfFailures, Map<String, Object> printVariables) {
 		PlainTextTestReportCapabilityConfiguration plainTextTestReportCapabilityConfiguration = mavenCentralDeploy.findConfigurationForPlugin(PlainTextTestReportCapabilityConfiguration.class) ;
 
 		if(plainTextTestReportCapabilityConfiguration == null || StringUtils.isBlank(plainTextTestReportCapabilityConfiguration.getReportTemplate()))
@@ -34,20 +27,7 @@ public class PlainTextTestReportCapability extends TestReportCapability<PlainTex
 		Objects.requireNonNull(templateHelper);
 
 		if (StringUtils.isNotBlank(plainTextTestReportCapabilityConfiguration.getOutputFileName())) {
-			Map<String, Object> parameters = templateHelper.generateTemplateParameters(mavenCentralDeployTaskConfiguration);
-			String outputFile = templateHelper.render(plainTextTestReportCapabilityConfiguration.getOutputFileName(), parameters);
-
-
-			////////////////////
-			Comparator<FailedCheck> failedCheckComparator = Comparator.comparing((FailedCheck o) -> o.getComponent().requireGroup())
-				 .thenComparing(o -> o.getComponent().name())
-				 .thenComparing(o -> o.getComponent().requireVersion());
-
-			// Add parameters for the template processing
-			List<FailedCheck> errors = listOfFailures.stream().sorted(failedCheckComparator).collect(Collectors.toList());
-			parameters.put("errors", errors);
-			parameters.put("repository", mavenCentralDeployTaskConfiguration.getRepository());
-			parameters.put("processed", processed);
+			String outputFile = templateHelper.render(plainTextTestReportCapabilityConfiguration.getOutputFileName(), printVariables);
 
 			boolean appendFile = plainTextTestReportCapabilityConfiguration.isAppendFile();
 
@@ -63,7 +43,7 @@ public class PlainTextTestReportCapability extends TestReportCapability<PlainTex
 			}
 
 			try (PrintWriter printWriter = new PrintWriter(new FileOutputStream(file, appendFile))) {
-				templateHelper.render(new StringReader(plainTextTestReportCapabilityConfiguration.getReportTemplate()), printWriter, parameters);
+				templateHelper.render(new StringReader(plainTextTestReportCapabilityConfiguration.getReportTemplate()), printWriter, printVariables);
 			} catch (FileNotFoundException e) {
 				throw new RuntimeException(e);
 			}
@@ -98,7 +78,7 @@ public class PlainTextTestReportCapability extends TestReportCapability<PlainTex
 					result.append("<b>------------------------------- ").append(taskInfo.getName()).append(" -------------------------------</b>\n");
 					MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration = new MavenCentralDeployTaskConfiguration (taskInfo.getConfiguration());
 					result.append("<b>Output file:</b> ");
-					Map<String, Object> parameters = templateHelper.generateTemplateParameters(mavenCentralDeployTaskConfiguration);
+					Map<String, Object> parameters = templateHelper.generateTemplateParameters(mavenCentralDeployTaskConfiguration, TemplateRenderingHelper.generateFictiveErrors(), 15);
 					try {
 						result.append(templateHelper.render(getConfig().getOutputFileName(), parameters));
 					} catch (Exception e) {
@@ -109,11 +89,6 @@ public class PlainTextTestReportCapability extends TestReportCapability<PlainTex
 					}
 					result.append('\n');
 					result.append("<b>Example output:</b> \n");
-
-					List<FailedCheck> errors = TemplateRenderingHelper.generateFictiveErrors();
-					parameters.put("errors", errors);
-					parameters.put("repository", mavenCentralDeployTaskConfiguration.getRepository());
-					parameters.put("processed", 15);
 
 					try {
 						result.append(templateHelper.render(getConfig().getReportTemplate(), parameters));
