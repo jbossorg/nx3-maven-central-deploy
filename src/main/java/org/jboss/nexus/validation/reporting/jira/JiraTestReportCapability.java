@@ -129,8 +129,7 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 		String issue = (String) processedVariables.get(JiraTestReportCapabilityConfiguration.ISSUE_TYPE);
 		if(StringUtils.isEmpty(issue))
 			throw new RuntimeException("Issue type is not defined!");
-		// printVariables.put(JiraTestReportServerInformation.ISSUE_TYPE_ID, jiraTestReportServerInformation.findIs)
-		// todo add search issue type!
+		processedVariables.put(JiraTestReportServerInformation.ISSUE_TYPE_ID, jiraTestReportServerInformation.findIssueTypeID(issue));
 
 		// priority (not required)
 		String priority = (String) processedVariables.get(JiraTestReportCapabilityConfiguration.PRIORITY);
@@ -203,8 +202,9 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 			if(urlConnection.getResponseCode() == 201) {
 				try(InputStream inputStream = JiraTestReportServerInformation.giveDecompressedInputStream(urlConnection)) {
 					JsonNode jsonNode = (new ObjectMapper()).readTree(inputStream);
-					log.debug("Issue created: " + jsonNode.get("key"));
-
+					String message = "Issue created: " + jsonNode.get("key");
+					log.debug(message);
+					mavenCentralDeployTaskConfiguration.setLatestStatus(message);
 				}
 			} else {
 				try(BufferedReader reader = new BufferedReader(new InputStreamReader(JiraTestReportServerInformation.giveDecompressedErrorStream(urlConnection)))) { // consume the response anyway

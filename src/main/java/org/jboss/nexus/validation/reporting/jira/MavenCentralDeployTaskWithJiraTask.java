@@ -41,8 +41,9 @@ public class MavenCentralDeployTaskWithJiraTask extends MavenCentralDeployTask {
                 List<FailedCheck> errors = TemplateRenderingHelper.generateFictiveErrors();
                 Map<String, Object> templateVariables = templateRenderingHelper.generateTemplateParameters(configuration, errors, 42);
 
-                getConfiguration().setString(MavenCentralDeployTaskWithJiraConfiguration.LATEST_STATUS, "Test report created.");
                 jiraTestReportCapability.createReport(configuration, errors, templateVariables);
+
+                getConfiguration().setString(MavenCentralDeployTaskWithJiraConfiguration.LATEST_STATUS, configuration.getLatestStatus());
                 return "Test report created.";
             } else
                 return super.execute();

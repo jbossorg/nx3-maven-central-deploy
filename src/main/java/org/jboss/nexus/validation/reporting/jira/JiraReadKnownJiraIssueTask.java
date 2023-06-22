@@ -38,6 +38,7 @@ public class JiraReadKnownJiraIssueTask extends TaskSupport {
 		try {
 			jiraTestReportServerInformation.tryJiraIssue(taskConfiguration);
 			getConfiguration().setString(JiraReadKnownJiraIssueTaskConfiguration.LATEST_RESULT, taskConfiguration.getLatestResult());
+			getConfiguration().setString(JiraReadKnownJiraIssueTaskConfiguration.DESCRIPTION, taskConfiguration.getDescription());
 			return "OK";
 		} catch (Exception e) {
 			getConfiguration().setString(JiraReadKnownJiraIssueTaskConfiguration.LATEST_RESULT, "Error retrieving Jira issue: "+e.getMessage());

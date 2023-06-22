@@ -71,7 +71,7 @@ public class JiraTestReportServerInformationTest {
 
 		// tested.tryJira();
 
-		tested.findSecurityLevelID("NEXUS", "Red Hat Internal");
+		tested.findIssueTypeID("Bug");
 
 
 		// TODO: 28.03.2023 remove this!!!!!!
@@ -172,9 +172,6 @@ public class JiraTestReportServerInformationTest {
 			throw e;
 		}
 	}
-	// TODO: 14.06.2023  test security levels
-
-	// TODO: 21.06.2023 test issue types
 
 	private static final String jiraProjectResponse = "{\n" +
 			"   \"id\": \"1234\",\n" +
@@ -243,13 +240,95 @@ public class JiraTestReportServerInformationTest {
 		assertNull(tested.getAuthentication());
 	}
 
+	private static final String ISSUE_TYPE_RESPONSE = "[ {\n" +
+			"  \"self\" : \"https://issues.somecompany.org/rest/api/latest/issuetype/2\",\n" +
+			"  \"id\" : \"2\",\n" +
+			"  \"description\" : \"Feature requests from customers and/or users\",\n" +
+			"  \"iconUrl\" : \"https://issues.somecompany.org/secure/viewavatar?size=xsmall&avatarId=13271&avatarType=issuetype\",\n" +
+			"  \"name\" : \"Feature Request\",\n" +
+			"  \"subtask\" : false,\n" +
+			"  \"avatarId\" : 13271\n" +
+			"}, {\n" +
+			"  \"self\" : \"https://issues.somecompany.org/rest/api/latest/issuetype/13\",\n" +
+			"  \"id\" : \"13\",\n" +
+			"  \"description\" : \"An enhancement or refactoring of existing functionality\",\n" +
+			"  \"iconUrl\" : \"https://issues.somecompany.org/secure/viewavatar?size=xsmall&avatarId=13269&avatarType=issuetype\",\n" +
+			"  \"name\" : \"Enhancement\",\n" +
+			"  \"subtask\" : false,\n" +
+			"  \"avatarId\" : 13269\n" +
+			"}, {\n" +
+			"  \"self\" : \"https://issues.somecompany.org/rest/api/latest/issuetype/17\",\n" +
+			"  \"id\" : \"17\",\n" +
+			"  \"description\" : \"Created by Jira Software - do not edit or delete. Issue type for a user story.\",\n" +
+			"  \"iconUrl\" : \"https://issues.somecompany.org/secure/viewavatar?size=xsmall&avatarId=13275&avatarType=issuetype\",\n" +
+			"  \"name\" : \"Story\",\n" +
+			"  \"subtask\" : false,\n" +
+			"  \"avatarId\" : 13275\n" +
+			"},  {\n" +
+			"  \"self\" : \"https://issues.somecompany.org/rest/api/latest/issuetype/16\",\n" +
+			"  \"id\" : \"16\",\n" +
+			"  \"description\" : \"Created by Jira Software - do not edit or delete. Issue type for a big user story that needs to be broken down.\",\n" +
+			"  \"iconUrl\" : \"https://issues.somecompany.org/secure/viewavatar?size=xsmall&avatarId=13267&avatarType=issuetype\",\n" +
+			"  \"name\" : \"Epic\",\n" +
+			"  \"subtask\" : false,\n" +
+			"  \"avatarId\" : 13267\n" +
+			"},  {\n" +
+			"  \"self\" : \"https://issues.somecompany.org/rest/api/latest/issuetype/1\",\n" +
+			"  \"id\" : \"1\",\n" +
+			"  \"description\" : \"A problem which impairs or prevents the functions of the product.\",\n" +
+			"  \"iconUrl\" : \"https://issues.somecompany.org/secure/viewavatar?size=xsmall&avatarId=13263&avatarType=issuetype\",\n" +
+			"  \"name\" : \"Bug\",\n" +
+			"  \"subtask\" : false,\n" +
+			"  \"avatarId\" : 13263\n" +
+			"} ]";
 
 	@Test
-	public void findPriorityIDNumber() throws IOException {
-		String result = tested.findPriorityID("1000");
+	public void findIssueTypeIDNumber() throws IOException {
+		Integer result = tested.findIssueTypeID("1001");
 
-		assertEquals("1000", result);
+		assertEquals((Integer)1001, result);
 		verify(mockedURLConnection, never()).getInputStream();
+	}
+
+	@Test
+	public void findIssueTypeID() throws IOException {
+		when(mockedURLConnection.getInputStream()).thenReturn(new ByteArrayInputStream(ISSUE_TYPE_RESPONSE.getBytes(StandardCharsets.UTF_8)));
+
+		Integer result = tested.findIssueTypeID("Story");
+		assertEquals((Integer) 17, result);
+
+		assertEquals((Integer) 1, (Integer)tested.findIssueTypeID("Bug"));
+		assertEquals((Integer) 16, (Integer) tested.findIssueTypeID("Epic"));
+
+		verify(mockedURLConnection).getInputStream(); // called just once
+	}
+
+	@Test
+	public void findIssueTypeIDWithRefresh() throws IOException {
+		when(mockedURLConnection.getInputStream())
+				.thenReturn(new ByteArrayInputStream(ISSUE_TYPE_RESPONSE.getBytes(StandardCharsets.UTF_8)))
+				.thenReturn(new ByteArrayInputStream(ISSUE_TYPE_RESPONSE.replace("Bug", "Error in Code").getBytes(StandardCharsets.UTF_8)));
+
+		tested.findPriorityID("Bug"); // initiate the "old" issue type
+
+		String result = tested.findPriorityID("Error in Code");
+		assertEquals("1", result);
+
+		verify(mockedURLConnection, times(2)).getInputStream();
+	}
+
+	@Test(expected = RuntimeException.class)
+	public void findIssueTypeIDWithRefreshFailed() throws IOException {
+		when(mockedURLConnection.getInputStream()).thenReturn(new ByteArrayInputStream(ISSUE_TYPE_RESPONSE.getBytes(StandardCharsets.UTF_8)));
+
+		try {
+			tested.findIssueTypeID("Something Wrong");
+		} catch (RuntimeException e) {
+			assertEquals("Issue type Something Wrong was not found!", e.getMessage());
+
+			verify(mockedURLConnection).getInputStream(); // called just once
+			throw e;
+		}
 	}
 
 
@@ -258,6 +337,14 @@ public class JiraTestReportServerInformationTest {
 			"\t{\"id\": \"200\", \"name\": \"moderate\"},\n" +
 			"  {\"id\": \"300\", \"name\": \"low\"}\n" +
 			"]";
+
+	@Test
+	public void findPriorityIDNumber() throws IOException {
+		String result = tested.findPriorityID("1001");
+
+		assertEquals("1001", result);
+		verify(mockedURLConnection, never()).getInputStream();
+	}
 
 	@Test
 	public void findPriorityID() throws IOException {

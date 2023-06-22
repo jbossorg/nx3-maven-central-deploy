@@ -95,6 +95,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 	private final Map<Integer, Map<String, Integer>> components = new HashMap<>();
 
 
+	private final Map<String, Integer> issueTypeIDs = new HashMap<>();
 	private final Map<String, String> priorities = new HashMap<>();
 	private final Map<Integer, Map<String, Integer>> securityLevels = new HashMap<>();
 
@@ -374,6 +375,66 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 	}
 
 
+	/** Tries to get the issue id given the issue type name or ID.
+	 *
+	 * @param issueType if number, it is considered to be the ID itself. Otherwise, it is being considered a name and the ID is being searched for.
+	 *
+	 * @return ID of the issue type
+	 *
+	 * @throws RuntimeException if there is an error communicating with the Jira server or the priority is not found.
+	 */
+	public int findIssueTypeID(String issueType) {
+		if(StringUtils.isNumeric(issueType)) {
+			return Integer.parseInt(issueType);
+		}
+
+		Integer issueTypeID = issueTypeIDs.get(issueType);
+		if(issueTypeID != null)
+			return issueTypeID;
+
+
+		String issueTypeNotFoundMessage = "Issue type " + issueType + " was not found!";
+		if(!issueTypeIDs.isEmpty()) {
+			if(!logLimiter.warn(issueTypeNotFoundMessage+" I am trying to refresh the issue type list.")) {
+				throw new RuntimeException(issueTypeNotFoundMessage);
+			}
+
+			// maybe if we refresh the list....
+			issueTypeIDs.clear();
+		}
+
+		// read the issue types
+		log.debug("Reading issue types from the server");
+
+		try {
+			URLConnection connection = buildConnection("/rest/api/latest/issuetype");
+
+			try (InputStream inputStream = giveDecompressedInputStream(connection)) {
+				JsonNode jsonNode = mapper.readTree(inputStream);
+
+				if(jsonNode.isEmpty()) {
+					String msg = "Unable to get information about issue types. Response from the server is empty.";
+					logLimiter.error(msg);
+					throw new RuntimeException(msg);
+				}
+
+				jsonNode.elements().forEachRemaining(node -> issueTypeIDs.put(node.get("name").asText(), node.get("id").asInt()));
+			}
+		} catch (IOException e) {
+			String msg = "Error connecting to Jira server: " + e.getMessage();
+			logLimiter.error(msg);
+			throw new RuntimeException(msg, e);
+		}
+
+		issueTypeID = issueTypeIDs.get(issueType);
+		if(issueTypeID != null)
+			return issueTypeID;
+
+		logLimiter.error(issueTypeNotFoundMessage);
+		throw new RuntimeException(issueTypeNotFoundMessage);
+	}
+
+
 	/** Tries to get the component id given the priority name or ID.
 	 *
 	 * @param project project name or ID
@@ -485,8 +546,14 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 				fieldNode.remove(toRemove);
 			}
 
-			// add project
+			// analyze description
+			JsonNode descriptionNode = fieldNode.get("description");
+			if(descriptionNode != null && descriptionNode.isTextual()) {
+				String description = descriptionNode.asText();
+				jiraReadKnownJiraIssueTaskConfiguration.setDescription(description.replaceAll("\\r\\n", "\\\\r\\\\n\n"));
+			}
 
+			// add project
 			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
 				fieldNode.remove("project");
 				ObjectNode project = mapper.createObjectNode();
@@ -531,7 +598,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
 				fieldNode.remove("priority");
 				ObjectNode priority = mapper.createObjectNode();
-				priority.put("id", variableWrap(PRIORITY_ID)); // FIXME: 24.04.2023 proper value
+				priority.put("id", variableWrap(PRIORITY_ID));
 				fieldNode.set("priority", priority);
 			} else {
 				ObjectNode priority = (ObjectNode) fieldNode.get("priority");

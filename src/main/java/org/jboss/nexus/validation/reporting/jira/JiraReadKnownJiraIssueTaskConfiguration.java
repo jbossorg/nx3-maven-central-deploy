@@ -8,6 +8,7 @@ import org.sonatype.nexus.scheduling.TaskConfiguration;
 public class JiraReadKnownJiraIssueTaskConfiguration extends TaskConfiguration {
 
 	public static final String LATEST_RESULT = "latestResult";
+	public static final String DESCRIPTION = "description";
 
 	public static final String ISSUE = "issue";
 
@@ -86,6 +87,24 @@ public class JiraReadKnownJiraIssueTaskConfiguration extends TaskConfiguration {
 	 */
 	public boolean getWipeNullFields() {
 		return getBoolean(WIPE_NULL_FIELDS, true);
+	}
+
+
+	/** Returns description gained during issue analysis.
+	 *
+	 * @return description
+	 */
+	public String getDescription() {
+		return getString(DESCRIPTION);
+	}
+
+
+	/** Set description gained during issue analysis
+	 *
+	 * @param description the description to save
+	 */
+	public void setDescription(String description) {
+		setString(DESCRIPTION, description);
 	}
 
 }

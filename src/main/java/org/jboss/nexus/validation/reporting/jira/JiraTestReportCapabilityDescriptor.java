@@ -142,6 +142,17 @@ public class JiraTestReportCapabilityDescriptor extends TestReportCapabilityDesc
 
 	private static final Messages messages = I18N.create(JiraTestReportCapabilityDescriptor.Messages.class);
 
+	private static final String DEFAULT_DESCRIPTION = "h2. $name $run on $date\\r\\n\n" +
+			"\\r\\n\n" +
+			"{*}Processed{*}: $processed components from {_}$repository{_}.\\r\\n\n" +
+			"{*}Problems found{*}: ${errors.size()}\\r\\n\n" +
+			"h2. Details\\r\\n\n" +
+			"\\r\\n\n" +
+			"||Group||Artifact||Version||Error||\\r\\n\n" +
+			"#set ($previous=\"\")\n" +
+			"#foreach( $error in $errors )\n" +
+			"|$error.component.group()|$error.component.name()|$error.component.version()|$error.problem|\\r\\n\n" +
+			"#end";
 
 	@SuppressWarnings("rawtypes")
 	static List<FormField> formFields = new ArrayList<>();
@@ -155,7 +166,7 @@ public class JiraTestReportCapabilityDescriptor extends TestReportCapabilityDesc
 		formFields.add(new PasswordFormField(JiraTestReportCapabilityConfiguration.TOKEN, messages.tokenLabel(), messages.tokenHelp(), false));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.PROJECT, messages.projectLabel(), messages.projectHelp(), true));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.SUMMARY, messages.summaryLabel(), messages.summaryHelp(), true).withInitialValue(messages.defaultIssueSummary()));
-		formFields.add(new TextAreaFormField(JiraTestReportCapabilityConfiguration.DESCRIPTION, messages.descriptionLabel(), messages.descriptionHelp(), true)); // TODO: 07.06.2023 add default template to report in Jira! 
+		formFields.add(new TextAreaFormField(JiraTestReportCapabilityConfiguration.DESCRIPTION, messages.descriptionLabel(), messages.descriptionHelp(), true).withInitialValue(DEFAULT_DESCRIPTION));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.ISSUE_TYPE, messages.issueTypeLabel(), messages.issueTypeHelp(), true).withInitialValue(messages.defaultIssueType()));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.COMPONENTS, messages.componentsLabel(), messages.componentsHelp(), false));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.LABELS, messages.labelsLabel(), messages.labelsHelp(), false));
@@ -163,7 +174,7 @@ public class JiraTestReportCapabilityDescriptor extends TestReportCapabilityDesc
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.SECURITY, messages.securityLabel(), messages.securityHelp(), false));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.ASSIGNEE, messages.assigneeLabel(), messages.assigneeHelp(), false));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.REPORTER, messages.reporterLabel(), messages.reporterHelp(), false));
-		formFields.add(new TextAreaFormField(JiraTestReportCapabilityConfiguration.TEMPLATE, messages.templateLabel(), messages.templateHelp(), true));
+		formFields.add(new TextAreaFormField(JiraTestReportCapabilityConfiguration.TEMPLATE, messages.templateLabel(), messages.templateHelp(), true)); // TODO: 22.06.2023 add default template 
 	}
 
 

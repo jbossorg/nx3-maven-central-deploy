@@ -25,7 +25,8 @@ public class JiraReadKnownJiraIssueTaskDescriptor extends TaskDescriptorSupport 
 				new StringTextFormField(JiraReadKnownJiraIssueTaskConfiguration.ISSUE, messages.issueLabel(), messages.issueHelp(), true),
 				new CheckboxFormField(JiraReadKnownJiraIssueTaskConfiguration.USE_VELOCITY_VARIABLES, messages.useVelocityVariablesLabel(), messages.useVelocityVariablesHelp(), false),
 				new CheckboxFormField(JiraReadKnownJiraIssueTaskConfiguration.WIPE_NULL_FIELDS, messages.wipeOutNullFieldsLabel(), messages.wipeOutNullFieldsHelp(), false).withInitialValue(true),
-				new TextAreaFormField(JiraReadKnownJiraIssueTaskConfiguration.LATEST_RESULT, messages.latestResultLabel(), messages.latestResultHelp(), false, null, true)
+				new TextAreaFormField(JiraReadKnownJiraIssueTaskConfiguration.LATEST_RESULT, messages.latestResultLabel(), messages.latestResultHelp(), false, null, true),
+				new TextAreaFormField(JiraReadKnownJiraIssueTaskConfiguration.DESCRIPTION, messages.descriptionLabel(), messages.descriptionHelp(), false, null, true)
         );
 	}
 
@@ -55,6 +56,12 @@ public class JiraReadKnownJiraIssueTaskDescriptor extends TaskDescriptorSupport 
 
 		@DefaultMessage("If checked, in the generated report the known fields (like project or issue type) will be replaced by Velocity variables, that are provided by the deployment tasks.")
 		String useVelocityVariablesHelp();
+
+		@DefaultMessage("Description")
+		String descriptionLabel();
+
+		@DefaultMessage("Description, that was analyzed from the analyzed ticket.")
+		String descriptionHelp();
 
 		@DefaultMessage("MCD: Investigate existing Jira issue!")
 		String name();
