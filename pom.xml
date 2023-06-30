@@ -8,14 +8,14 @@
     <parent>
         <groupId>org.sonatype.nexus.plugins</groupId>
         <artifactId>nexus-plugins</artifactId>
-        <version>3.42.0-01</version>
+        <version>3.56.0-01</version>
     </parent>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <packaging>bundle</packaging>
 
 
-    <groupId>com.redhat.nx3-maven-central-deploy</groupId>
+    <groupId>org.jboss.nexus.nx3-maven-central-deploy</groupId>
     <artifactId>nx3-maven-central-deploy</artifactId>
     <version>${nexus.version}-SNAPSHOT</version>
     <description>Plugin for deployment of artifacts from Sonatype Nexus 3 repositories to Maven Central.</description>
@@ -30,7 +30,7 @@
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
 
@@ -81,14 +81,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!--
-        <dependency>
-            <groupId>org.sonatype.nexus</groupId>
-            <artifactId>nexus-base</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        -->
-
         <dependency>
             <groupId>org.apache.velocity</groupId>
             <artifactId>velocity-engine-core</artifactId>
@@ -114,29 +106,6 @@
             <scope>test</scope>
         </dependency>
 
-
-        <!--
-
-                <dependency>
-                    <groupId>org.sonatype.nexus</groupId>
-                    <artifactId>nexus-repository-config</artifactId>
-                    <scope>provided</scope>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.sonatype.nexus</groupId>
-                    <artifactId>nexus-plugin-api</artifactId>
-                    <scope>provided</scope>
-                </dependency>
-
-
-
-                <dependency>
-                    <groupId>org.sonatype.nexus</groupId>
-                    <artifactId>nexus-siesta</artifactId>
-                    <scope>provided</scope>
-                </dependency>
-         -->
     </dependencies>
 
     <build>
@@ -147,8 +116,5 @@
             </plugin>
         </plugins>
     </build>
-
-
-
 
 </project>

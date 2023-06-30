@@ -184,7 +184,7 @@ public class JiraTestReportCapabilityTest {
                    "}" +
                 "}";
 
-        String result = jiraTestReportCapability.fixProblematicArrays(invalidJson);
+        String result = JiraTestReportCapability.fixProblematicArrays(invalidJson);
         assertEquals("{" +
                 "\"fields\" : {" +
                 "\"labels\" : [\"label1\" ,\"label2\", \"label3\" ]" +
@@ -258,7 +258,7 @@ public class JiraTestReportCapabilityTest {
                 "}";
 
 
-        String result = jiraTestReportCapability.fixProblematicArrays(content);
+        String result = JiraTestReportCapability.fixProblematicArrays(content);
 
         assertEquals(content, result);
     }

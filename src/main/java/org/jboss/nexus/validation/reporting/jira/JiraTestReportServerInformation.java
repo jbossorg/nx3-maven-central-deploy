@@ -2,6 +2,7 @@ package org.jboss.nexus.validation.reporting.jira;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
@@ -514,6 +515,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 	private static final String[] issueTypeRemovedFields = {"self", "description", "iconUrl", "avatarId"};
 	private static final String[] priorityRemovedFields = {"self", "iconUrl"};
 	private static final String[] securityRemovedFields = {"self", "description", "name"};
+	private static final String[] componentsRemovedFields = {"self", "description", "name"};
 	private static final String[] personRemovedFields = {"self", "emailAddress", "avatarUrls", "displayName", "active", "timeZone"};
 
 	@SuppressWarnings("StatementWithEmptyBody")
@@ -557,7 +559,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
 				fieldNode.remove("project");
 				ObjectNode project = mapper.createObjectNode();
-				project.put("id", variableWrap(PROJECT_ID)); // FIXME: 24.04.2023 proper value
+				project.put("id", variableWrap(PROJECT_ID));
 				fieldNode.set("project", project);
 			} else {
 				ObjectNode project = (ObjectNode) fieldNode.get("project");
@@ -637,7 +639,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 			// add reporter
 			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
 				String userIdentifierField;
-				ObjectNode reporter = (ObjectNode)fieldNode.get("reporter");
+				ObjectNode reporter = (ObjectNode)fieldNode.get(REPORTER);
 				if(reporter != null && reporter.get("name") != null) { // end of support for names https://developer.atlassian.com/cloud/jira/platform/deprecation-notice-user-privacy-api-migration-guide/
 					userIdentifierField = "name";
 				} else
@@ -690,13 +692,26 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 
 			// add summary
 			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
-				fieldNode.put("summary", "${summary}"); // FIXME: 24.04.2023 proper value
+				fieldNode.put("summary", "${summary}");
 			}
 
 			// add description
 			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
-				fieldNode.put("description", "${description}"); // FIXME: 24.04.2023 proper value
+				fieldNode.put("description", "${description}");
 			}
+
+			// process components
+			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
+				fieldNode.putArray(COMPONENTS);
+			} else {
+				ArrayNode components = fieldNode.withArray(COMPONENTS);
+				if(components != null) {
+					for(String token : componentsRemovedFields) {
+						components.forEach(component -> ((ObjectNode) component).remove(token));
+					}
+				}
+			}
+
 
 			// clean field null values
 			if(jiraReadKnownJiraIssueTaskConfiguration.getWipeNullFields()) {
@@ -751,11 +766,30 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 
 				}
 
-				// TODO: 24.04.2023 resolve adding labels from variable
+				// add components variable
+				int index = preparedJSON.indexOf("\"components\"") ;
+				if(index > 0 ) {
+					try {
+						index += 12;  // jump behind the field name
+
+						//noinspection ControlFlowStatementWithoutBraces
+						while (preparedJSON.charAt(++index) != '[') ;
+						int start = index;
+						//noinspection ControlFlowStatementWithoutBraces
+						while (preparedJSON.charAt(++index) != ']') ;
+						index++;
+
+						preparedJSON.replace(start+1, index-1, " "+variableWrap(COMPONENTS)+" " );
+
+					} catch (IndexOutOfBoundsException e) {
+						log.error("Problem parsing labels in the json - missing [ or ]");
+					}
+				}
 			}
 
-				//---------------------------------- this is the END -------------------------------
-				jiraReadKnownJiraIssueTaskConfiguration.setLatestResult(preparedJSON.toString());
+
+			//---------------------------------- this is the END -------------------------------
+			jiraReadKnownJiraIssueTaskConfiguration.setLatestResult(preparedJSON.toString());
 		} catch (FileNotFoundException e) {
 			String message = "Examining issue "+issue+": Issue was not found in Jira. Check the issue number and your permissions in Jira.";
 			log.warn(message);

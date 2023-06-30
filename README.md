@@ -38,12 +38,12 @@ The features here are ordered based on the current development priority - the to
 - tag artifacts successfully deployed to Maven Central
 - tag artifacts, where errors were found making them not suitable for publishing
 - report validation errors in customizable text file format
-
-## In Development
 - integrate validation reporting with Jira
 
-## Coming Soon
+## In Development
 - push released artifacts into Maven Central
+
+## Coming Soon
 - combine your validation with nx3-maven-central-deploy pre-prepared tests by adding simple custom modules
   - example validation plugin
 - report validation errors using NXRM3 logging environment
@@ -82,7 +82,7 @@ If you are trying to prepare deployment of a project, that is not in Maven Centr
 
 While most of the [requirements](https://central.sonatype.org/publish/requirements/) are mandatory, you might have a reason for disabling some of them. For example even though the JavaDoc is mandatory you have it deployed elsewhere. Or you just want to make the initial "mark all artifacts as published using Dry-Run" even though your old artifacts do not comply with the Sonatype requirements.
 
-| Check               | Descritpion                                                                                                                                                                                                                                           |
+| Check               | Description                                                                                                                                                                                                                                           |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Project Name        | Ensures you have the name of the project in your pom.xml.                                                                                                                                                                                             |
 | Project Description | Ensures you have the description of your project in pom.xml.                                                                                                                                                                                          |
@@ -149,8 +149,55 @@ In the summary the plugin searches for all your deployment configurations, appli
 The plaintext report is the simplest of the reports. Do note, that it does not allow log rotation or similar. If you have many errors and you spam the task, be sure you have enough room on your target disk. 
 
 ## Jira Reporting Capability
+One of the possibilities, how to report validation errors, is creating issue in Jira automatically. If you enable this feature, when validation fails, an issue will be created in a specified Jira project. Just like in case of plaintext reporting Velocity templates are used to create the issue. If enabled, **all deployment tasks may trigger Jira reports**, but it is possible to use specialized **Maven Central Deployment with Jira** task, that contains fields for Jira variables, that will override the defaults. It is also possible to overwrite the Jira variables in the standard *Task Variables* field. You can use this to ensure, that different artifacts are reported in different projects based on their responsible teams or similar.
+
+The configuration precedence of Jira variables:
+1. Task Variables (all tasks have this field)
+2. Fields in *Maven Central Deployment Task with Jira*
+3. Fields configured in *MCD Jira Reports Default Configuration* capability
+
+### Setting Up Jira Integration
+Jira has API, that is used for manipulating issues. The main REST endpoint for creating issues can be found in [Atlassian reference guide](https://developer.atlassian.com/cloud/jira/platform/rest/v2/api-group-issues/#api-rest-api-2-issue-post). The JSON, that needs to be used seems simple enough in the documentation, but as soon as you start investigating it, it starts to get complicated.
+
+The biggest problem are customization abilities of Jira. On one side it is great, that each team may have their own workflows, issue types, security schemes and such, on the other hand it prevents easy use of the API. So I had to be creative in how to enable the Nexus administrator configuring the web flow:
+
+#### Setting Up Jira - Step One - Preparing a Nice Jira Ticket
+Your Jira administrator needs to grant you administrator privilege to the project(s), that will be used by Jira integration to create issues. Ideally you will also get access to a technical account, that will be used by Nexus to create the issues. The best practice is Nexus will use the technical account to create issue and not your account - if you leave the company, the automatization should still work.
+
+Log into Jira using the technical account and create a [personal access token](https://confluence.atlassian.com/enterprise/using-personal-access-tokens-1026032365.html). If your company uses some older Jira, you can use the good old basic authentication. The Jira integration plugin has three fields - *username*, *password* and *token*. Based on those you fill the authentication method will be used when calling Jira.
+
+Then visit your Jira project and create your ideal ticket. Make sure to fill all required fields, such as security, components etc. E.g. I created this ticket:
+
+![](images/jira_issue.png)
+
+If your Jira workflow uses some custom fields, make sure to fill them to the initial state of your workflow for the ticket. If you have more projects in your Jira and each of them uses different workflow, create the sample issue in each of them filling the fields properly. You will later prepare deployment tasks for each of them separately. With luck, it will be enough to just use the different values in Velocity variables, but if not, it is possible to fully customize each deployment task.
+
+#### Setting Up Jira - Step Two - Enable *MCD - Jira Reports Default Configuration*
+Assuming you already installed this plugin, you will find *MCD - Jira Reports Default Configuration* in Nexus settings under *System->Capabilities*. Click on Create Capability button and fill the required fields. Right now it is important to fill *Jira base URL* and authentication fields. If you use a proxy, also it must be set so that the plugin will be able to reach your Jira server. Use the technical account credentials you created in the previous chapter.
+
+If you want to, you may also fill the other default values for Jira tickets. These will be used by default if you do not specify these fields in deployment tasks. You should have always defined Issue Type and you will be required to define *Issue main template* and *Description*, however now it is not yet important what is in those three fields.
+
+Do notice, that for all fields, such as *Issue type*, or *Priority* you can decide if you want to use the identifier value directly (e.g. in our Jira issue type "Bug" has ID 1) or its name. If you use the human-readable name, the Jira reporting plugin will use Jira API to obtain the ID and will use the ID in the resulting JSON.
+
+#### Setting Up Jira - Step Three - Dig the Issue JSON from the SERVER
+
+After you set the default values for Jira, got to *System->Tasks* and create **MCD: Investigate existing Jira issue!** task. Important fields are:
+
+| Field                  | Description                                                                                                                                                                               |
+|------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Issue                  | The issue key of the ticket in Jira, that will be analyzed by this task (the same one you created in the first step).  Ths field is mandatory.                                            |
+| Use Velocity variables | If you check this checkbox, the task would replace parts of the JSON from the server and replace them by Velocity variables.                                                              |
+| Wipe out empty fields  | The JSON this task reads from Jira often contains lots of empty fields, that are related to other project workflows. If you check this field, the task will remove those from the result. |
+| Latest result          | Read only field, where the response from Jira will be available after the task finishes. Or details of the error if it fails.                                                             |
+| Description            | Read only field, where after the issue successfully completes, the parsed description of the source ticket will be available.                                                             |
+
+After you run this task, make sure to refresh the Nexus view. Nexus sadly recognizes you started the task and starts reporting it is running, but it does not care about the completion of tasks, so you will have to refresh the view manually.
+
+If you set your connection to Jira properly, this task will succeed. In *Latest result* you will see the simplified (if you checked the checkboxes) JSON, that will be used in *Issue main template* field and *Description* field, which will contain a bit pre-formatted description.
+
 <span style="color:red"> ! TODO</span>
 
+ 
 ## Logging Reporting Capability
 <span style="color:red"> ! TODO</span>
 
@@ -192,6 +239,7 @@ In your reports you will work with FailedCheck objects, that each holds informat
 | errors     | Array of *FailedCheck* objects ordered by component.                    |
 | processed  | The total number of artifacts, that were checked during the deployment. |
 | repository | Nexus repository name.                                                  |
+
 
 # Extending nx3-maven-central-deploy by Your Tests and Reports
 nx3-maven-central-deploy was designed with the emphasis of the extendability of checking and reporting capability. If you want to implement **your own validation(s)**, you can create a plugin, that extends **org.jboss.nexus.validation.checks.CentralValidation** class. In order to add your own **reaction** on a failed deployment, implement a capability, that extends **org.jboss.nexus.validation.reporting.TestReportCapability**.  

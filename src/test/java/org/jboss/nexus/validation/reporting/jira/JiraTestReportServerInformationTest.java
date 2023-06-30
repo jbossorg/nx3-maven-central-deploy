@@ -67,9 +67,7 @@ public class JiraTestReportServerInformationTest {
 	@Test
 	public void findSecurityIDReal() {
 		tested = new JiraTestReportServerInformation(new JiraTestReportCapabilityDescriptor());
-		tested.setJiraConnectionInformation("https://issues.stage.redhat.com", null, "", null,"squid.corp.redhat.com", 3128); // fixme credentials remove!
-
-		// tested.tryJira();
+		tested.setJiraConnectionInformation("https://issues.stage.redhat.com", null, "OTI0MzYzMTU3NzkxOtFIE8Rt3ssgKr8DR17o6fH96pL4", null,"squid.corp.redhat.com", 3128); // fixme credentials remove!
 
 		tested.findIssueTypeID("Bug");
 
@@ -482,6 +480,17 @@ public class JiraTestReportServerInformationTest {
 			"    \"versions\" : [ ],\n" +
 			"    \"customfield_12310031\" : null,\n" +
 			"    \"issuelinks\" : [ ],\n" +
+			"    \"components\" : [ {\n" +
+			"      \"self\" : \"https://issues.stage.redhat.com/rest/api/2/component/12372671\",\n" +
+			"      \"id\" : \"12372671\",\n" +
+			"      \"name\" : \"Maven Central Plugin\",\n" +
+			"      \"description\" : \"Maven Central Deployment Plugin\"\n" +
+			"    }, {\n" +
+			"      \"self\" : \"https://issues.stage.redhat.com/rest/api/2/component/12372672\",\n" +
+			"      \"id\" : \"12372672\",\n" +
+			"      \"name\" : \"SSO Plugin\",\n" +
+			"      \"description\" : \"Nexus 3 SSO Plugin\"\n" +
+			"    } ],\n" +
 			"    \"assignee\" : {\n" +
 			"      \"self\" : \"https://issues.company.org/rest/api/2/user?username=dhladky%40redhat.com\",\n" +
 			"      \"name\" : \"dhladky@redhat.com\",\n" +
@@ -514,7 +523,6 @@ public class JiraTestReportServerInformationTest {
 			"        \"name\" : \"To Do\"\n" +
 			"      }\n" +
 			"    },\n" +
-			"    \"components\" : [ ],\n" +
 			"    \"timeoriginalestimate\" : null,\n" +
 			"    \"description\" : \"Nexus 2 has reach end of support and so we need to migrate to the newer product line (Nexus 3). Things to consider\\r\\n\\r\\n- replacing staging suite\\r\\n- SSO\\r\\n- high availability\\r\\n- Maven Central synchronization\\r\\n- Maven Central statistics\\r\\n- splitting people to projects\\r\\n\",\n" +
 			"    \"customfield_12314040\" : null,\n" +
@@ -744,7 +752,7 @@ public class JiraTestReportServerInformationTest {
 		tested.tryJiraIssue(configuration);
 
 		// FIXME: 27.04.2023 proper variable names here!
-		final String[] variables = {"${project_id}", "${issue_type_id}", "${priority_id}", "${reporter}", "${assignee}", "${summary}", "${description}", "${security_level_id}", "${labels}"};
+		final String[] variables = {"${project_id}", "${issue_type_id}", "${priority_id}", "${reporter}", "${assignee}", "${summary}", "${description}", "${security_level_id}", "${labels}", "${components}"};
 
 		final String result = configuration.getLatestResult();
 		assertTrue(Arrays.stream(variables).noneMatch(result::contains));

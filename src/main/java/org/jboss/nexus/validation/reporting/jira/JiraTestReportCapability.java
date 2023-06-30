@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
 import org.jboss.nexus.validation.checks.FailedCheck;
 import org.jboss.nexus.validation.reporting.TestReportCapability;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -146,15 +147,23 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 		// process labels
 		String labels = (String) processedVariables.get(JiraTestReportCapabilityConfiguration.LABELS);
 		if(StringUtils.isNotBlank(labels)) {
-			String[] splitLabels = labels.trim().split("\\s*,\\s*");
-			for(int i = 0; i < splitLabels.length; i++ ) {
-				if(!splitLabels[i].startsWith("\""))
-					splitLabels[i] = "\""+splitLabels[i];
-				if(!splitLabels[i].endsWith("\""))
-					splitLabels[i] += "\"";
-			}
+			String[] splitLabels = normalizeStrings(labels);
 			processedVariables.put(JiraTestReportCapabilityConfiguration.LABELS, String.join(",", splitLabels));
 		}
+
+		// process components
+		String components = (String) processedVariables.get(JiraTestReportCapabilityConfiguration.COMPONENTS);
+		if(StringUtils.isNotBlank(components)) {
+			String[] splitComponents = normalizeStrings(components);
+			for(int i = 0; i < splitComponents.length; i++) {
+				String component = splitComponents[i].substring(1, splitComponents[i].length()-1);
+				splitComponents[i] = "\""+jiraTestReportServerInformation.findComponentID(project, component)+"\"";
+			}
+
+			String c = "{ \"id\" : " +   String.join(" }, { \"id\" : ", splitComponents) +" }";
+			processedVariables.put(JiraTestReportCapabilityConfiguration.COMPONENTS, String.join(",", c));
+		}
+
 
 		try {
 			// We allow CRLF in the description field, but we are not allowed to remain them in the field.
@@ -225,6 +234,22 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 			throw new RuntimeException(message);
 		}
 	}
+// FIXME: 27.06.2023 
+	/** Splits comma separated list of strings and makes sure all are wrapped by double quote.
+	 *
+	 * @param string string to normalize
+	 * @return tokenized array with quote-wrapped strings
+	 */
+	private static String[] normalizeStrings(@NotNull final String string) {
+		String[] splitLabels = string.trim().split("\\s*,\\s*");
+		for(int i = 0; i < splitLabels.length; i++ ) {
+			if(!splitLabels[i].startsWith("\""))
+				splitLabels[i] = "\""+ splitLabels[i];
+			if(!splitLabels[i].endsWith("\""))
+				splitLabels[i] += "\"";
+		}
+		return splitLabels;
+	}
 
 	/** Fixes problematic arrays aka "labels" : ["label1" "label2"]
 	 *
@@ -244,6 +269,9 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 			do {
 
 				switch (character) {
+					case '{':
+						inArray = false; // we are not fixing complicated stuff
+						break;
 					case '[':
 						inArray = true;
 						inQuote = false;
@@ -287,7 +315,6 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 		}
 
 
-
 		return builder.toString();
 	}
 
@@ -317,7 +344,7 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 			}
 		}
 
-		// if we removed a node and it resulted ind emptied structure, remove it as well
+		// if we removed a node, and it resulted ind emptied structure, remove it as well
 		return modified && jsonNode.isEmpty();
 	}
 }
