@@ -1,0 +1,13 @@
+Current status: <b>${status}</b><br>
+Base URL: ${baseURL}<br>
+#if($proxy)
+Proxy: ${proxy} Port: ${proxy_port}<br>
+#end
+User name: ${username}<br>
+User credentials: ${credentials}<br>
+#if($jiraDisplayUser)
+Current Jira user: ${jiraDisplayUser}
+#end
+#if($error)
+Error: $error
+#end

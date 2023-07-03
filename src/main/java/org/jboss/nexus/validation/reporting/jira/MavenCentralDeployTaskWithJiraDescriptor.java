@@ -24,10 +24,10 @@ public class MavenCentralDeployTaskWithJiraDescriptor extends MavenCentralDeploy
     private interface Messages
             extends MessageBundle
     {
-        @DefaultMessage("Create Test Ticket")
+        @DefaultMessage("Create test issue")
         String createTestReportLabel();
 
-        @DefaultMessage("If checked, instead of doing the actual deployment to Maven Central a Jira ticket is being created using fictive errors to validate the ticket configuration.")
+        @DefaultMessage("If checked, instead of doing the actual deployment to Maven Central a Jira issue is being created using fictive errors to validate the issue configuration.")
         String createTestReportHelp();
 
         @DefaultMessage("Maven Central Deployment with Jira")

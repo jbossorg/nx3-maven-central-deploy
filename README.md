@@ -159,7 +159,14 @@ The configuration precedence of Jira variables:
 ### Setting Up Jira Integration
 Jira has API, that is used for manipulating issues. The main REST endpoint for creating issues can be found in [Atlassian reference guide](https://developer.atlassian.com/cloud/jira/platform/rest/v2/api-group-issues/#api-rest-api-2-issue-post). The JSON, that needs to be used seems simple enough in the documentation, but as soon as you start investigating it, it starts to get complicated.
 
-The biggest problem are customization abilities of Jira. On one side it is great, that each team may have their own workflows, issue types, security schemes and such, on the other hand it prevents easy use of the API. So I had to be creative in how to enable the Nexus administrator configuring the web flow:
+The biggest problem are customization abilities of Jira. On one side it is great, that each team may have their own workflows, issue types, security schemes and such, on the other hand it prevents easy use of the API. To make things easy, I introduced a support task in Nexus, that allows analysis of exiting Jira issues, so the Nexus admin can make the configuration in an easy way:
+
+1. create a sample ticket in Jira
+2. configure "default" description, and main template in *MCD - Jira Reports Default Configuration* capability
+3. use *MCD: Investigate existing Jira issue!* task to parse the sample Jira ticket a prepare the issue templates
+4. use task *Maven Central Deployment with Jira* to debug your templates
+5. configure deployment tasks for your development teams
+
 
 #### Setting Up Jira - Step One - Preparing a Nice Jira Ticket
 Your Jira administrator needs to grant you administrator privilege to the project(s), that will be used by Jira integration to create issues. Ideally you will also get access to a technical account, that will be used by Nexus to create the issues. The best practice is Nexus will use the technical account to create issue and not your account - if you leave the company, the automatization should still work.
@@ -177,7 +184,13 @@ Assuming you already installed this plugin, you will find *MCD - Jira Reports De
 
 If you want to, you may also fill the other default values for Jira tickets. These will be used by default if you do not specify these fields in deployment tasks. You should have always defined Issue Type and you will be required to define *Issue main template* and *Description*, however now it is not yet important what is in those three fields.
 
-Do notice, that for all fields, such as *Issue type*, or *Priority* you can decide if you want to use the identifier value directly (e.g. in our Jira issue type "Bug" has ID 1) or its name. If you use the human-readable name, the Jira reporting plugin will use Jira API to obtain the ID and will use the ID in the resulting JSON.
+Do notice, that for all fields, such as *Issue type*, or *Priority* you can decide if you want to use the identifier value directly (e.g. in our Jira issue type "Bug" has ID 1) or its human readable *name*. If you use the name, the Jira reporting plugin will use Jira API to obtain the ID and will use the ID in the resulting JSON.
+
+If you do this step correctly, you can check the connection under Summary tab. It will look like:
+
+![](images/jira_status.png)
+
+Eventually you will see an error here.
 
 #### Setting Up Jira - Step Three - Dig the Issue JSON from the SERVER
 
@@ -193,9 +206,52 @@ After you set the default values for Jira, got to *System->Tasks* and create **M
 
 After you run this task, make sure to refresh the Nexus view. Nexus sadly recognizes you started the task and starts reporting it is running, but it does not care about the completion of tasks, so you will have to refresh the view manually.
 
-If you set your connection to Jira properly, this task will succeed. In *Latest result* you will see the simplified (if you checked the checkboxes) JSON, that will be used in *Issue main template* field and *Description* field, which will contain a bit pre-formatted description.
+If your Jira permissions are right for the project, this task will succeed. In *Latest result* you will see the simplified (if you checked the checkboxes) JSON, that will be used in *Issue main template* field and *Description* field, which will contain a bit pre-formatted description.
 
-<span style="color:red"> ! TODO</span>
+#### Setting Up Jira - Step Four - Configure *description* and *main template*
+
+Here you will have to play with the main template and description, so it creates the ticket you like. The best place where to put both values is the *MCD - Jira Reports Default Configuration* capability, however, it will likely be a trial-error process. So at this moment it would be more convenient for you, if you create a new **Maven Central Deployment with Jira** task and check **Create test issue** checkbox. And be sure to set the *Task frequency* to "Manually". 
+
+Instead of trying to do the actual report, the task will take an example set of fictive errors and tries to create a failed report using your configuration and templates. This way you can test how your settings work. Once you are happy with the created ticket, copy and paste your *Description* field and *Issue main template* field to your default values into the capability configuration, so you do not need to fill these fields in all tasks. 
+
+Note: when debugging, after you run the issue click on "Refresh current view and data" button. Nexus does not refresh the task automatically after it is done.   
+
+Everytime you run the task, you can check "Latest result" field to see what happened or check the Nexus application log to see if there were any errors either in processing your template or if Jira complains about your request for any reason. 
+
+#### Setting Up Jira - Step Five - Configure Your Deployments
+
+Once you have your default configuration updated, you can now customise all your Maven Central deployment tasks. The templates use velocity variables, so you can for example set different projects for different deployment tasks (so the proper team gets the information about the problem). 
+
+Remember, that all the tasks will be subject to create the Jira Report if errors appear. However, if you use *Maven Central Deployment with Jira* task, it will be more convenient to override the default values. You would not need to remember the Velocity variable names. But you can always override the default values using Task variables field. If you do not override a field (keep it empty), then the default value will be used from the Jira default configuration capability.
+
+Do not forget to un-check *Create test issue* after you are done with debugging. 
+
+#### Jira Specific Velocity Variables
+
+These standard variables can be re-defined in *Task variables* field and used in the templates:   
+
+| Variable    | Description                                                                                                                                                                                 |
+|-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| project     | Name or identifier of the project                                                                                                                                                           |
+| summary     | Summary field of the issue (the main title of the issue)                                                                                                                                    |
+| description | Description othe issue (details of the error). It is not adviceable to re-define this variable using a task variable.                                                                       |
+| issueType   | Identifier or name of the issue type                                                                                                                                                        |
+| labels      | Comma separated list of labels. You may use quotes, however Jira does not allow spaces in labels.                                                                                           |
+| priority    | Name or identifier of the issue priority                                                                                                                                                    |
+| security    | The field, that describes the visibility of the issue. Usually Public, Company internal or similar.                                                                                         |
+| assignee    | Assignee of the issue. Old Jira versions use username field, newer versions use account ID. The plugin suggests the right version based on issue analysis.                                  |
+| reporter    | You can overwrite the reporter of the issue to someone. Old Jira versions use username field, newer versions use account ID. The plugin suggests the right version based on issue analysis. |
+| components  | Comma separated list of components. If you use component names, the plugin will translate them into component IDs. You may use (double) quotes and spaces are allowed here.                 |
+| template    | The main Velocity template for rendering the JSON structure of the create issue request. It is not adviceable to re-define this variable using a task variable.                             |
+
+These variables are calculated from the fields above and can be used in the template:
+
+| Variable          | Description                |
+|-------------------|----------------------------|
+| project_id        | Project identifier.        |
+| issue_type_id     | Issue type identifier.     |
+| priority_id       | Priority identifier.       |
+| security_level_id | Security level identifier. |
 
  
 ## Logging Reporting Capability

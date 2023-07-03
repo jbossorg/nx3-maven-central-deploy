@@ -49,7 +49,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 	 */
 	private static String variableWrap(@NotNull final String variableName) {
 		return "${"+variableName+'}';
-	};
+	}
 
 
 	@Inject
@@ -73,6 +73,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 	 *
 	 * @param logLimiter log limiter
 	 */
+	@SuppressWarnings("unused")
 	void setLogLimiter(@NotNull LogLimiter logLimiter) {
 		this.logLimiter = logLimiter;
 	}
@@ -99,8 +100,6 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 	private final Map<String, Integer> issueTypeIDs = new HashMap<>();
 	private final Map<String, String> priorities = new HashMap<>();
 	private final Map<Integer, Map<String, Integer>> securityLevels = new HashMap<>();
-
-	private final Map<String, String> users = new HashMap<>();
 
 	private final ObjectMapper mapper = new ObjectMapper();
 
@@ -141,6 +140,25 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 		} else {
 			authentication = null;
 			log.warn("Neither authentication token nor username and password provided. Access to Jira will be anonymous.");
+		}
+	}
+
+	/** Attempts to fetch user information.
+	 *
+	 * @throws IOException when there is a problem
+	 *
+	 * @return current user information
+	 */
+	public String findCurrentUserInformation() throws IOException {
+		if(StringUtils.isBlank(getAuthentication())) {
+			log.debug("No authentication.");
+			return "No authentication.";
+		}
+
+		URLConnection connection = buildConnection("/rest/api/latest/myself");
+		try (InputStream inputStream = giveDecompressedInputStream(connection)) {
+			JsonNode jsonNode = mapper.readTree(inputStream);
+			return jsonNode.get("displayName").asText()+" ("+jsonNode.get("emailAddress").asText()+")";
 		}
 	}
 
@@ -502,11 +520,6 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 
 		logLimiter.error(componentNotFoundMessage);
 		throw new RuntimeException(componentNotFoundMessage);
-	}
-
-
-	public String findSeverityLevelID(String severity) {
-		return null; // todo
 	}
 
 	private static final String[] rootRemovedFields = {"id", "self", "key", "expand"};

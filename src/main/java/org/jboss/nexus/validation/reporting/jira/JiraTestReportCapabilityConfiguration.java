@@ -2,8 +2,6 @@ package org.jboss.nexus.validation.reporting.jira;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.nexus.validation.reporting.TestReportCapabilityConfigurationParent;
-import org.sonatype.nexus.formfields.StringTextFormField;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,7 +25,7 @@ public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityC
 	
 	public static final String DESCRIPTION = "description";
 
-	public static final String ISSUE_TYPE = "issue.type";
+	public static final String ISSUE_TYPE = "issueType";
 
 	public static final String LABELS = "labels";
 	
@@ -44,6 +42,7 @@ public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityC
 	public static final String TEMPLATE = "template";
 
 
+	@SuppressWarnings("unused")
 	public JiraTestReportCapabilityConfiguration() {
 		defaultJiraConfiguration = new JiraConfiguration();
 	}
@@ -430,7 +429,7 @@ public class JiraTestReportCapabilityConfiguration extends TestReportCapabilityC
 
 	/** Returns default Jira configuration
 	 *
-	 * @return
+	 * @return configuration
 	 */
 	public JiraConfiguration getDefaultJiraConfiguration() {
 		return defaultJiraConfiguration;

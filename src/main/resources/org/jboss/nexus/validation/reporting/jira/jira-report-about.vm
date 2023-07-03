@@ -1,0 +1,7 @@
+<p>Report for failed Maven Central Deployment: org.jboss.nexus.validation.reporting.jira.JiraTestReportCapabilityDescriptor</p>
+
+<h3>Common Velocity Variables</h3>
+See <a href="https://github.com/jbossorg/nx3-maven-central-deploy#velocity-variables">here</a>
+
+<h3>Jira specific Velocity Variables</h3>
+See <a href="https://github.com/jbossorg/nx3-maven-central-deploy#velocity-variables">here</a>

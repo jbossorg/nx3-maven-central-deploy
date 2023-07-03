@@ -52,14 +52,48 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 
 	@Nullable
 	@Override
-	protected String renderStatus() throws Exception {
-		return super.renderStatus(); // TODO: 31.03.2023  Display all stored information from ServerInformation
+	protected String renderStatus() {
+		if(isConfigured()) {
+			Map<String, Object> values = new HashMap<>();
+			values.put("baseURL", getConfig().getDefaultJiraConfiguration().getJiraBaseUrl());
+			if(StringUtils.isNotBlank(getConfig().getDefaultJiraConfiguration().getJiraBaseUrl())) {
+				values.put("proxy", getConfig().getDefaultJiraConfiguration().getProxyHost());
+				values.put("proxy_port", getConfig().getDefaultJiraConfiguration().getProxyPort());
+			}
+
+			values.put("username", getConfig().getDefaultJiraConfiguration().getUserName());
+			if(StringUtils.isNotBlank(getConfig().getDefaultJiraConfiguration().getToken())) {
+				values.put("credentials", "user token") ;
+			} else if(StringUtils.isNotBlank(getConfig().getDefaultJiraConfiguration().getPassword())) {
+				values.put("credentials", "basic authentication") ;
+			} else {
+				values.put("credentials", "no user name nor password defined!") ;
+			}
+
+			if(context().isActive()) {
+				try {
+					String user = jiraTestReportServerInformation.findCurrentUserInformation();
+					values.put("status", "ACTIVE");
+					values.put("jiraDisplayUser", user);
+				} catch (IOException e) {
+					values.put("status", "BROKEN");
+					values.put("error", e.getMessage());
+				} catch (NullPointerException e) {
+					values.put("status", "Jira Reporting is NOT OPERATIONAL");
+					values.put("error", "Unknown response structure. A field in Jira response is missing.");
+				}
+			} else values.put("status", "DISABLED");
+
+			return render("jira-status.vm", values);
+
+		} else
+			return "The capability is not configured!";
 	}
 
 	@Nullable
 	@Override
-	protected String renderDescription() throws Exception {
-		return super.renderDescription(); // TODO: 31.03.2023
+	protected String renderDescription() {
+		return "Jira reporting of Maven Central Deployment";
 	}
 
 	private String template;
@@ -192,7 +226,7 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 			JsonNode jsonNode = (new JsonMapper()).readTree(jsonString);
 			removeNotTranslatedVelocityVariables(jsonNode);
 
-			jsonString = jsonNode.toPrettyString(); // fixme change to just String
+			jsonString = jsonNode.toString();
 		} catch (JsonProcessingException e) {
 			log.error("Error creating issue JSON: "+e.getMessage());
 
@@ -228,13 +262,12 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 				}
 			}
 		} catch (IOException e) {
-			// FIXME: 12.06.2023
 			String message = "Error creating Issue in Jira: " + e.getMessage();
 			log.error(message);
 			throw new RuntimeException(message);
 		}
 	}
-// FIXME: 27.06.2023 
+
 	/** Splits comma separated list of strings and makes sure all are wrapped by double quote.
 	 *
 	 * @param string string to normalize

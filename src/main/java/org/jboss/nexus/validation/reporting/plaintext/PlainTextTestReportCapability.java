@@ -11,7 +11,6 @@ import org.sonatype.nexus.scheduling.TaskInfo;
 import javax.inject.Named;
 import java.io.*;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Named(PlainTextTestReportCapabilityDescriptor.TYPE_ID)
 public class PlainTextTestReportCapability extends TestReportCapability<PlainTextTestReportCapabilityConfiguration> {
@@ -108,7 +107,7 @@ public class PlainTextTestReportCapability extends TestReportCapability<PlainTex
 
 	@Override
 	protected String renderDescription()  {
-		return "Plaintext reporting of MC Deployment.";
+		return "Plaintext reporting of Maven Central Deployment.";
 	}
 }
 
