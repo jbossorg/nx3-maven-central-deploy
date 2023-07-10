@@ -184,7 +184,7 @@ Assuming you already installed this plugin, you will find *MCD - Jira Reports De
 
 If you want to, you may also fill the other default values for Jira tickets. These will be used by default if you do not specify these fields in deployment tasks. You should have always defined Issue Type and you will be required to define *Issue main template* and *Description*, however now it is not yet important what is in those three fields.
 
-Do notice, that for all fields, such as *Issue type*, or *Priority* you can decide if you want to use the identifier value directly (e.g. in our Jira issue type "Bug" has ID 1) or its human readable *name*. If you use the name, the Jira reporting plugin will use Jira API to obtain the ID and will use the ID in the resulting JSON.
+Do notice, that for all fields, such as *Issue type*, or *Priority* you can decide if you want to use the identifier value directly (e.g. in our Jira issue type "Bug" has ID 1) or its human-readable *name*. If you use the name, the Jira reporting plugin will use Jira API to obtain the ID and will use the ID in the resulting JSON.
 
 If you do this step correctly, you can check the connection under Summary tab. It will look like:
 
@@ -234,7 +234,7 @@ These standard variables can be re-defined in *Task variables* field and used in
 |-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | project     | Name or identifier of the project                                                                                                                                                           |
 | summary     | Summary field of the issue (the main title of the issue)                                                                                                                                    |
-| description | Description othe issue (details of the error). It is not adviceable to re-define this variable using a task variable.                                                                       |
+| description | Description other issue (details of the error). It is not advisable to re-define this variable using a task variable.                                                                       |
 | issueType   | Identifier or name of the issue type                                                                                                                                                        |
 | labels      | Comma separated list of labels. You may use quotes, however Jira does not allow spaces in labels.                                                                                           |
 | priority    | Name or identifier of the issue priority                                                                                                                                                    |
@@ -242,7 +242,7 @@ These standard variables can be re-defined in *Task variables* field and used in
 | assignee    | Assignee of the issue. Old Jira versions use username field, newer versions use account ID. The plugin suggests the right version based on issue analysis.                                  |
 | reporter    | You can overwrite the reporter of the issue to someone. Old Jira versions use username field, newer versions use account ID. The plugin suggests the right version based on issue analysis. |
 | components  | Comma separated list of components. If you use component names, the plugin will translate them into component IDs. You may use (double) quotes and spaces are allowed here.                 |
-| template    | The main Velocity template for rendering the JSON structure of the create issue request. It is not adviceable to re-define this variable using a task variable.                             |
+| template    | The main Velocity template for rendering the JSON structure of the create issue request. It is not adviseable to re-define this variable using a task variable.                             |
 
 These variables are calculated from the fields above and can be used in the template:
 
@@ -302,6 +302,6 @@ nx3-maven-central-deploy was designed with the emphasis of the extendability of 
 
 In both cases nx3-maven-central-deploy will use the dependency injection to add your capability to the process of validation or error reporting based on the parent class you extended. You do not need to worry about registering it or similar. An example plugins will be added later, so you would be able to easily extend the test/reporting contract with your own logic. 
 
-If you need to read the configuration of other nx3-maven-central-deploy extension capabilities, you can use [org.jboss.nexus.MavenCentrayDeploy::findConfigurationForPlugin(configurationClass)](src/main/java/org/jboss/nexus/MavenCentralDeploy.java) method. Based on configuration class it will try to find registered configuration of this type. 
+If you need to read the configuration of other nx3-maven-central-deploy extension capabilities, you can use [org.jboss.nexus.MavenCentralDeploy::findConfigurationForPlugin(configurationClass)](src/main/java/org/jboss/nexus/MavenCentralDeploy.java) method. Based on configuration class it will try to find registered configuration of this type. 
 
-You can manually register your own capability configurations using [org.jboss.nexus.MavenCentrayDeploy::registerConfiguration(MavenCentralDeployCapabilityConfigurationParent configuration) ](src/main/java/org/jboss/nexus/MavenCentralDeploy.java), but all check and report plugins register or unregister automatically when you activate/deactivate your capability.
+You can manually register your own capability configurations using [org.jboss.nexus.MavenCentralDeploy::registerConfiguration(MavenCentralDeployCapabilityConfigurationParent configuration) ](src/main/java/org/jboss/nexus/MavenCentralDeploy.java), but all check and report plugins register or unregister automatically when you activate/deactivate your capability.
