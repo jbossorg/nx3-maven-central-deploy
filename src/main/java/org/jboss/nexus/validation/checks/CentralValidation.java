@@ -1,11 +1,11 @@
 package org.jboss.nexus.validation.checks;
 
 import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
+import org.jboss.nexus.content.Asset;
+import org.jboss.nexus.content.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.sonatype.goodies.common.Loggers;
-import org.sonatype.nexus.repository.storage.Asset;
-import org.sonatype.nexus.repository.storage.Component;
 
 import java.util.List;
 

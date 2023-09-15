@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 public class FilterTest {
 
 	@Mock
-	private Component component;
+	private Component storageComponent;
 
 	@Mock
 	private TagComponent tagComponent;
@@ -39,70 +39,70 @@ public class FilterTest {
 	@Test
 	public void checkComponentNull() {
 		Filter tested = Filter.parseFilterString(null);
-		assertTrue(tested.checkComponent(component));
+		assertTrue(tested.checkComponent(storageComponent));
 	}
 
 
 	@Test
 	public void checkComponentGAV() {
 		Filter tested = Filter.parseFilterString("group=org.jboss&artifact=nexus&version=2.3.1");
-		when(component.group()).thenReturn("org.jboss");
-		when(component.name()).thenReturn("nexus");
-		when(component.version()).thenReturn("2.3.1");
-		assertTrue(tested.checkComponent(component));
+		when(storageComponent.group()).thenReturn("org.jboss");
+		when(storageComponent.name()).thenReturn("nexus");
+		when(storageComponent.version()).thenReturn("2.3.1");
+		assertTrue(tested.checkComponent(storageComponent));
 
 
 		tested = Filter.parseFilterString("artifact=nexus&version=2.3.1");
-		assertTrue(tested.checkComponent(component));
+		assertTrue(tested.checkComponent(storageComponent));
 
 		tested = Filter.parseFilterString("group=org.jboss&version=2.3.1");
-		assertTrue(tested.checkComponent(component));
+		assertTrue(tested.checkComponent(storageComponent));
 
 		tested = Filter.parseFilterString("group=org.jboss&artifact=nexus");
-		assertTrue(tested.checkComponent(component));
+		assertTrue(tested.checkComponent(storageComponent));
 
 		tested = Filter.parseFilterString("group=com.redhat&artifact=nexus&version=2.3.1");
-		assertFalse(tested.checkComponent(component));
+		assertFalse(tested.checkComponent(storageComponent));
 
 		tested = Filter.parseFilterString("group=com.redhat&artifact=nexus&version=2.3.1");
-		assertFalse(tested.checkComponent(component));
+		assertFalse(tested.checkComponent(storageComponent));
 
 		tested = Filter.parseFilterString("group=org.jboss&artifact=eap&version=2.3.1");
-		assertFalse(tested.checkComponent(component));
+		assertFalse(tested.checkComponent(storageComponent));
 
 		tested = Filter.parseFilterString("group=org.jboss&artifact=nexus&version=2.3.2");
-		assertFalse(tested.checkComponent(component));
+		assertFalse(tested.checkComponent(storageComponent));
 
 		tested = Filter.parseFilterString("group=org.jboss&artifact=nexus&version>=2.3.2");
-		assertFalse(tested.checkComponent(component));
+		assertFalse(tested.checkComponent(storageComponent));
 
 		tested = Filter.parseFilterString("group=org.jboss&artifact=nexus&version>=2.3.0");
-		assertTrue(tested.checkComponent(component));
+		assertTrue(tested.checkComponent(storageComponent));
 
 		tested = Filter.parseFilterString("group=org.jboss&artifact=nexus&version>=2.3.1");
-		assertTrue(tested.checkComponent(component));
+		assertTrue(tested.checkComponent(storageComponent));
 
 		tested = Filter.parseFilterString("group=org.jboss&artifact=nexus&version<=2.3.2");
-		assertTrue(tested.checkComponent(component));
+		assertTrue(tested.checkComponent(storageComponent));
 
 		tested = Filter.parseFilterString("group=org.jboss&artifact=nexus&version<=2.3.0");
-		assertFalse(tested.checkComponent(component));
+		assertFalse(tested.checkComponent(storageComponent));
 
 		tested = Filter.parseFilterString("group=org.jboss&artifact=nexus&version<=2.3.1");
-		assertTrue(tested.checkComponent(component));
+		assertTrue(tested.checkComponent(storageComponent));
 
 		tested = Filter.parseFilterString("group=org.jboss&artifact=nexus&version!=2.3.1");
-		assertFalse(tested.checkComponent(component));
+		assertFalse(tested.checkComponent(storageComponent));
 
 		tested = Filter.parseFilterString("group=org.jboss&artifact=nexus&version <> 2.3.1");
-		assertFalse(tested.checkComponent(component));
+		assertFalse(tested.checkComponent(storageComponent));
 	}
 
 	@Test(expected = RuntimeException.class)
 	public void checkComponentTagsUnsupported() {
 		Filter tested = Filter.parseFilterString("tag=DEPLOYED");
 		try {
-			tested.checkComponent(component); // mocked class not compatible with TagComponent
+			tested.checkComponent(storageComponent); // mocked class not compatible with TagComponent
 		} catch (RuntimeException e) {
 			assertEquals("Filter error: attempt to filter based on a tag or tagAttr. Tags are only supported in NXRM3 Professional.", e.getMessage());
 			throw e;
@@ -113,7 +113,7 @@ public class FilterTest {
 	public void checkComponentTagAttrsUnsupported() {
 		Filter tested = Filter.parseFilterString("tagAttr=OS=macOS");
 		try {
-			tested.checkComponent(component); // mocked class not compatible with TagComponent
+			tested.checkComponent(storageComponent); // mocked class not compatible with TagComponent
 		} catch (RuntimeException e) {
 			assertEquals("Filter error: attempt to filter based on a tag or tagAttr. Tags are only supported in NXRM3 Professional.", e.getMessage());
 			throw e;

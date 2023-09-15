@@ -1,6 +1,8 @@
 package org.jboss.nexus.validation.checks;
 
 import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
+import org.jboss.nexus.content.Asset;
+import org.jboss.nexus.content.Component;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
@@ -8,33 +10,22 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.sonatype.nexus.blobstore.api.Blob;
-import org.sonatype.nexus.blobstore.api.BlobRef;
-import org.sonatype.nexus.blobstore.api.BlobStore;
-import org.sonatype.nexus.blobstore.api.BlobStoreManager;
-import org.sonatype.nexus.repository.storage.Asset;
-import org.sonatype.nexus.repository.storage.Component;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.jboss.nexus.testutils.Utils.mockedAsset;
 import static org.junit.Assert.*;
 
 @RunWith((MockitoJUnitRunner.class))
 public class PomXMLValidationCheckTest {
 
-	private final BlobRef fakeBlobRef = new BlobRef("node", "store", "blob");
-
 	@Mock
-	private Blob testBlob;
-
-	@Mock
-	private BlobStore blobStore;
-
-	@Mock
-	private BlobStoreManager blobStoreManager;
+	private InputStream inputStream;
 
 	private PomXMLValidationCheck tested;
 
@@ -47,14 +38,13 @@ public class PomXMLValidationCheckTest {
 
 	private MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration;
 
+	private Asset testAsset;
+
 	@Before
 	public void setup() {
-		Asset testAsset = new Asset().name("some/SomeProject.pom").blobRef(fakeBlobRef);
+		 testAsset = mockedAsset("some/SomeProject.pom");
 
-		Mockito.when(blobStoreManager.get("store")).thenReturn(blobStore);
-		Mockito.when(blobStore.get(fakeBlobRef.getBlobId())).thenReturn(testBlob); // set up the content of testBlob in the test
-
-		tested = new PomXMLValidationCheck(blobStoreManager);
+		tested = new PomXMLValidationCheck();
 
 		failedCheckList = new ArrayList<>();
 
@@ -70,7 +60,11 @@ public class PomXMLValidationCheckTest {
 	 * @param xml the content of the XML file
 	 */
 	private void prepareInputStream(@NotNull String xml) {
-		Mockito.when(testBlob.getInputStream()).thenReturn(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+		try {
+			Mockito.when(testAsset.openContentInputStream()).thenReturn(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	private boolean errorExist(String error) {
@@ -161,8 +155,7 @@ public class PomXMLValidationCheckTest {
 				  "       <license>" +
 				  "       </license>" +
 				  "       <license/>" +
-				  "   </licenses>" +
-				  ""); // missing end tag
+				  "   </licenses>"); // missing end tag
 
 		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
 

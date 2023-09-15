@@ -1,12 +1,12 @@
 package org.jboss.nexus.validation.checks;
 
 import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
+import org.jboss.nexus.content.Asset;
+import org.jboss.nexus.content.Component;
 import org.jetbrains.annotations.NotNull;
 import org.sonatype.nexus.blobstore.api.Blob;
 import org.sonatype.nexus.blobstore.api.BlobRef;
 import org.sonatype.nexus.blobstore.api.BlobStoreManager;
-import org.sonatype.nexus.repository.storage.Asset;
-import org.sonatype.nexus.repository.storage.Component;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -41,12 +41,10 @@ import static org.jboss.nexus.constants.FileExtensions.EXTENSION_POM;
 @Singleton
 @Named
 public class PomXMLValidationCheck extends CentralValidation {
-	private final BlobStoreManager blobStoreManager;
 
 	@Inject
-	public PomXMLValidationCheck(BlobStoreManager blobStoreManager) {
+	public PomXMLValidationCheck() {
 		super();
-		this.blobStoreManager = checkNotNull(blobStoreManager);
 	}
 
 	@Override
@@ -54,207 +52,188 @@ public class PomXMLValidationCheck extends CentralValidation {
 		XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
 		for(Asset asset : assets ) {
 			if(asset.name().endsWith(EXTENSION_POM)) {
+				try (InputStream bis = asset.openContentInputStream()) {
+					int level = 0;
+					XMLEventReader reader = xmlInputFactory.createXMLEventReader(bis);
 
-				if(asset.blobRef() == null) {
-					String msg = "Program error: asset " + asset.name() + " has no blob reference!";
-					log.error(msg);
-					listOfFailures.add(new FailedCheck(component, msg));
-				} else {
-					BlobRef blobRef = asset.requireBlobRef();
-					Blob blob = Objects.requireNonNull(blobStoreManager.get(blobRef.getStore())).get(blobRef.getBlobId());
-					if(blob == null) {
-						String msg = "Program error: can not get blob for asset " + asset.name();
-						log.error(msg);
-						listOfFailures.add(new FailedCheck(component, msg));
-					} else {
-							try (InputStream bis = blob.getInputStream()) {
-								int level = 0;
-								XMLEventReader reader = xmlInputFactory.createXMLEventReader(bis);
-
-								boolean hasProject = false,
-									 hasLicense = false,
-									 licensesSection = false,
-									 developersSection = false,
-									 parentSection = false,
-									 hasSCM = false,
-									 hasGroup = false,
-									 hasArtifact = false,
-									 hasVersion = false,
-									 hasSnapshotVersion = false,
-									 hasDeveloperInfo = false,
-									 hasProjectName = false,
-									 hasProjectDescription = false,
-									 hasProjectURL = false;
+					boolean hasProject = false,
+						 hasLicense = false,
+						 licensesSection = false,
+						 developersSection = false,
+						 parentSection = false,
+						 hasSCM = false,
+						 hasGroup = false,
+						 hasArtifact = false,
+						 hasVersion = false,
+						 hasSnapshotVersion = false,
+						 hasDeveloperInfo = false,
+						 hasProjectName = false,
+						 hasProjectDescription = false,
+						 hasProjectURL = false;
 
 
-								while (reader.hasNext()) {
-									XMLEvent event = reader.nextEvent();
+					while (reader.hasNext()) {
+						XMLEvent event = reader.nextEvent();
 
-									if (event.isStartElement()) {
-										level++;
-										StartElement startElement = event.asStartElement();
-										switch (startElement.getName().getLocalPart()) {
-											case "project":
-												hasProject = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "project", level, 1);
-												break;
-											case "scm":
-												hasSCM = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "source code source (scm)", level, 2);
-												break;
-											case "license":
-												// license is in the expected place in xml (level and inside licenses block)
-												if(checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "license", level, 3))
-												    hasLicense |= licensesSection; // the right section is also required
-												break;
-											case "licenses":
-												licensesSection = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "licenses section", level, 2);
-												break;
-											case "developer":
-												// developer is in the expected place in xml (level and inside licenses block)
-												if(checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "developer", level, 3))
-												    hasDeveloperInfo |= developersSection; // the right section is also required
-												break;
-											case "developers":
-												developersSection = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "developers section", level, 2);
-												break;
-											case "organization":
-												// this can be considered developer info as well
-												hasDeveloperInfo = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "source code source (scm)", level, 2);
-												break;
-											case "name":
-												hasProjectName = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "name", level, 2);
-												break;
-											case "description":
-												hasProjectDescription = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "description", level, 2);
-												break;
-											case "url":
-												if(level == 2) // url tag may be elsewhere, which is all right so no complaining
-													hasProjectURL = true;
-												break;
-											case "parent":
-												parentSection  = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "parent", level, 2);
-												break;
-											case "groupId":
-												if(level==2 || level == 3 && parentSection)
-													hasGroup = true;
-												break;
-											case "artifactId":
-												if(level == 2)
-													hasArtifact = true;
-											case "version":
-												XMLEvent versionEvent = reader.peek();
-												if(versionEvent.isCharacters()) {
-													if(versionEvent.asCharacters().getData().endsWith("-SNAPSHOT")) {
-														hasSnapshotVersion = true;
-													}
-													if(level==2 || level == 3 && parentSection) {
-														hasVersion = true;
-													}
-												} else {
-														String msg = asset.name() + " at [" + versionEvent.getLocation().getLineNumber()+":"+versionEvent.getLocation().getColumnNumber()   + "]: the version element should contain a string!";
-														log.info("Failed PomXMLValidationCheck: "+msg);
-														listOfFailures.add(new FailedCheck(component, msg));
-												}
-
-												break;
+						if (event.isStartElement()) {
+							level++;
+							StartElement startElement = event.asStartElement();
+							switch (startElement.getName().getLocalPart()) {
+								case "project":
+									hasProject = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "project", level, 1);
+									break;
+								case "scm":
+									hasSCM = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "source code source (scm)", level, 2);
+									break;
+								case "license":
+									// license is in the expected place in xml (level and inside licenses block)
+									if(checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "license", level, 3))
+										hasLicense |= licensesSection; // the right section is also required
+									break;
+								case "licenses":
+									licensesSection = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "licenses section", level, 2);
+									break;
+								case "developer":
+									// developer is in the expected place in xml (level and inside licenses block)
+									if(checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "developer", level, 3))
+										hasDeveloperInfo |= developersSection; // the right section is also required
+									break;
+								case "developers":
+									developersSection = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "developers section", level, 2);
+									break;
+								case "organization":
+									// this can be considered developer info as well
+									hasDeveloperInfo = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "source code source (scm)", level, 2);
+									break;
+								case "name":
+									hasProjectName = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "name", level, 2);
+									break;
+								case "description":
+									hasProjectDescription = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "description", level, 2);
+									break;
+								case "url":
+									if(level == 2) // url tag may be elsewhere, which is all right so no complaining
+										hasProjectURL = true;
+									break;
+								case "parent":
+									parentSection  = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "parent", level, 2);
+									break;
+								case "groupId":
+									if(level==2 || level == 3 && parentSection)
+										hasGroup = true;
+									break;
+								case "artifactId":
+									if(level == 2)
+										hasArtifact = true;
+								case "version":
+									XMLEvent versionEvent = reader.peek();
+									if(versionEvent.isCharacters()) {
+										if(versionEvent.asCharacters().getData().endsWith("-SNAPSHOT")) {
+											hasSnapshotVersion = true;
 										}
-									} else if (event.isEndElement()) {
-										level--;
-										EndElement endElement = event.asEndElement();
-										switch (endElement.getName().getLocalPart()) {
-											case "licenses":
-												licensesSection = false;
-												break;
-											case "developers":
-												developersSection = false;
-												break;
-											case "parent":
-												parentSection = false;
-												break;
+										if(level==2 || level == 3 && parentSection) {
+											hasVersion = true;
 										}
-
+									} else {
+											String msg = asset.name() + " at [" + versionEvent.getLocation().getLineNumber()+":"+versionEvent.getLocation().getColumnNumber()   + "]: the version element should contain a string!";
+											log.info("Failed PomXMLValidationCheck: "+msg);
+											listOfFailures.add(new FailedCheck(component, msg));
 									}
 
-								}
-
-								if(! mavenCentralDeployTaskConfiguration.getDisableHasProject() && !hasProject) {
-									String msg = asset.name() + " does not have required project root!";
-									log.info("Failed PomXMLValidationCheck: "+msg);
-									listOfFailures.add(new FailedCheck(component, msg));
-								}
-
-								if(hasProject) {
-									// if there is no project it does not make any sense to report anything else from here
-
-									if (!mavenCentralDeployTaskConfiguration.getDisableHasSCM() && !hasSCM) {
-										String msg = asset.name() + " does not have source code repository specified (scm)!";
-										log.info("Failed PomXMLValidationCheck: " + msg);
-										listOfFailures.add(new FailedCheck(component, msg));
-									}
-									if (!mavenCentralDeployTaskConfiguration.getDisableHasLicense() && !hasLicense) {
-										String msg = asset.name() + " does not have any license specified!";
-										log.info("Failed PomXMLValidationCheck: " + msg);
-										listOfFailures.add(new FailedCheck(component, msg));
-									}
-									if (!mavenCentralDeployTaskConfiguration.getDisableHasProjectName() && !hasProjectName) {
-										String msg = asset.name() + " does not have the project name specified!";
-										log.info("Failed PomXMLValidationCheck: " + msg);
-										listOfFailures.add(new FailedCheck(component, msg));
-									}
-									if (!mavenCentralDeployTaskConfiguration.getDisableHasDeveloperInfo() && !hasDeveloperInfo) {
-										String msg = asset.name() + " does not have any developer information specified!";
-										log.info("Failed PomXMLValidationCheck: " + msg);
-										listOfFailures.add(new FailedCheck(component, msg));
-									}
-									if (!mavenCentralDeployTaskConfiguration.getDisableHasProjectDescription() && !hasProjectDescription) {
-										String msg = asset.name() + " does not have the project description specified!";
-										log.info("Failed PomXMLValidationCheck: " + msg);
-										listOfFailures.add(new FailedCheck(component, msg));
-									}
-									if (!mavenCentralDeployTaskConfiguration.getDisableHasProjectURL() && !hasProjectURL) {
-										String msg = asset.name() + " does not have the project URL specified!";
-										log.info("Failed PomXMLValidationCheck: " + msg);
-										listOfFailures.add(new FailedCheck(component, msg));
-									}
-									if (!mavenCentralDeployTaskConfiguration.getDisableHasGroup() && !hasGroup) {
-										String msg = asset.name() + " does not have the project group specified!";
-										log.info("Failed PomXMLValidationCheck: " + msg);
-										listOfFailures.add(new FailedCheck(component, msg));
-									}
-									if (!mavenCentralDeployTaskConfiguration.getDisableHasArtifact() && !hasArtifact) {
-										String msg = asset.name() + " does not have the artifact specified!";
-										log.info("Failed PomXMLValidationCheck: " + msg);
-										listOfFailures.add(new FailedCheck(component, msg));
-									}
-									if (!mavenCentralDeployTaskConfiguration.getDisableHasVersion() && !hasVersion) {
-										String msg = asset.name() + " does not have the project version specified!";
-										log.info("Failed PomXMLValidationCheck: " + msg);
-										listOfFailures.add(new FailedCheck(component, msg));
-									}
-									if (!mavenCentralDeployTaskConfiguration.getDisableHasSnapshotVersion() && hasSnapshotVersion) {
-										String msg = asset.name() + " contains a dependency on a SNAPSHOT artifact!";
-										log.info("Failed PomXMLValidationCheck: " + msg);
-										listOfFailures.add(new FailedCheck(component, msg));
-									}
-								}
-
-							} catch (IOException e) {
-								String msg = "Program error: error getting file content " + asset.name()+": "+e.getMessage();
-								log.error(msg);
-								listOfFailures.add(new FailedCheck(component, msg));
-							} catch (XMLStreamException e) {
-								String msg = asset.name() + " parsing error: " + e.getMessage().replace("\n", "");
-								log.info("Failed PomXMLValidationCheck: "+msg);
-								listOfFailures.add(new FailedCheck(component, msg));
+									break;
 							}
+						} else if (event.isEndElement()) {
+							level--;
+							EndElement endElement = event.asEndElement();
+							switch (endElement.getName().getLocalPart()) {
+								case "licenses":
+									licensesSection = false;
+									break;
+								case "developers":
+									developersSection = false;
+									break;
+								case "parent":
+									parentSection = false;
+									break;
+							}
+
+						}
 
 					}
 
+					if(! mavenCentralDeployTaskConfiguration.getDisableHasProject() && !hasProject) {
+						String msg = asset.name() + " does not have required project root!";
+						log.info("Failed PomXMLValidationCheck: "+msg);
+						listOfFailures.add(new FailedCheck(component, msg));
+					}
 
+					if(hasProject) {
+						// if there is no project it does not make any sense to report anything else from here
+
+						if (!mavenCentralDeployTaskConfiguration.getDisableHasSCM() && !hasSCM) {
+							String msg = asset.name() + " does not have source code repository specified (scm)!";
+							log.info("Failed PomXMLValidationCheck: " + msg);
+							listOfFailures.add(new FailedCheck(component, msg));
+						}
+						if (!mavenCentralDeployTaskConfiguration.getDisableHasLicense() && !hasLicense) {
+							String msg = asset.name() + " does not have any license specified!";
+							log.info("Failed PomXMLValidationCheck: " + msg);
+							listOfFailures.add(new FailedCheck(component, msg));
+						}
+						if (!mavenCentralDeployTaskConfiguration.getDisableHasProjectName() && !hasProjectName) {
+							String msg = asset.name() + " does not have the project name specified!";
+							log.info("Failed PomXMLValidationCheck: " + msg);
+							listOfFailures.add(new FailedCheck(component, msg));
+						}
+						if (!mavenCentralDeployTaskConfiguration.getDisableHasDeveloperInfo() && !hasDeveloperInfo) {
+							String msg = asset.name() + " does not have any developer information specified!";
+							log.info("Failed PomXMLValidationCheck: " + msg);
+							listOfFailures.add(new FailedCheck(component, msg));
+						}
+						if (!mavenCentralDeployTaskConfiguration.getDisableHasProjectDescription() && !hasProjectDescription) {
+							String msg = asset.name() + " does not have the project description specified!";
+							log.info("Failed PomXMLValidationCheck: " + msg);
+							listOfFailures.add(new FailedCheck(component, msg));
+						}
+						if (!mavenCentralDeployTaskConfiguration.getDisableHasProjectURL() && !hasProjectURL) {
+							String msg = asset.name() + " does not have the project URL specified!";
+							log.info("Failed PomXMLValidationCheck: " + msg);
+							listOfFailures.add(new FailedCheck(component, msg));
+						}
+						if (!mavenCentralDeployTaskConfiguration.getDisableHasGroup() && !hasGroup) {
+							String msg = asset.name() + " does not have the project group specified!";
+							log.info("Failed PomXMLValidationCheck: " + msg);
+							listOfFailures.add(new FailedCheck(component, msg));
+						}
+						if (!mavenCentralDeployTaskConfiguration.getDisableHasArtifact() && !hasArtifact) {
+							String msg = asset.name() + " does not have the artifact specified!";
+							log.info("Failed PomXMLValidationCheck: " + msg);
+							listOfFailures.add(new FailedCheck(component, msg));
+						}
+						if (!mavenCentralDeployTaskConfiguration.getDisableHasVersion() && !hasVersion) {
+							String msg = asset.name() + " does not have the project version specified!";
+							log.info("Failed PomXMLValidationCheck: " + msg);
+							listOfFailures.add(new FailedCheck(component, msg));
+						}
+						if (!mavenCentralDeployTaskConfiguration.getDisableHasSnapshotVersion() && hasSnapshotVersion) {
+							String msg = asset.name() + " contains a dependency on a SNAPSHOT artifact!";
+							log.info("Failed PomXMLValidationCheck: " + msg);
+							listOfFailures.add(new FailedCheck(component, msg));
+						}
+					}
+
+				} catch (IOException e) {
+					String msg = "Program error: error getting file content " + asset.name()+": "+e.getMessage();
+					log.error(msg);
+					listOfFailures.add(new FailedCheck(component, msg));
+				} catch (XMLStreamException e) {
+					String msg = asset.name() + " parsing error: " + e.getMessage().replace("\n", "");
+					log.info("Failed PomXMLValidationCheck: "+msg);
+					listOfFailures.add(new FailedCheck(component, msg));
 				}
+
 			}
 		}
-
-
 	}
 
 	private static StringBuilder errorMessage(String assetName, Location location) {

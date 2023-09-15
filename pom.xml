@@ -74,7 +74,12 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- new stuff -->
+        <dependency>
+            <groupId>org.sonatype.nexus.plugins</groupId>
+            <artifactId>nexus-repository-maven</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.sonatype.nexus</groupId>
             <artifactId>nexus-capability</artifactId>

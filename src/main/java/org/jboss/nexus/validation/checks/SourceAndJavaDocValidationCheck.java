@@ -2,9 +2,9 @@ package org.jboss.nexus.validation.checks;
 
 import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
 import org.jboss.nexus.constants.FileExtensions;
+import org.jboss.nexus.content.Asset;
+import org.jboss.nexus.content.Component;
 import org.jetbrains.annotations.NotNull;
-import org.sonatype.nexus.repository.storage.Asset;
-import org.sonatype.nexus.repository.storage.Component;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -78,5 +78,4 @@ public class SourceAndJavaDocValidationCheck extends CentralValidation {
 	 static String makeSourceCodeName(@NotNull String fileName) {
 		return fileName.substring(0, fileName.length()-4)+FileExtensions.EXTENSION_SOURCES;
 	}
-
 }

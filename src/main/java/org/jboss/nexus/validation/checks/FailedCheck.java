@@ -1,6 +1,6 @@
 package org.jboss.nexus.validation.checks;
 
-import org.sonatype.nexus.repository.storage.Component;
+import org.jboss.nexus.content.Component;
 
 import java.util.Objects;
 
@@ -31,11 +31,11 @@ public class FailedCheck {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FailedCheck that = (FailedCheck) o;
-        return Objects.equals(getComponent().requireGroup(), that.getComponent().requireGroup()) && Objects.equals(getComponent().requireVersion(), that.getComponent().requireVersion()) && Objects.equals(getComponent().name(), that.getComponent().name()) && Objects.equals(getProblem(), that.getProblem());
+        return Objects.equals(getComponent().group(), that.getComponent().group()) && Objects.equals(getComponent().version(), that.getComponent().version()) && Objects.equals(getComponent().name(), that.getComponent().name()) && Objects.equals(getProblem(), that.getProblem());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getComponent().requireGroup(), getComponent().name(), getComponent().requireVersion(), getProblem());
+        return Objects.hash(getComponent().group(), getComponent().name(), getComponent().version(), getProblem());
     }
 }

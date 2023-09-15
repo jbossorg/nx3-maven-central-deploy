@@ -157,13 +157,13 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 		// project
 		String project = (String) processedVariables.get(JiraTestReportCapabilityConfiguration.PROJECT);
 		if(StringUtils.isEmpty(project))
-			throw new RuntimeException("Project is not defined!");
+			throw new RuntimeException("Not able to create the Jira report: Project is not defined!");
 		processedVariables.put(JiraTestReportServerInformation.PROJECT_ID, jiraTestReportServerInformation.findProjectID(project));
 
 		// issue type
 		String issue = (String) processedVariables.get(JiraTestReportCapabilityConfiguration.ISSUE_TYPE);
 		if(StringUtils.isEmpty(issue))
-			throw new RuntimeException("Issue type is not defined!");
+			throw new RuntimeException("Not able to create the Jira report: Issue type for it is not defined!");
 		processedVariables.put(JiraTestReportServerInformation.ISSUE_TYPE_ID, jiraTestReportServerInformation.findIssueTypeID(issue));
 
 		// priority (not required)
@@ -204,7 +204,7 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 			description = templateHelper.render(description, processedVariables).replaceAll("(\\r)?\\n", "");
 			processedVariables.put(JiraTestReportCapabilityConfiguration.DESCRIPTION, description);
 		} catch (RuntimeException e) {
-			String message = "Error processing description template: " + e.getMessage();
+			String message = "Error processing Jira ticket description template: " + e.getMessage();
 			log.error(message, e);
 			throw new RuntimeException(message);
 		}
@@ -214,7 +214,7 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 			jsonString = templateHelper.render(template, processedVariables);
 			jsonString = templateHelper.render(jsonString, processedVariables); // summary, some user defined variables and such may also use variables so let's re-apply
 		} catch (RuntimeException e) {
-			String message = "Error processing issue main template: " + e.getMessage();
+			String message = "Error processing issue main Jira ticket template: " + e.getMessage();
 			log.error(message, e);
 			throw new RuntimeException(message);
 		}

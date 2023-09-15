@@ -67,7 +67,7 @@ public class JiraTestReportServerInformationTest {
 	@Test
 	public void findSecurityIDReal() {
 		tested = new JiraTestReportServerInformation(new JiraTestReportCapabilityDescriptor());
-		tested.setJiraConnectionInformation("https://issues.stage.redhat.com", null, "OTI0MzYzMTU3NzkxOtFIE8Rt3ssgKr8DR17o6fH96pL4", null,"squid.corp.redhat.com", 3128); // fixme credentials remove!
+		tested.setJiraConnectionInformation("https://issues.stage.redhat.com", null, "", null,"squid.corp.redhat.com", 3128); // fixme credentials remove!
 
 		tested.findIssueTypeID("Bug");
 

@@ -3,15 +3,10 @@ package org.jboss.nexus;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.jboss.nexus.content.Component;
 import org.jboss.nexus.validation.checks.FailedCheck;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.sonatype.nexus.common.entity.Entity;
 import org.sonatype.nexus.common.entity.EntityId;
-import org.sonatype.nexus.common.entity.EntityMetadata;
-import org.sonatype.nexus.common.entity.EntityVersion;
-import org.sonatype.nexus.repository.storage.Component;
-import org.sonatype.nexus.repository.storage.DefaultComponent;
 
 import javax.inject.Named;
 import java.io.*;
@@ -93,67 +88,27 @@ public class TemplateRenderingHelper {
 		}
 	}
 
-	public static class FictiveComponent extends DefaultComponent {
+	public static class FictiveComponent extends Component {
+		private static int entityIdCounter = 0;
 
-		public FictiveComponent() {
-			id = ++counter;
-		}
-
-		private final int id;
-
-		private static int counter = 0;
-		@Override
-		public int hashCode() {
-			return Objects.hash(group(), name(), version(), format());
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if(obj.getClass() != FictiveComponent.class)
-				return false;
-
-			if(obj == this)
-				return true;
-
-			FictiveComponent that = (FictiveComponent) obj;
-
-			return  Objects.equals(group(), that.group()) && Objects.equals(name(), that.name()) && Objects.equals(version(), version()) && Objects.equals(format(), that.format());
-		}
-
-		@Nullable
-		@Override
-		public EntityMetadata getEntityMetadata() {
-			return new EntityMetadata() {
-				@NotNull
-				@Override
-				public EntityId getId() {
-					return () -> String.valueOf(FictiveComponent.this.id);
-				}
+		public FictiveComponent(String group, String name, String version) {
+			super(new EntityId() {
+				private final String entityId = String.valueOf(entityIdCounter++);
 
 				@NotNull
 				@Override
-				public EntityVersion getVersion() {
-					return FictiveComponent.this::requireVersion;
+				public String getValue() {
+					return entityId;
 				}
-
-				@Override
-				public <T> Optional<Class<T>> getEntityType() {
-					return Optional.empty();
-				}
-
-				@Override
-				public <T extends Entity> Optional<T> getEntity() {
-					return Optional.empty();
-				}
-			};
+			}, group, name, version);
 		}
 	}
 
 	private static final List<FailedCheck> failedChecks ;
 	static {
-		Component component1 = new FictiveComponent().group("org.jboss.failed").name("failed-1").version("1.2.3").format("maven2");
-		Component component2 = new FictiveComponent().group("org.jboss.failed").name("failed-2").version("1.2.3").format("maven2");
-		Component component3 = new FictiveComponent().group("org.something.failed").name("another").version("3.2.1").format("maven2");
+		Component component1 = new FictiveComponent("org.jboss.failed", "failed-1", "1.2.3");
+		Component component2 = new FictiveComponent("org.jboss.failed", "failed-2", "1.2.3");
+		Component component3 = new FictiveComponent("org.something.failed", "another", "3.2.1");
 
 		List<FailedCheck> list = new ArrayList<>();
 

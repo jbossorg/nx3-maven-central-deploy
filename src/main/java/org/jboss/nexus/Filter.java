@@ -3,13 +3,11 @@ package org.jboss.nexus;
 import com.sonatype.nexus.tags.orient.OrientTag;
 import com.sonatype.nexus.tags.orient.TagComponent;
 import org.apache.commons.lang3.StringUtils;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.sonatype.nexus.repository.storage.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 
 public class Filter {
@@ -111,7 +109,7 @@ public class Filter {
 		Operator operator;
 
 		/** Parses the string, that looks something like xy=zz. The operator gets identified. Attribute and value are stored in the fields.
-		 * 
+		 *
 		 * @param attrExpression expression to be parsed
 		 *
 		 * @throws RuntimeException when there is an error in the string
@@ -208,21 +206,24 @@ public class Filter {
 	/** Returns artifact name to be searched for.
 	 *
 	 * @return artifact name
-	 */	public String getArtifact() {
+	 */
+	public String getArtifact() {
 		return artifact;
 	}
 
 	/** Returns version of the artifact to be searched for.
 	 *
 	 * @return version
-	 */	public String getVersion() {
+	 */
+	public String getVersion() {
 		return version;
 	}
 
 	/** Returns tag name of the artifact to be searched for.
 	 *
 	 * @return tag name
-	 */	public String getTag() {
+	 */
+	public String getTag() {
 		return tag;
 	}
 
@@ -262,10 +263,12 @@ public class Filter {
 
 
 	/** Returns string, that will be searched for by Nexus based on the filter setting to narrow the selection of artifacts.
+	 * It should be used, when
+	 * <i>nexus.datastore.enabled=false</i>
 	 *
 	 * @return null or string, that will be matched against group OR artifact OR version during repository crawling
 	 */
-	public String getSearchString() {
+	public String getOrientDBSearchString() {
 		if(StringUtils.isNotBlank(getUnspecified()))
 			return getUnspecified();
 
@@ -281,13 +284,115 @@ public class Filter {
 		return null;
 	}
 
-	/** Verifies, that the current component matches the filter conditions.
+
+	/** Search string when <br>
+	 * <i>nexus.datastore.enabled=true</i>
+	 *
+	 * @return search string for {@link org.sonatype.nexus.repository.content.fluent.FluentComponents#byFilter(String, Map)} or an empty string
+	 */
+	public String getDatabaseSearchString() {
+		StringBuilder result = new StringBuilder(); // todo check if the names are OK
+
+		if (StringUtils.isNotBlank(getGroup())) {
+			result.append(" AND namespace = #{filterParams.groupId}");
+		}
+
+		if (StringUtils.isNotBlank(getArtifact())) { // todo I do not know if it is the right name
+			result.append(" AND name = #{filterParams.name}");
+		}
+
+		if (StringUtils.isNotBlank(getVersion())) {
+			if(getVersionOperation().equals(LogicalOperation.Operator.EQ)) {
+				result.append(" AND version = #{filterParams.version}");
+			} else if(getVersionOperation().equals(LogicalOperation.Operator.NE))
+				result.append(" AND version != #{filterParams.version}");
+		}
+
+		if(StringUtils.isNotBlank(getUnspecified())) {
+			result.append(" AND (version = #{filterParams.unspecified} OR name = #{filterParams.unspecified} OR namespace = #{filterParams.unspecified})");
+		}
+
+		if(result.length() > 4)
+			return result.substring(5); // cut leading " AND "
+
+		return ""; // no GAV filtering
+	}
+
+
+	/** <p>Search parameters when <br>
+	 * <i>nexus.datastore.enabled=true</i></p>
+	 *
+	 *
+	 * @return search parameters for {@link org.sonatype.nexus.repository.content.fluent.FluentComponents#byFilter(String, Map)}
+	 */
+	@NotNull
+	public Map<String, Object> getDatabaseSearchParameters() {
+		final HashMap<String, Object>  result = new HashMap<>();
+		if (StringUtils.isNotBlank(getGroup()) ) {
+			result.put("groupId", getGroup());
+		}
+
+		if(StringUtils.isNotBlank(getArtifact())) {
+			result.put("name", getArtifact()); // todo verify the name!
+		}
+
+
+		if(StringUtils.isNotBlank(getVersion())) {
+			result.put("version", getVersion());
+		}
+
+		if (StringUtils.isNotBlank(getUnspecified()))
+			result.put("unspecified", getUnspecified());
+
+		return Collections.unmodifiableMap(result); // TODO: junit
+	}
+
+
+	/** Verifies, that the current (database component matches the filter conditions.
 	 *
 	 * @param component component to be checked
 	 *
 	 * @return true if the component corresponds to the search conditions
 	 */
-	public boolean checkComponent(Component component) {
+	public boolean checkComponent(org.sonatype.nexus.repository.content.fluent.FluentComponent component) {
+		// no evaluation of group and artifact as those should be filtered out through database query
+
+		if(StringUtils.isNotEmpty(getVersion()))
+			if(!FunctionMapping.resolve(getVersionOperation(), component.version(), getVersion()))
+				return false;
+
+//		if (StringUtils.isNotEmpty(getTag()))
+//			if(((TagComponent)component).tags().stream().noneMatch( t -> FunctionMapping.resolve(getTagOperation(), t.name(), getTag())))
+//				return false;
+//
+//		if (!tagAttributeOperations.isEmpty() ) {
+//			for(TagAttributeExpression tagAttributeExpression : tagAttributeOperations) {
+//				boolean found = false;
+//				for (OrientTag tag : ((TagComponent) component).tags()) {
+//					Object object = tag.attributes().get(tagAttributeExpression.tagAttr);
+//					if (object != null && String.class.isAssignableFrom(object.getClass())) {
+//						found = FunctionMapping.resolve(tagAttributeExpression.tagAttrOperation, (String) object, tagAttributeExpression.tagAttrValue);
+//						if (found)
+//							break;
+//					}
+//				}
+//				if(!found)
+//					return false;
+//			}
+
+
+
+		return true; // todo resolve tag verification
+
+	}
+
+	/** Verifies, that the current (OrientDB) component matches the filter conditions.
+	 *
+	 * @param component component to be checked
+	 *
+	 * @return true if the component corresponds to the search conditions
+	 */
+	public boolean checkComponent(org.sonatype.nexus.repository.storage.Component component) {
 		if(StringUtils.isNotEmpty(getGroup()))
 			if(!Objects.equals(getGroup(), component.group()))
 				return false;

@@ -1,11 +1,11 @@
 package org.jboss.nexus.validation.checks;
 import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
+import org.jboss.nexus.content.Asset;
+import org.jboss.nexus.content.Component;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.sonatype.nexus.repository.storage.Asset;
-import org.sonatype.nexus.repository.storage.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,7 +20,7 @@ public class ChecksumsPresentValidationCheckTest {
 
         private List<FailedCheck> failedChecks;
 
-        private ChecksumsPresentValidationCheck testObject  = new ChecksumsPresentValidationCheck();
+        private final ChecksumsPresentValidationCheck testObject  = new ChecksumsPresentValidationCheck();
 
         private MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration;
 
