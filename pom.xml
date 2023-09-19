@@ -12,9 +12,8 @@
     <name>${project.groupId}:${project.artifactId}</name>
     <packaging>pom</packaging>
 
-
-    <groupId>org.jboss.nexus.nx3-maven-central-deploy</groupId>
-    <artifactId>nx3-maven-central-deploy</artifactId>
+    <groupId>org.jboss.nexus</groupId>
+    <artifactId>nx3-maven-central-deploy-parent</artifactId>
     <version>3.57.0-01-SNAPSHOT</version>
     <description>Plugin for deployment of artifacts from Sonatype Nexus 3 repositories to Maven Central.</description>
 
@@ -113,7 +112,7 @@
     </dependencies>
 
   <modules>
-    <module>common</module>
+    <module>nx3-maven-central-deploy</module>
     <module>nx3-maven-central-deploy-orientdb</module>
     <module>nx3-maven-central-deploy-database</module>
   </modules>

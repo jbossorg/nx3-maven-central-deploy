@@ -37,12 +37,6 @@ public class MavenCentralDeploy extends ComponentSupport {
 
     private final RepositoryManager repositoryManager;
 
-//    private BrowseService browseService;
-
-
-
-    private final BlobStoreManager blobStoreManager;
-
     private final Set<TestReportCapability<?>> reports;
 
     private final TagStore tagStore;
@@ -57,7 +51,6 @@ public class MavenCentralDeploy extends ComponentSupport {
     /** Constructor for Nexus running in the database configuration.
      *
      * @param repositoryManager repository manager
-     * @param blobStoreManager blob store manager
      * @param validations validations to be registered for handling
      * @param reports reports to be registered for handling
      * @param tagStore tag store
@@ -65,18 +58,16 @@ public class MavenCentralDeploy extends ComponentSupport {
      * @param templateRenderingHelper helper method for Velocity rendering
      */
     @Inject
-    public MavenCentralDeploy(RepositoryManager repositoryManager, @Nullable BlobStoreManager blobStoreManager, Set<CentralValidation> validations, Set<TestReportCapability<?>> reports, @Nullable TagStore tagStore, @Nullable TagService tagService, TemplateRenderingHelper templateRenderingHelper, ContentBrowser contentBrowser) {
+    public MavenCentralDeploy(RepositoryManager repositoryManager, Set<CentralValidation> validations, Set<TestReportCapability<?>> reports, @Nullable TagStore tagStore, @Nullable TagService tagService, TemplateRenderingHelper templateRenderingHelper, ContentBrowser contentBrowser) {
         this.repositoryManager = checkNotNull(repositoryManager);
         this.templateRenderingHelper = checkNotNull(templateRenderingHelper);
-        this.blobStoreManager = blobStoreManager;
         this.reports = reports;
         this.tagStore = tagStore; // I expect this may be null in the community version
         this.tagService = tagService;
         this.contentBrowser = contentBrowser;
     }
 
-
-
+    @SuppressWarnings("unused")
     public static final int SEARCH_COMPONENT_PAGE_SIZE = 5;
 
    public void processDeployment(MavenCentralDeployTaskConfiguration configuration) {
