@@ -1,5 +1,6 @@
-package org.jboss.nexus.content;
+package org.jboss.nexus.contentimpl;
 
+import org.jboss.nexus.content.Asset;
 import org.sonatype.nexus.repository.content.fluent.FluentAsset;
 import org.sonatype.nexus.repository.view.Content;
 

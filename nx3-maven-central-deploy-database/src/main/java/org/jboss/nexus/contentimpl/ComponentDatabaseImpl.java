@@ -1,5 +1,6 @@
-package org.jboss.nexus.content;
+package org.jboss.nexus.contentimpl;
 
+import org.jboss.nexus.content.Component;
 import org.sonatype.nexus.common.entity.DetachedEntityId;
 import org.sonatype.nexus.common.entity.EntityHelper;
 import org.sonatype.nexus.repository.content.fluent.FluentComponent;
