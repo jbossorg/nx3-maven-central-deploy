@@ -9,17 +9,20 @@ import java.util.*;
 /** Parent class for working with artifacts.  */
 public abstract class Component {
 
-    protected Component(EntityId entityId, String group, String name, String version, Set<Tag> tags) {
-        this(entityId, group,name, version);
+    protected Component(EntityId entityId, String group, String name, String version, long created, Set<Tag> tags) {
+        this(entityId, group,name, version, created);
         this.tags.addAll(tags);
     }
 
-    protected Component(EntityId entityId, String group, String name, String version) {
+    protected Component(EntityId entityId, String group, String name, String version, long created) {
         this.group = group;
         this.name = name;
         this.version = version;
         this.entityId = entityId;
+        this.created = created;
     }
+
+    private final long created;
 
     private final String group, name, version;
 
@@ -35,7 +38,7 @@ public abstract class Component {
      */
     public String group() {
         return group;
-    };
+    }
 
     /** Artifact name.
      *
@@ -43,7 +46,7 @@ public abstract class Component {
      */
     public String name() {
         return name;
-    };
+    }
 
     /** Version of the component.
      *
@@ -51,7 +54,7 @@ public abstract class Component {
      */
     public String version() {
         return version;
-    };
+    }
 
 
     public EntityId entityId() {
@@ -65,7 +68,7 @@ public abstract class Component {
      */
     public @NotNull Set<Tag> tags() {
         return tags;
-    }; // fixme probably not needed!
+    }
 
     /** Assets, that belong to the component
      *
@@ -74,6 +77,16 @@ public abstract class Component {
     public @NotNull List<Asset> assetsInside() {
         return assetList;
     } // fixme probably not needed
+
+    /** Time, when the component was created (in seconds from January 1st 1970)
+     *
+     * @see java.time.OffsetDateTime#toEpochSecond()
+     *
+     * @return time, when the component was added to the system
+     */
+    public long getCreated() {
+        return created;
+    }
 
     @Override
     public int hashCode() {

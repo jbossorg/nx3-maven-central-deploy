@@ -16,7 +16,6 @@ import org.jboss.nexus.validation.reporting.TestReportCapability;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.sonatype.goodies.common.ComponentSupport;
-import org.sonatype.nexus.blobstore.api.BlobStoreManager;
 import org.sonatype.nexus.common.collect.NestedAttributesMap;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.manager.RepositoryManager;
@@ -69,6 +68,8 @@ public class MavenCentralDeploy extends ComponentSupport {
 
     @SuppressWarnings("unused")
     public static final int SEARCH_COMPONENT_PAGE_SIZE = 5;
+
+    private long lastDeployedArtifact;
 
    public void processDeployment(MavenCentralDeployTaskConfiguration configuration) {
         log.info("Deploying content.....");
@@ -255,6 +256,8 @@ public class MavenCentralDeploy extends ComponentSupport {
     }
 
     void publishArtifact(Component component) {
+
+
        // TODO: 06.03.2023 push the content to Maven Central
 
         // TODO: 15.09.2023 also remove possible error tag from the artifact

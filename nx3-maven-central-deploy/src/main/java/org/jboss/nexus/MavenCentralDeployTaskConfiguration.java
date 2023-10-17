@@ -1,6 +1,7 @@
 package org.jboss.nexus;
 
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.sonatype.nexus.scheduling.TaskConfiguration;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -31,6 +32,9 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
     public static final String DISABLE_HAS_SOURCE_CODES = "disableHasSourceCodes";
     public static final String DISABLE_HAS_JAVADOC = "disableHasJavadoc";
 
+    public static final String LATEST_COMPONENT_TIME = "latestComponentTime";
+
+    public static final String PROCESSING_TIME_OFFSET = "processingTimeOffset";
 
     public static final String LATEST_STATUS = "latestStatus";
 
@@ -152,4 +156,39 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
         setString(LATEST_STATUS, latestStatus);
     }
 
+    /** Marks the creation time of the latest component, that was successfully deployed to Maven Central
+     *
+     * @param latestComponentTime time of the newest component successfully deployed in this deployment
+     */
+    public void setLatestComponentTime(String latestComponentTime) {
+        if(StringUtils.isNumeric(latestComponentTime)) {
+            setLong(LATEST_COMPONENT_TIME, Long.parseLong(latestComponentTime));
+        } else
+            setString(LATEST_COMPONENT_TIME, null); // remove the value from the configuration
+    }
+
+    /** Creation time of the last component, that was successfully published to Maven Central
+     *
+     * @return time in seconds after Jan 01st 1970
+     */
+    public Long getLatestComponentTime() {
+        return getLong(LATEST_COMPONENT_TIME, -1);
+    }
+
+    /** Sets the time, when new components will be ignored during the synchronization so the deployer has time to finish the deployment.
+     *
+     * @param processingTimeOffset minutes
+     */
+    public void setProcessingTimeOffset(Integer processingTimeOffset) {
+          setInteger(LATEST_COMPONENT_TIME, processingTimeOffset);
+    }
+
+
+    /** Gets the time, when new components will be ignored during the synchronization so the deployer has time to finish the deployment.
+     *
+     * @return minutes
+     */
+    public int getProcessingTimeOffset() {
+          return getInteger(LATEST_COMPONENT_TIME, 10);
+    }
 }

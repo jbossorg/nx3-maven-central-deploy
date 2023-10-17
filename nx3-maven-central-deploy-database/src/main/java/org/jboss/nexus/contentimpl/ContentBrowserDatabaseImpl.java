@@ -88,7 +88,11 @@ public class ContentBrowserDatabaseImpl implements ContentBrowser {
         if(browse.isEmpty())
             return null;
 
-        browse.stream().filter(filter::checkComponent).forEach(
+        long currentProcessingEpochTime = System.currentTimeMillis()/1000 - 60L * configuration.getProcessingTimeOffset();
+
+        browse.stream().filter(filter::checkComponent)
+                .filter(fluentComponent ->  fluentComponent.created().toEpochSecond() > configuration.getLatestComponentTime() && fluentComponent.created().toEpochSecond() < currentProcessingEpochTime )
+                .forEach(
                 fluentComponent -> {
                     List<SearchFilter> searchFilters = new ArrayList<>();
                     searchFilters.add(new SearchFilter("group.raw", fluentComponent.namespace()));
@@ -102,7 +106,8 @@ public class ContentBrowserDatabaseImpl implements ContentBrowser {
                     String id;
                     Iterator<ComponentSearchResult> iterator = components.iterator();
                     if(iterator.hasNext()) {
-                        id = iterator.next().getId();
+                        ComponentSearchResult next = iterator.next();
+                        id = next.getId();
                         if(iterator.hasNext())
                             throw new RuntimeException("Unexpected error: more than one "+fluentComponent.toStringExternal()+" found!");
                     } else

@@ -100,7 +100,7 @@ public class TemplateRenderingHelper {
 				public String getValue() {
 					return entityId;
 				}
-			}, group, name, version);
+			}, group, name, version, System.currentTimeMillis()/1000);
 		}
 	}
 

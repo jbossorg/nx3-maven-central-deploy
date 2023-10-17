@@ -1,12 +1,11 @@
 package org.jboss.nexus.content;
 
-import org.jboss.nexus.validation.checks.FailedCheck;
 import org.sonatype.nexus.blobstore.api.Blob;
 import org.sonatype.nexus.blobstore.api.BlobRef;
 import org.sonatype.nexus.blobstore.api.BlobStoreManager;
 
-import java.io.IOException;
 import java.io.InputStream;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 
 
@@ -16,6 +15,8 @@ public class AssetOrientDBImpl implements Asset {
     private final String name;
     private final BlobRef blobRef;
 
+    private final long created;
+
     private final BlobStoreManager blobStoreManager;
 
     public AssetOrientDBImpl(org.sonatype.nexus.repository.storage.Asset storageAsset, BlobStoreManager blobStoreManager) {
@@ -23,7 +24,7 @@ public class AssetOrientDBImpl implements Asset {
         this.name = storageAsset.name();
         this.blobRef = storageAsset.requireBlobRef();
         this.blobStoreManager = blobStoreManager;
-
+        this.created = storageAsset.blobCreated() == null ? -1 : Objects.requireNonNull(storageAsset.blobCreated()).getMillis() / 1000;
     }
 
     @Override
@@ -44,5 +45,15 @@ public class AssetOrientDBImpl implements Asset {
         } else {
             return blob.getInputStream();
         }
+    }
+
+    /** Returns epoch time in seconds after Jan 01 1970
+     *
+     * @see OffsetDateTime#toEpochSecond()
+     *
+     * @return time, when the blob was created
+     */
+    public long getCreated() {
+        return created;
     }
 }

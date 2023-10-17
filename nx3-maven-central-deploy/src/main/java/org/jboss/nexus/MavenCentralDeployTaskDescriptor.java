@@ -12,7 +12,6 @@
  */
 package org.jboss.nexus;
 
-import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -64,6 +63,18 @@ public class MavenCentralDeployTaskDescriptor
 
     @DefaultMessage("Uncheck while doing repeated testing. If checked, the processed artifacts are marked as deployed. With dry-run on it may be used for the initial marking of artifacts as deployed before you installed this plugin.")
     String markArtifactsAfterRunHelp();
+
+    @DefaultMessage("Processing Time Offset")
+    String processingTimeOffsetLabel();
+
+    @DefaultMessage("A time in minutes, when components will not yet be deployed by the task. The value is here in order to make sure the components are fully deployed to Nexus before they get checked and synchronization starts.")
+    String processingTimeOffsetHelp();
+
+    @DefaultMessage("Latest Run Timestamp")
+    String latestRunTimeStampLabel();
+
+    @DefaultMessage("Timestamp of the last component, that was successfully deployed to Maven Central. It is in seconds after January 1st 1970. You may remove it to re-publish already published content or set it to a specific value as needed.")
+    String latestRunTimeStampHelp();
 
     @DefaultMessage("Filter")
     String filterLabel();
@@ -184,6 +195,8 @@ public class MavenCentralDeployTaskDescriptor
           new RepositoryCombobox(MavenCentralDeployTaskConfiguration.REPOSITORY, messages.repositoryLabel(), messages.repositoryHelp(), FormField.MANDATORY).includingAnyOfFormats("maven2"),
           new CheckboxFormField(MavenCentralDeployTaskConfiguration.DRY_RUN, messages.dryRunLabel(), messages.dryRunHelp(), FormField.OPTIONAL).withInitialValue(true),
           new CheckboxFormField(MavenCentralDeployTaskConfiguration.MARK_ARTIFACTS, messages.markArtifactsAfterRunLabel(), messages.markArtifactsAfterRunHelp(), FormField.OPTIONAL).withInitialValue(false),
+          new NumberTextFormField(MavenCentralDeployTaskConfiguration.LATEST_COMPONENT_TIME, messages.latestRunTimeStampLabel(), messages.latestResultsHelp(), FormField.OPTIONAL),
+          new NumberTextFormField(MavenCentralDeployTaskConfiguration.PROCESSING_TIME_OFFSET, messages.processingTimeOffsetLabel(), messages.processingTimeOffsetHelp(), FormField.OPTIONAL).withInitialValue(10).withMinimumValue(0),
           new StringTextFormField(MavenCentralDeployTaskConfiguration.FILTER, messages.filterLabel(), messages.filterHelp(), FormField.OPTIONAL),
           new TextAreaFormField(MavenCentralDeployTaskConfiguration.VARIABLES, messages.variablesLabel(), messages.variablesHelp(), FormField.OPTIONAL),
 

@@ -40,41 +40,49 @@ public class ContentBrowserOrientDBImpl implements ContentBrowser{
     @Override
     public void prepareValidationData(Repository repository, Filter filter, MavenCentralDeployTaskConfiguration configuration, List<FailedCheck> listOfFailures, List<Component> toDeploy, Logger log) {
 
-              // ---------------------------------------------------------
-              // OrientDB Implementation (data saved on the local storage)
-              QueryOptions queryOptions = new QueryOptions(filter.getOrientDBSearchString(), "id", "asc", null, SEARCH_COMPONENT_PAGE_SIZE, null, false);
+          // ---------------------------------------------------------
+          // OrientDB Implementation (data saved on the local storage)
+          QueryOptions queryOptions = new QueryOptions(filter.getOrientDBSearchString(), "id", "asc", null, SEARCH_COMPONENT_PAGE_SIZE, null, false);
 
-              // TODO: 10.01.2023 add time filter to remove already updated stuff
-              PageResult<org.sonatype.nexus.repository.storage.Component> result = browseService.browseComponents(repository, queryOptions);
+          PageResult<org.sonatype.nexus.repository.storage.Component> result = browseService.browseComponents(repository, queryOptions);
 
-              int componentsCounter = SEARCH_COMPONENT_PAGE_SIZE;
+          int componentsCounter = SEARCH_COMPONENT_PAGE_SIZE;
 
-              if(result != null ) {
-                  // validation
-                  while (!result.getResults().isEmpty()) {
-                      CancelableHelper.checkCancellation();
+          long currentProcessingEpochTime = System.currentTimeMillis()/1000 - 60L * configuration.getProcessingTimeOffset();
 
-                      for (org.sonatype.nexus.repository.storage.Component storageComponent : result.getResults()) {
-                          if (filter.checkComponent(storageComponent)) {
-                              Component component = new ComponentOrientDBImpl(storageComponent);
+          if(result != null ) {
+              // validation
+              while (!result.getResults().isEmpty()) {
+                  CancelableHelper.checkCancellation();
+
+                  for (org.sonatype.nexus.repository.storage.Component storageComponent : result.getResults()) {
+                      if (filter.checkComponent(storageComponent)) {
+
+                          PageResult<org.sonatype.nexus.repository.storage.Asset> assetPageResult = browseService.browseComponentAssets(repository, storageComponent);
+                          List<Asset> assetsInside = assetPageResult.getResults().stream().map(storageAsset -> new AssetOrientDBImpl(storageAsset, blobStoreManager)).collect(Collectors.toList());
+
+                          long newestBlob = assetsInside.stream().mapToLong(asset -> ((AssetOrientDBImpl) asset).getCreated()).max().orElse(0);
+
+                          Component component = new ComponentOrientDBImpl(storageComponent, newestBlob);
+
+                          if (newestBlob < currentProcessingEpochTime && newestBlob > configuration.getLatestComponentTime()) {
                               log.info("Validating component: " + component.toStringExternal());
                               toDeploy.add(component);
 
-                              PageResult<org.sonatype.nexus.repository.storage.Asset> assetPageResult = browseService.browseComponentAssets(repository, storageComponent);
-
-                              List<Asset> assetsInside = assetPageResult.getResults().stream().map(storageAsset -> new AssetOrientDBImpl(storageAsset, blobStoreManager) ).collect(Collectors.toList());
                               for (CentralValidation validation : validations) {
                                   validation.validateComponent(configuration, component, assetsInside, listOfFailures);
                               }
+                          } else {
+                              log.debug("Component "+component.toStringExternal()+" was skipped due to being already deployed.");
                           }
                       }
-
-                      // todo check it actually works!
-                      queryOptions = new QueryOptions(queryOptions.getFilter(), queryOptions.getSortProperty(), queryOptions.getSortDirection(), componentsCounter, queryOptions.getLimit(), null, false);
-                      result = browseService.browseComponents(repository, queryOptions);
-                      componentsCounter += SEARCH_COMPONENT_PAGE_SIZE;
                   }
-              }
 
+                  // todo check it actually works!
+                  queryOptions = new QueryOptions(queryOptions.getFilter(), queryOptions.getSortProperty(), queryOptions.getSortDirection(), componentsCounter, queryOptions.getLimit(), null, false);
+                  result = browseService.browseComponents(repository, queryOptions);
+                  componentsCounter += SEARCH_COMPONENT_PAGE_SIZE;
+              }
+          }
     }
 }

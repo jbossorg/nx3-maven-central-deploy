@@ -14,8 +14,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.jboss.nexus.nx3-maven-central-deploy</groupId>
-      <artifactId>common</artifactId>
+      <groupId>org.jboss.nexus</groupId>
+      <artifactId>nx3-maven-central-deploy</artifactId>
       <version>${parent.version}</version>
     </dependency>
   </dependencies>
