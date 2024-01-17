@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>nx3-maven-central-deploy-parent</artifactId>
+    <groupId>org.jboss.nexus</groupId>
+    <version>3.64.0-04-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>nx3-maven-central-deploy-orientdb</artifactId>
+
+
+  <name>${project.groupId}:${project.artifactId}</name>
+  <packaging>bundle</packaging>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.jboss.nexus</groupId>
+      <artifactId>nx3-maven-central-deploy</artifactId>
+      <version>${parent.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.karaf.tooling</groupId>
+        <artifactId>karaf-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <configuration>
+          <instructions>
+            <Export-Package>org.jboss.nexus.contentimpl</Export-Package>
+            <Fragment-Host>org.jboss.nexus.nx3-maven-central-deploy</Fragment-Host>
+            <!--
+            Only resolve this fragment when orient support is deployed.
+            -->
+            <Require-Bundle>org.sonatype.nexus.orient</Require-Bundle>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+
+</project>
