@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import static org.jboss.nexus.MavenCentralDeploy.SEARCH_COMPONENT_PAGE_SIZE;
 
+@SuppressWarnings({"CdiManagedBeanInconsistencyInspection", "CdiInjectionPointsInspection"})
 @Named
 public class ContentBrowserDatabaseImpl implements ContentBrowser {
 
@@ -45,9 +46,6 @@ public class ContentBrowserDatabaseImpl implements ContentBrowser {
 
     @Override
     public void prepareValidationData(final Repository repository, final Filter filter, final MavenCentralDeployTaskConfiguration configuration, final List<FailedCheck> listOfFailures, final List<Component> toDeploy, Logger log) {
-        //todo
-
-
         Optional<MavenContentFacet> optionalFacet = repository.optionalFacet(MavenContentFacet.class);
         if(optionalFacet.isPresent()) {
             // ---------------------------------------------------------

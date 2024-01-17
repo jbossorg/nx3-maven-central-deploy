@@ -1,16 +1,12 @@
 package org.jboss.nexus;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-
 import com.sonatype.nexus.tags.Tag;
 import com.sonatype.nexus.tags.TagStore;
 import com.sonatype.nexus.tags.service.TagService;
 import org.apache.commons.lang3.StringUtils;
-import org.jboss.nexus.content.*;
+import org.jboss.nexus.content.Component;
+import org.jboss.nexus.content.ContentBrowser;
 import org.jboss.nexus.tagging.MCDTagSetupConfiguration;
-import org.jboss.nexus.validation.checks.CentralValidation;
 import org.jboss.nexus.validation.checks.FailedCheck;
 import org.jboss.nexus.validation.reporting.TestReportCapability;
 import org.jetbrains.annotations.NotNull;
@@ -20,7 +16,9 @@ import org.sonatype.nexus.common.collect.NestedAttributesMap;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.manager.RepositoryManager;
 
-
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
@@ -50,14 +48,13 @@ public class MavenCentralDeploy extends ComponentSupport {
     /** Constructor for Nexus running in the database configuration.
      *
      * @param repositoryManager repository manager
-     * @param validations validations to be registered for handling
      * @param reports reports to be registered for handling
      * @param tagStore tag store
      * @param tagService tag service
      * @param templateRenderingHelper helper method for Velocity rendering
      */
     @Inject
-    public MavenCentralDeploy(RepositoryManager repositoryManager, Set<CentralValidation> validations, Set<TestReportCapability<?>> reports, @Nullable TagStore tagStore, @Nullable TagService tagService, TemplateRenderingHelper templateRenderingHelper, ContentBrowser contentBrowser) {
+    public MavenCentralDeploy(RepositoryManager repositoryManager, Set<TestReportCapability<?>> reports, @Nullable TagStore tagStore, @Nullable TagService tagService, TemplateRenderingHelper templateRenderingHelper, ContentBrowser contentBrowser) {
         this.repositoryManager = checkNotNull(repositoryManager);
         this.templateRenderingHelper = checkNotNull(templateRenderingHelper);
         this.reports = reports;
@@ -68,8 +65,6 @@ public class MavenCentralDeploy extends ComponentSupport {
 
     @SuppressWarnings("unused")
     public static final int SEARCH_COMPONENT_PAGE_SIZE = 5;
-
-    private long lastDeployedArtifact;
 
    public void processDeployment(MavenCentralDeployTaskConfiguration configuration) {
         log.info("Deploying content.....");
@@ -87,7 +82,6 @@ public class MavenCentralDeploy extends ComponentSupport {
         try {
           List<Component> toDeploy = new ArrayList<>();
 
-          @SuppressWarnings("DataFlowIssue")
           Repository repository = checkNotNull(repositoryManager.get(checkNotNull(configuration.getRepository(), "Repository not configured for the task!")), "Invalid repository configured!");
           contentBrowser.prepareValidationData(repository, filter, configuration, listOfFailures, toDeploy, log);
 
@@ -108,9 +102,18 @@ public class MavenCentralDeploy extends ComponentSupport {
 
 
           if (listOfFailures.isEmpty()) {
-             if (!configuration.getDryRun()) {
-                toDeploy.forEach(this::publishArtifact);
+             long latestComponentTime = configuration.getLatestComponentTime();
+             for (Component component : toDeploy) {
+                 if (!configuration.getDryRun())
+                    publishArtifact(component);
+
+                 if (component.getCreated() > latestComponentTime)
+                     latestComponentTime = component.getCreated();
              }
+
+             if(configuration.getMarkArtifacts())
+                configuration.setLatestComponentTime(String.valueOf(latestComponentTime));
+
 
              final String publishedTag;
              if (configuration.getMarkArtifacts() && mcdTagSetupConfiguration != null && StringUtils.isNotBlank((publishedTag = mcdTagSetupConfiguration.getDeployedTagName()))) {

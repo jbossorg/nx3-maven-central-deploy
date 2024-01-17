@@ -156,9 +156,9 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
         setString(LATEST_STATUS, latestStatus);
     }
 
-    /** Marks the creation time of the latest component, that was successfully deployed to Maven Central
+    /** Marks the creation time of the latest component, that was successfully deployed to Maven Central.
      *
-     * @param latestComponentTime time of the newest component successfully deployed in this deployment
+     * @param latestComponentTime time of the newest component successfully deployed in this deployment in epoch seconds
      */
     public void setLatestComponentTime(String latestComponentTime) {
         if(StringUtils.isNumeric(latestComponentTime)) {
@@ -180,7 +180,7 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
      * @param processingTimeOffset minutes
      */
     public void setProcessingTimeOffset(Integer processingTimeOffset) {
-          setInteger(LATEST_COMPONENT_TIME, processingTimeOffset);
+          setInteger(PROCESSING_TIME_OFFSET, processingTimeOffset);
     }
 
 
@@ -189,6 +189,6 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
      * @return minutes
      */
     public int getProcessingTimeOffset() {
-          return getInteger(LATEST_COMPONENT_TIME, 10);
+          return getInteger(PROCESSING_TIME_OFFSET, 10);
     }
 }

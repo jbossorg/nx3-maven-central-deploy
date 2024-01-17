@@ -63,13 +63,14 @@ public class ContentBrowserOrientDBImplTest {
         validations = new HashSet<>();
         listOfFailures = new ArrayList<>();
         toDeploy = new ArrayList<>();
+        configuration = new MavenCentralDeployTaskConfiguration();
 
         tested = new ContentBrowserOrientDBImpl(blobStoreManager, browseService, validations);
 
         // setup repository
         // when(repository.getName()).thenReturn("repository-name");
 
-        configuration = new MavenCentralDeployTaskConfiguration();
+
     }
 
 
@@ -92,7 +93,7 @@ public class ContentBrowserOrientDBImplTest {
 
         int componentCount = SEARCH_COMPONENT_PAGE_SIZE * 3+2;
 
-        org.sonatype.nexus.repository.storage.Component[] components = prepareComponents(componentCount);
+        prepareComponents(componentCount);
 
         tested.prepareValidationData(repository, filter, configuration, listOfFailures, toDeploy, log );
         
@@ -106,8 +107,7 @@ public class ContentBrowserOrientDBImplTest {
         }
     }
 
-    @NotNull
-    private org.sonatype.nexus.repository.storage.Component[] prepareComponents(int componentCount) {
+    private void prepareComponents(int componentCount) {
         org.sonatype.nexus.repository.storage.Component[] components =  new org.sonatype.nexus.repository.storage.Component[componentCount];
         for (int i = 0; i < components.length; i++) {
             components[i]  = mockComponent(i);
@@ -132,8 +132,6 @@ public class ContentBrowserOrientDBImplTest {
         }
 
         when(browseService.browseComponentAssets(any(Repository.class), any(org.sonatype.nexus.repository.storage.Component.class))).thenReturn(new PageResult<>(0, new ArrayList<>()));
-
-        return components;
     }
 
     /** Prepares a mocked component
@@ -244,8 +242,32 @@ public class ContentBrowserOrientDBImplTest {
 
     @Test
     public void prepareValidationDataRemoveFailingTest() {
-        // TODO: 17.10.2023
+        Filter filter =  Filter.parseFilterString("group=org.jboss.nexus&version!=version-5");
 
+        int componentCount = SEARCH_COMPONENT_PAGE_SIZE * 3+2;
+
+        prepareComponents(componentCount);
+
+
+        validations.add(new CentralValidation() {
+            @Override
+            public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<org.jboss.nexus.content.Asset> assets, @NotNull List<FailedCheck> listOfFailures) {
+                listOfFailures.add(new FailedCheck(component, "Failed due to no reason."));
+            }
+        });
+
+
+        tested.prepareValidationData(repository, filter, configuration, listOfFailures, toDeploy, log );
+
+        assertEquals(componentCount-1,  listOfFailures.size()); // one component should not have been tested
+
+        HashSet<String> versions = new HashSet<>();
+        for(FailedCheck failedCheck : listOfFailures) {
+            assertNotEquals("version-5", failedCheck.getComponent().version());
+            versions.add(failedCheck.getComponent().version());
+            assertEquals("Failed due to no reason.", failedCheck.getProblem());
+        }
+        assertEquals("All versions should be distinct", componentCount-1, versions.size());
     }
 
 
