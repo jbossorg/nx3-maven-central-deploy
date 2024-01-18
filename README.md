@@ -55,7 +55,15 @@ The features here are ordered based on the current development priority - the to
 
 You will find the installation packages of the current versions of Nexus in [GitHub releases](https://github.com/jbossorg/nx3-maven-central-deploy/releases).
 
-Download the version suitable for your version of Nexus and copy it to the *{nexusInstallDir}/deploy/*. When doing Nexus upgrade, you must also upgrade nx3-maven-central-deploy, so it runs the same version number as your Nexus. 
+Download the version suitable for your version of Nexus and copy it to the *{nexusInstallDir}/deploy/*. When doing Nexus upgrade, you must also upgrade nx3-maven-central-deploy, so it runs the same version number as your Nexus.
+
+For the application to work in your environment, you always need two jar files: 
+
+- _always_ **nx3-maven-central-deploy-{version}.jar**
+- with _OrientDB_ **nx3-maven-central-deploy-orientdb-{version}.jar**
+- with _external Postgres database_ **nx3-maven-central-deploy-database-{version}.jar**
+
+Make sure not to deploy both orientdb and database jars together. If you install all the three jars, the plugin fails. By default, Nexus 3 uses the OrientDB implementation. See Nexus [documentation](https://help.sonatype.com/en/planning-your-implementation.html#planning-your-implementation).    
 
 Unless you already have it, enable **Schedule** capability under *System->Capabilities* in Nexus.
 
