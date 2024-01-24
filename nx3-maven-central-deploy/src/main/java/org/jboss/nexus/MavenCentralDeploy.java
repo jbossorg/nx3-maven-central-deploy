@@ -129,7 +129,7 @@ public class MavenCentralDeploy extends ComponentSupport {
                       if (log.isDebugEnabled())
                          log.debug("Tagging failed artifact: " + component.toStringExternal());
 
-                      tagService.associateById(publishedTag, repository, component.entityId());
+                      tagService.maybeAssociateById(publishedTag, repository, component.entityId());
                    });
                 }
              }
@@ -163,7 +163,7 @@ public class MavenCentralDeploy extends ComponentSupport {
 
                       //noinspection ConstantConditions
 
-                      tagService.associateById(failedTagName, repository, component.entityId());
+                      tagService.maybeAssociateById(failedTagName, repository, component.entityId());
                    });
                 }
              }

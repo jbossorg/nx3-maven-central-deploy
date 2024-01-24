@@ -1,5 +1,6 @@
 package org.jboss.nexus.contentimpl;
 
+import com.sonatype.nexus.tags.service.TagService;
 import org.jboss.nexus.Filter;
 import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
 import org.jboss.nexus.content.Component;
@@ -56,6 +57,8 @@ public class ContentBrowserDatabaseImplTest {
     @Mock
     private SearchService searchService;
 
+    private final TagService tagService = null; // We do not need this
+
     @Mock
     private MavenContentFacet mavenContentFacet;
 
@@ -101,8 +104,7 @@ public class ContentBrowserDatabaseImplTest {
             return Collections.singleton(result);
         });
 
-
-        tested = new ContentBrowserDatabaseImpl(searchService, validations);
+        tested = new ContentBrowserDatabaseImpl(searchService, validations, tagService);
     }
 
 

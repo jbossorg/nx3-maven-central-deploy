@@ -1,6 +1,8 @@
 package org.jboss.nexus.contentimpl;
 
 import com.google.common.base.Preconditions;
+import com.sonatype.nexus.tags.Tag;
+import com.sonatype.nexus.tags.service.TagService;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.nexus.Filter;
 import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
@@ -23,6 +25,7 @@ import org.sonatype.nexus.scheduling.CancelableHelper;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.validation.constraints.NotNull;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,15 +37,18 @@ public class ContentBrowserDatabaseImpl implements ContentBrowser {
 
 
     @Inject
-    public ContentBrowserDatabaseImpl(SearchService searchService, Set<CentralValidation> validations) {
+    public ContentBrowserDatabaseImpl(SearchService searchService, Set<CentralValidation> validations, TagService tagService) {
         this.searchService = Preconditions.checkNotNull(searchService);
         this.validations = Preconditions.checkNotNull(validations);
+        this.tagService = tagService; // we can ignore it if needed
     }
 
 
     private final SearchService searchService;
 
     private final Set<CentralValidation> validations;
+
+    private final TagService tagService;
 
     @Override
     public void prepareValidationData(final Repository repository, final Filter filter, final MavenCentralDeployTaskConfiguration configuration, final List<FailedCheck> listOfFailures, final List<Component> toDeploy, Logger log) {
@@ -68,7 +74,8 @@ public class ContentBrowserDatabaseImpl implements ContentBrowser {
                     continuationToken = validateDatabaseAssets(configuration, listOfFailures, filter, toDeploy, browse, log);
                 }  while (StringUtils.isNotBlank(continuationToken)); // fixme Is this correct end of the continuation?
             }
-        }
+        } else
+            log.error("Database implementation of repository browsing is running in OrientDB environment. See the installation guidelines and deploy the right jars!");
     }
 
     /** Handles validation of assets when Nexus is configured to use database.
@@ -101,27 +108,39 @@ public class ContentBrowserDatabaseImpl implements ContentBrowser {
                     SearchRequest request = SearchRequest.builder().searchFilters(searchFilters).build();
                     Iterable<ComponentSearchResult> components = this.searchService.browse(request);
 
-                    String id;
                     Iterator<ComponentSearchResult> iterator = components.iterator();
                     if(iterator.hasNext()) {
-                        ComponentSearchResult next = iterator.next();
-                        id = next.getId();
+                        ComponentSearchResult searchResult = iterator.next();
                         if(iterator.hasNext())
                             throw new RuntimeException("Unexpected error: more than one "+fluentComponent.toStringExternal()+" found!");
+
+                        final Component component = new ComponentDatabaseImpl(searchResult, fluentComponent, this);
+                        log.info("Validating component: " + component.toStringExternal());
+                        toDeploy.add(component);
+
+                        List<Asset> assetsInside = fluentComponent.assets().stream().map(AssetDatabaseImpl::new).collect(Collectors.toList());
+                        for (CentralValidation validation : validations) {
+                            validation.validateComponent(configuration, component, assetsInside, listOfFailures);
+                        }
                     } else
                         throw new RuntimeException("Unexpected error: Unable to find component "+fluentComponent.toStringExternal()+"!");
-
-
-                    Component component = new ComponentDatabaseImpl(fluentComponent, id);
-                    log.info("Validating component: " + component.toStringExternal());
-                    toDeploy.add(component);
-
-                    List<Asset> assetsInside = fluentComponent.assets().stream().map(AssetDatabaseImpl::new).collect(Collectors.toList());
-                    for (CentralValidation validation : validations) {
-                        validation.validateComponent(configuration, component, assetsInside, listOfFailures);
-                    }
                 }
         );
         return browse.nextContinuationToken();
+    }
+
+
+    private final Map<String, Tag> tags = new HashMap<>();
+
+    /** Find tag for the given name
+     *
+     * @param tagName name of the tag
+     * @return the tag
+     */
+    Tag findTag(@NotNull String tagName) {
+        if(tagService == null)
+            return null;
+
+        return tags.computeIfAbsent(tagName, tagService::get);
     }
 }
