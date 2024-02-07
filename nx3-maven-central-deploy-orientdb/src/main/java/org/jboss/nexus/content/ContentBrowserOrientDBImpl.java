@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import static org.jboss.nexus.MavenCentralDeploy.SEARCH_COMPONENT_PAGE_SIZE;
 
+@SuppressWarnings("CdiInjectionPointsInspection")
 @Named
 public class ContentBrowserOrientDBImpl implements ContentBrowser{
 
@@ -63,14 +64,14 @@ public class ContentBrowserOrientDBImpl implements ContentBrowser{
 
                           long newestBlob = assetsInside.stream().mapToLong(asset -> ((AssetOrientDBImpl) asset).getCreated()).max().orElse(0);
 
-                          Component component = new ComponentOrientDBImpl(storageComponent, newestBlob);
+                          Component component = new ComponentOrientDBImpl(storageComponent, newestBlob, assetsInside);
 
                           if (newestBlob < currentProcessingEpochTime && newestBlob > configuration.getLatestComponentTime()) {
                               log.info("Validating component: " + component.toStringExternal());
                               toDeploy.add(component);
 
                               for (CentralValidation validation : validations) {
-                                  validation.validateComponent(configuration, component, assetsInside, listOfFailures);
+                                  validation.validateComponent(configuration, component, listOfFailures);
                               }
                           } else {
                               log.debug("Component "+component.toStringExternal()+" was skipped due to being already deployed.");

@@ -201,7 +201,7 @@ public class ContentBrowserDatabaseImplTest {
         // last deployed time 30 minutes ago
         configuration.setLatestComponentTime(  String.valueOf (OffsetDateTime.now().minusMinutes(30).toEpochSecond() ));
 
-        // ignore too fresh artifacts so we have enough time so it does not affect us
+        // ignore too fresh artifacts, so we have enough time, so it does not affect us
         configuration.setProcessingTimeOffset(10);
 
         OffsetDateTime artifactTime = OffsetDateTime.now().minusMinutes(25);
@@ -280,7 +280,7 @@ public class ContentBrowserDatabaseImplTest {
 
         validations.add(new CentralValidation() {
             @Override
-            public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<org.jboss.nexus.content.Asset> assets, @NotNull List<FailedCheck> listOfFailures) {
+            public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<FailedCheck> listOfFailures) {
                 listOfFailures.add(new FailedCheck(component, "Failed due to no reason."));
             }
         });

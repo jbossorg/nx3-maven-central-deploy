@@ -251,7 +251,7 @@ public class ContentBrowserOrientDBImplTest {
 
         validations.add(new CentralValidation() {
             @Override
-            public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<org.jboss.nexus.content.Asset> assets, @NotNull List<FailedCheck> listOfFailures) {
+            public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<FailedCheck> listOfFailures) {
                 listOfFailures.add(new FailedCheck(component, "Failed due to no reason."));
             }
         });

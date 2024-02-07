@@ -12,6 +12,10 @@ public abstract class Component {
     protected Component(EntityId entityId, String group, String name, String version, long created, Set<Tag> tags) {
         this(entityId, group,name, version, created);
         this.tags.addAll(tags);
+
+        // TODO: 2024-02-01 - add assets
+
+
     }
 
     protected Component(EntityId entityId, String group, String name, String version, long created) {
@@ -76,7 +80,7 @@ public abstract class Component {
      */
     public @NotNull List<Asset> assetsInside() {
         return assetList;
-    } // fixme probably not needed
+    }
 
     /** Time, when the component was created (in seconds from January 1st 1970)
      *

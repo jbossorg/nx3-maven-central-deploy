@@ -8,32 +8,25 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.jboss.nexus.testutils.Utils.mockedAsset;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.when;
 
 @RunWith((MockitoJUnitRunner.class))
 public class PomXMLValidationCheckTest {
-
-	@Mock
-	private InputStream inputStream;
-
 	private PomXMLValidationCheck tested;
 
 	@Mock
 	private Component component;
-
-	private List<Asset> listOfAssets;
-
 	private List<FailedCheck> failedCheckList;
 
 	private MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration;
@@ -42,15 +35,16 @@ public class PomXMLValidationCheckTest {
 
 	@Before
 	public void setup() {
-		 testAsset = mockedAsset("some/SomeProject.pom");
+		testAsset = mockedAsset("some/SomeProject.pom");
 
 		tested = new PomXMLValidationCheck();
 
 		failedCheckList = new ArrayList<>();
 
-		listOfAssets = new ArrayList<>();
+		List<Asset> listOfAssets = new ArrayList<>();
 		listOfAssets.add(testAsset);
 
+		when(component.assetsInside()).thenReturn(listOfAssets);
 		mavenCentralDeployTaskConfiguration = new MavenCentralDeployTaskConfiguration(TaskConfigurationGenerator.defaultMavenCentralDeployTaskConfiguration());
 	}
 
@@ -61,7 +55,7 @@ public class PomXMLValidationCheckTest {
 	 */
 	private void prepareInputStream(@NotNull String xml) {
 		try {
-			Mockito.when(testAsset.openContentInputStream()).thenReturn(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+			when(testAsset.openContentInputStream()).thenReturn(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -91,7 +85,7 @@ public class PomXMLValidationCheckTest {
 				  "   </licenses>" +
 				  "</project>");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 
 		assertTrue(failedCheckList.isEmpty());
 	}
@@ -109,7 +103,7 @@ public class PomXMLValidationCheckTest {
 				  "   <license/>" + // <-- it should not be here
 				  "</project>");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 
 		assertTrue( errorExist("pom.xml validation failed: some/SomeProject.pom at [1,100]: license appeared outside its expected location in xml."));
 		assertFalse( errorExist("some/SomeProject.pom does not have any license specified!"));
@@ -126,7 +120,7 @@ public class PomXMLValidationCheckTest {
 				  "   </scm>" +
 				  "</project>");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 
 		assertTrue( errorExist("pom.xml validation failed: some/SomeProject.pom at [1,34]: licenses section appeared outside its expected location in xml."));
 		assertTrue( errorExist("some/SomeProject.pom does not have any license specified!"));
@@ -140,7 +134,7 @@ public class PomXMLValidationCheckTest {
 				  "   </scm>" +
 				  "</project>");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 
 		assertTrue( errorExist("some/SomeProject.pom does not have any license specified!"));
 	}
@@ -157,7 +151,7 @@ public class PomXMLValidationCheckTest {
 				  "       <license/>" +
 				  "   </licenses>"); // missing end tag
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 
 		assertTrue(errorExist("some/SomeProject.pom parsing error: ParseError at [row,col]:[1,104]" +
 				  "Message: XML document structures must start and end within the same entity."));
@@ -189,7 +183,7 @@ public class PomXMLValidationCheckTest {
 		for(String entity : Level2entities) {
 			failedCheckList.clear();
 			prepareInputStream("<project/>");
-			tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+			tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 			assertTrue(errorExist(errors[i]));
 
 
@@ -197,7 +191,7 @@ public class PomXMLValidationCheckTest {
 			prepareInputStream(
 				 xmlTemplate.replace("xxx", entity));
 
-			tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+			tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 			assertFalse(errorExist(errors[i++]));
 		}
 	}
@@ -208,7 +202,7 @@ public class PomXMLValidationCheckTest {
 	   "<project>" +
 			 "</project>");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 		String groupError = "some/SomeProject.pom does not have the project group specified!";
 		assertTrue(errorExist(groupError));
 
@@ -218,7 +212,7 @@ public class PomXMLValidationCheckTest {
 			 "</project>");
 
 		failedCheckList.clear();
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 		assertFalse("Direct group", errorExist(groupError));
 
 		failedCheckList.clear();
@@ -230,7 +224,7 @@ public class PomXMLValidationCheckTest {
 				  "</project>");
 
 		failedCheckList.clear();
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 		assertFalse("Group in parent", errorExist(groupError));
 	}
 
@@ -240,7 +234,7 @@ public class PomXMLValidationCheckTest {
 	   "<project>" +
 			 "</project>");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 		String versionError = "some/SomeProject.pom does not have the project version specified!";
 		assertTrue(errorExist(versionError));
 
@@ -250,7 +244,7 @@ public class PomXMLValidationCheckTest {
 			 "</project>");
 
 		failedCheckList.clear();
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 		assertFalse("Direct group", errorExist(versionError));
 
 		failedCheckList.clear();
@@ -262,7 +256,7 @@ public class PomXMLValidationCheckTest {
 				  "</project>");
 
 		failedCheckList.clear();
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 		assertFalse("Group in parent", errorExist(versionError));
 	}
 
@@ -282,7 +276,7 @@ public class PomXMLValidationCheckTest {
 				  "   </dependencies>" +
 				  "</project>");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 		assertTrue( errorExist("some/SomeProject.pom does not have the project group specified!"));
 		assertTrue( errorExist("some/SomeProject.pom does not have the artifact specified!"));
 		assertTrue( errorExist("some/SomeProject.pom does not have the project version specified!"));
@@ -296,7 +290,7 @@ public class PomXMLValidationCheckTest {
 				  "</parent>" +
 				  "</project>");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 		assertTrue("Parent SNAPSHOT", errorExist("some/SomeProject.pom contains a dependency on a SNAPSHOT artifact!"));
 
 		failedCheckList.clear();
@@ -307,7 +301,7 @@ public class PomXMLValidationCheckTest {
 				  "</parent>" +
 				  "</project>");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 		assertFalse("Parent SNAPSHOT OK", errorExist("some/SomeProject.pom contains a dependency on a SNAPSHOT artifact!"));
 
 		failedCheckList.clear();
@@ -316,7 +310,7 @@ public class PomXMLValidationCheckTest {
 				  "   <version>something-SNAPSHOT</version>" +
 				  "</project>");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 		assertTrue("Direct SNAPSHOT", errorExist("some/SomeProject.pom contains a dependency on a SNAPSHOT artifact!"));
 
 		failedCheckList.clear();
@@ -325,7 +319,7 @@ public class PomXMLValidationCheckTest {
 				  "   <version>something</version>" +
 				  "</project>");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 		assertFalse("Not snapshot", errorExist("some/SomeProject.pom contains a dependency on a SNAPSHOT artifact!"));
 	}
 
@@ -339,7 +333,7 @@ public class PomXMLValidationCheckTest {
 				  "</parent>" +
 				  "</project>");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 		assertTrue("Parent SNAPSHOT", errorExist("some/SomeProject.pom at [1:42]: the version element should contain a string!"));
 	}
 
@@ -358,7 +352,7 @@ public class PomXMLValidationCheckTest {
 				  "   </dependencies>" +
 				  "</project>");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 		assertTrue( errorExist("some/SomeProject.pom contains a dependency on a SNAPSHOT artifact!"));
 	}
 
@@ -366,7 +360,7 @@ public class PomXMLValidationCheckTest {
 	public void validateComponentProjectMissing() {
 		prepareInputStream("<notProject />");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 
 		assertTrue(errorExist("some/SomeProject.pom does not have required project root!"));
 		assertFalse(errorExist("some/SomeProject.pom does not have source code repository specified (scm)!"));
@@ -384,7 +378,7 @@ public class PomXMLValidationCheckTest {
 	public void validateComponentAllButProjectMissing() {
 		prepareInputStream("<project />");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 
 		assertFalse(errorExist("some/SomeProject.pom does not have required project root!"));
 		assertTrue(errorExist("some/SomeProject.pom does not have source code repository specified (scm)!"));
@@ -412,7 +406,7 @@ public class PomXMLValidationCheckTest {
 		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_VERSION, true);
 		prepareInputStream("<project />");
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, listOfAssets, failedCheckList);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
 
 		assertTrue(failedCheckList.isEmpty());
 

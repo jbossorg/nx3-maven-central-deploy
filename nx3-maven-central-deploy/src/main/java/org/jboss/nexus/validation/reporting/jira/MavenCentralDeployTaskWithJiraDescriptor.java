@@ -1,5 +1,6 @@
 package org.jboss.nexus.validation.reporting.jira;
 
+import org.jboss.nexus.DescriptorUtils;
 import org.jboss.nexus.MavenCentralDeployTaskDescriptor;
 import org.sonatype.goodies.i18n.I18N;
 import org.sonatype.goodies.i18n.MessageBundle;
@@ -43,7 +44,7 @@ public class MavenCentralDeployTaskWithJiraDescriptor extends MavenCentralDeploy
 
 
     static {
-        List<String> ignoredJiraFields = new ArrayList<>();
+        ArrayList<String> ignoredJiraFields = new ArrayList<>();
         ignoredJiraFields.add(JiraTestReportCapabilityConfiguration.JIRA_BASE_URL);
         ignoredJiraFields.add(JiraTestReportCapabilityConfiguration.PROXY_HOST);
         ignoredJiraFields.add(JiraTestReportCapabilityConfiguration.PROXY_PORT);
@@ -56,53 +57,15 @@ public class MavenCentralDeployTaskWithJiraDescriptor extends MavenCentralDeploy
 
         fields.add(new CheckboxFormField(MavenCentralDeployTaskWithJiraConfiguration.CREATE_TEST_TICKET, messages.createTestReportLabel(), messages.createTestReportHelp(), false));
 
-
         Collections.addAll(fields, taskFields);
 
         fields.add(new TextAreaFormField("jira_header", "", "", false, null, true)
                 .withInitialValue("---------------- Jira Configuration ----------------"));
 
+
         // re-create the mandatory fields from JiraTestReportCapabilityDescriptor, so they are always optional here. Default values exist in JiraTestReportCapabilityDescriptor
-        JiraTestReportCapabilityDescriptor.formFields.stream()
-                .filter(f -> ! ignoredJiraFields.contains(f.getId())).forEach(field -> {
-                    if(field.isRequired()) {
-                        // we must duplicate required fields, because we do not want them to be mandatory here
-                        switch(field.getType()) {
-                            case "text-area":
-                                TextAreaFormField textAreaFormField = new TextAreaFormField(field.getId(), field.getLabel(), field.getHelpText(), false, field.getRegexValidation(), field.isReadOnly());
-                                if(field.getInitialValue() != null) {
-                                    textAreaFormField.withInitialValue(((TextAreaFormField)field).getInitialValue());
-                                }
-                                fields.add(textAreaFormField);
-                                break;
-                            case "string":
-                                StringTextFormField stringTextFormField = new StringTextFormField(field.getId(), field.getLabel(), field.getHelpText(), false, field.getRegexValidation());
-                                if(field.getInitialValue() != null)
-                                    stringTextFormField.withInitialValue(((StringTextFormField)field).getInitialValue());
-                                fields.add(stringTextFormField);
-                                break;
-                            case "number":
-                                NumberTextFormField numberTextFormField = new NumberTextFormField(field.getId(), field.getLabel(), field.getHelpText(), false, field.getRegexValidation());
-                                if(field.getInitialValue() != null)
-                                    numberTextFormField.withInitialValue(((NumberTextFormField)field).getInitialValue());
-                                fields.add(numberTextFormField);
-                                break;
-                            case "boolean":
-                                CheckboxFormField checkboxFormField = new CheckboxFormField(field.getId(), field.getLabel(), field.getHelpText(), false);
-                                if(field.getInitialValue() != null)
-                                    checkboxFormField.withInitialValue(((CheckboxFormField)field).getInitialValue());
-                                fields.add(checkboxFormField);
-                                break;
-                            default:
-                                throw new RuntimeException("Programming error - Unexpected field type!");
-                        }
-
-                    } else
-                        fields.add(field);
-                });
-
-        taskFieldsWithJira = fields.toArray(new FormField[0]);
-
+        //noinspection unchecked
+        taskFieldsWithJira = DescriptorUtils.combineDescriptors(fields, ignoredJiraFields, JiraTestReportCapabilityDescriptor.formFields);
     }
 
 

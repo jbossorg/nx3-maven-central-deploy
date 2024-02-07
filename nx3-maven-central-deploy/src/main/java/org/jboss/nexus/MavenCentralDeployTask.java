@@ -24,6 +24,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.logging.task.TaskLogType.NEXUS_LOG_ONLY;
 
 
+@SuppressWarnings("CdiInjectionPointsInspection")
 @Named
 @TaskLogging(NEXUS_LOG_ONLY)
 public class MavenCentralDeployTask

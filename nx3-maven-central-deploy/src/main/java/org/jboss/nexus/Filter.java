@@ -240,7 +240,7 @@ public class Filter {
 	 *
 	 * @return {@link LogicalOperation.Operator#operator} value
 	 */
-	public LogicalOperation.Operator getVersionOperation() {
+	 LogicalOperation.Operator getVersionOperation() {
 		return versionOperation;
 	}
 
@@ -248,7 +248,7 @@ public class Filter {
 	 *
 	 * @return {@link LogicalOperation.Operator#operator} value
 	 */
-	public LogicalOperation.Operator getTagOperation() {
+	 LogicalOperation.Operator getTagOperation() {
 		return tagOperation;
 	}
 
@@ -257,7 +257,7 @@ public class Filter {
 	 *
 	 * @return list of attribute expressions to be validated
 	 */
-	public List<TagAttributeExpression> getTagAttributeOperations() {
+	 List<TagAttributeExpression> getTagAttributeOperations() {
 		return tagAttributeOperations;
 	}
 
@@ -404,6 +404,12 @@ public class Filter {
 		if(StringUtils.isNotEmpty(getVersion()))
 			if(!FunctionMapping.resolve(getVersionOperation(), component.version(), getVersion()))
 				return false;
+
+		if(StringUtils.isNotEmpty(getUnspecified())) {
+			if(!getUnspecified().equals(component.group()) && ! getUnspecified().equals(component.name()) && !getUnspecified().equals(component.version())){
+				return false;
+			}
+		}
 
 		// NXRM3 Professional tagging
 		if(TagComponent.class.isAssignableFrom(component.getClass())) {

@@ -30,6 +30,8 @@ public class ComponentDatabaseImpl extends Component {
                     .filter(Objects::nonNull)
                     .forEach(tags()::add);
         }
+
+        fluentComponent.assets().stream().map(AssetDatabaseImpl::new).forEach(assetsInside()::add);
     }
 
 }

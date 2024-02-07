@@ -34,6 +34,7 @@ public class FilterTest {
 	}
 
 
+	// TODO: 2024-02-01 - tests against database implementation!!!!!
 
 
 	@Test
@@ -96,6 +97,13 @@ public class FilterTest {
 
 		tested = Filter.parseFilterString("group=org.jboss&artifact=nexus&version <> 2.3.1");
 		assertFalse(tested.checkComponent(storageComponent));
+
+		tested = Filter.parseFilterString("nexus");
+		assertTrue(tested.checkComponent(storageComponent));
+
+		//noinspection SpellCheckingInspection
+		tested = Filter.parseFilterString("nexu");
+		assertFalse("Incomplete string", tested.checkComponent(storageComponent));
 	}
 
 	@Test(expected = RuntimeException.class)

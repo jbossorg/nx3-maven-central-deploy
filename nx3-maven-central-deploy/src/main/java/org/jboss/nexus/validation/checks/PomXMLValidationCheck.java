@@ -4,9 +4,6 @@ import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
 import org.jboss.nexus.content.Asset;
 import org.jboss.nexus.content.Component;
 import org.jetbrains.annotations.NotNull;
-import org.sonatype.nexus.blobstore.api.Blob;
-import org.sonatype.nexus.blobstore.api.BlobRef;
-import org.sonatype.nexus.blobstore.api.BlobStoreManager;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -21,9 +18,7 @@ import javax.xml.stream.events.XMLEvent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Objects;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jboss.nexus.constants.FileExtensions.EXTENSION_POM;
 
 /** <p>Class for  verification of the content of pom.xml files, such as present license, scm and such.
@@ -48,9 +43,9 @@ public class PomXMLValidationCheck extends CentralValidation {
 	}
 
 	@Override
-	public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<Asset> assets, @NotNull List<FailedCheck> listOfFailures) {
+	public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<FailedCheck> listOfFailures) {
 		XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
-		for(Asset asset : assets ) {
+		for(Asset asset : component.assetsInside() ) {
 			if(asset.name().endsWith(EXTENSION_POM)) {
 				try (InputStream bis = asset.openContentInputStream()) {
 					int level = 0;
@@ -106,7 +101,8 @@ public class PomXMLValidationCheck extends CentralValidation {
 									hasDeveloperInfo = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "source code source (scm)", level, 2);
 									break;
 								case "name":
-									hasProjectName = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "name", level, 2);
+									if(level == 2) // element named name appears in many tags, but we need the one on level 2
+										hasProjectName = true;
 									break;
 								case "description":
 									hasProjectDescription = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "description", level, 2);

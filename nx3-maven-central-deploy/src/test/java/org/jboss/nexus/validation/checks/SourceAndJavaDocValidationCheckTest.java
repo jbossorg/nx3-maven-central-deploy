@@ -14,6 +14,7 @@ import java.util.List;
 import static org.jboss.nexus.testutils.Utils.mockedAsset;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SourceAndJavaDocValidationCheckTest {
@@ -46,7 +47,9 @@ public class SourceAndJavaDocValidationCheckTest {
 		assets.add(component1AssetSources);
 		assets.add(component1AssetJavaDoc);
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, assets, failedChecks);
+		when(component1.assetsInside()).thenReturn(assets);
+
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, failedChecks);
 
 		assertTrue(failedChecks.isEmpty());
 
@@ -63,7 +66,9 @@ public class SourceAndJavaDocValidationCheckTest {
 		assets.add(component1Asset);
 		assets.add(component1AssetJavaDoc);
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, assets, failedChecks);
+		when(component1.assetsInside()).thenReturn(assets);
+
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, failedChecks);
 
 		assertTrue(errorExist("JavaDoc is missing for something/file.jar"));
 		assertFalse(errorExist("Source code is missing for something/file.jar"));
@@ -80,7 +85,8 @@ public class SourceAndJavaDocValidationCheckTest {
 		assets.add(component1Asset);
 		assets.add(component1AssetJavaDoc);
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, assets, failedChecks);
+		when(component1.assetsInside()).thenReturn(assets);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, failedChecks);
 
 		assertFalse(errorExist("JavaDoc is missing for something/file.jar"));
 		assertTrue(errorExist("Source code is missing for something/file.jar"));
@@ -97,7 +103,8 @@ public class SourceAndJavaDocValidationCheckTest {
 		List<Asset> assets = new ArrayList<>();
 		assets.add(component1Asset);
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, assets, failedChecks);
+		when(component1.assetsInside()).thenReturn(assets);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, failedChecks);
 
 		assertTrue(errorExist("JavaDoc is missing for something/file.jar"));
 		assertTrue(errorExist("Source code is missing for something/file.jar"));
@@ -116,8 +123,9 @@ public class SourceAndJavaDocValidationCheckTest {
 
 		List<Asset> assets = new ArrayList<>();
 		assets.add(component1Asset);
+		when(component.assetsInside()).thenReturn(assets);
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, assets, failedChecks);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedChecks);
 
 		assertFalse(errorExist("JavaDoc is missing for something/file.jar"));
 		assertTrue(errorExist("Source code is missing for something/file.jar"));
@@ -134,8 +142,9 @@ public class SourceAndJavaDocValidationCheckTest {
 
 		List<Asset> assets = new ArrayList<>();
 		assets.add(component1Asset);
+		when(component1.assetsInside()).thenReturn(assets);
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, assets, failedChecks);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, failedChecks);
 
 		assertTrue(errorExist("JavaDoc is missing for something/file.jar"));
 		assertFalse(errorExist("Source code is missing for something/file.jar"));
@@ -149,8 +158,9 @@ public class SourceAndJavaDocValidationCheckTest {
 
 		List<Asset> assets = new ArrayList<>();
 		assets.add(component1Asset);
+		when(component1.assetsInside()).thenReturn(assets);
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, assets, failedChecks);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, failedChecks);
 
 		assertTrue(errorExist("JavaDoc is missing for something/file.war"));
 		assertTrue(errorExist("Source code is missing for something/file.war"));
@@ -168,8 +178,8 @@ public class SourceAndJavaDocValidationCheckTest {
 		assets.add(component1Asset);
 		assets.add(component1AssetSources);
 		assets.add(component1AssetJavaDoc);
-
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, assets, failedChecks);
+		when(component1.assetsInside()).thenReturn(assets);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, failedChecks);
 
 		assertTrue(failedChecks.isEmpty());
 	}
@@ -182,8 +192,8 @@ public class SourceAndJavaDocValidationCheckTest {
 
 		List<Asset> assets = new ArrayList<>();
 		assets.add(component1Asset);
-
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, assets, failedChecks);
+		when(component1.assetsInside()).thenReturn(assets);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, failedChecks);
 
 		assertTrue(errorExist("JavaDoc is missing for something/file.ear"));
 		assertTrue(errorExist("Source code is missing for something/file.ear"));
@@ -202,7 +212,8 @@ public class SourceAndJavaDocValidationCheckTest {
 		assets.add(component1AssetSources);
 		assets.add(component1AssetJavaDoc);
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, assets, failedChecks);
+		when(component1.assetsInside()).thenReturn(assets);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, failedChecks);
 
 		assertTrue(failedChecks.isEmpty());
 	}
@@ -216,7 +227,8 @@ public class SourceAndJavaDocValidationCheckTest {
 		List<Asset> assets = new ArrayList<>();
 		assets.add(component1Asset);
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, assets, failedChecks);
+		when(component1.assetsInside()).thenReturn(assets);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, failedChecks);
 
 		assertTrue(failedChecks.isEmpty());
 	}
@@ -230,7 +242,8 @@ public class SourceAndJavaDocValidationCheckTest {
 		List<Asset> assets = new ArrayList<>();
 		assets.add(component1Asset);
 
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, assets, failedChecks);
+		when(component1.assetsInside()).thenReturn(assets);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, failedChecks);
 
 		assertTrue(failedChecks.isEmpty());
 	}
@@ -241,13 +254,7 @@ public class SourceAndJavaDocValidationCheckTest {
 		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SOURCE_CODES, true);
 
 		Component component = mock(Component.class);
-
-		Asset component1Asset = mockedAsset("something/file.jar");
-
-		List<Asset> assets = new ArrayList<>();
-		assets.add(component1Asset);
-
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, assets, failedChecks);
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedChecks);
 
 		assertTrue(failedChecks.isEmpty());
 	}

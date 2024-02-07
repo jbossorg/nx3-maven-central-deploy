@@ -2,7 +2,12 @@ package org.jboss.nexus;
 
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.sonatype.nexus.scheduling.TaskConfiguration;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Properties;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -190,5 +195,24 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
      */
     public int getProcessingTimeOffset() {
           return getInteger(PROCESSING_TIME_OFFSET, 10);
+    }
+
+
+    /** Tries to fetch a variable from variables.
+     *
+     * @param variable the name of the variable
+     * @return null or value of the variable
+     */
+    public String fetchVariable(@NotNull String variable) {
+        if(StringUtils.isNotBlank(getVariables())) {
+            try {
+                Properties properties = new Properties();
+                properties.load(new StringReader(getVariables()));
+                return properties.getProperty(variable);
+            } catch (IOException e) {
+                return null;
+            }
+        }
+        return null;
     }
 }

@@ -48,7 +48,6 @@ public class MCDTagSetupCapability extends MavenCentralDeployCapabilityParent<MC
 		return stringBuilder.toString();
 	}
 
-	@Nullable
 	@Override
 	protected String renderDescription() {
 		return "Tag Configuration for Maven Central Deployment";

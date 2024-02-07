@@ -195,7 +195,7 @@ public class MavenCentralDeployTaskDescriptor
           new RepositoryCombobox(MavenCentralDeployTaskConfiguration.REPOSITORY, messages.repositoryLabel(), messages.repositoryHelp(), FormField.MANDATORY).includingAnyOfFormats("maven2"),
           new CheckboxFormField(MavenCentralDeployTaskConfiguration.DRY_RUN, messages.dryRunLabel(), messages.dryRunHelp(), FormField.OPTIONAL).withInitialValue(true),
           new CheckboxFormField(MavenCentralDeployTaskConfiguration.MARK_ARTIFACTS, messages.markArtifactsAfterRunLabel(), messages.markArtifactsAfterRunHelp(), FormField.OPTIONAL).withInitialValue(false),
-          new NumberTextFormField(MavenCentralDeployTaskConfiguration.LATEST_COMPONENT_TIME, messages.latestRunTimeStampLabel(), messages.latestResultsHelp(), FormField.OPTIONAL),
+          new NumberTextFormField(MavenCentralDeployTaskConfiguration.LATEST_COMPONENT_TIME, messages.latestRunTimeStampLabel(), messages.latestRunTimeStampHelp(), FormField.OPTIONAL),
           new NumberTextFormField(MavenCentralDeployTaskConfiguration.PROCESSING_TIME_OFFSET, messages.processingTimeOffsetLabel(), messages.processingTimeOffsetHelp(), FormField.OPTIONAL).withInitialValue(10).withMinimumValue(0),
           new StringTextFormField(MavenCentralDeployTaskConfiguration.FILTER, messages.filterLabel(), messages.filterHelp(), FormField.OPTIONAL),
           new TextAreaFormField(MavenCentralDeployTaskConfiguration.VARIABLES, messages.variablesLabel(), messages.variablesHelp(), FormField.OPTIONAL),
@@ -217,6 +217,9 @@ public class MavenCentralDeployTaskDescriptor
           new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_VERSION, messages.disableHasVersionLabel(), messages.disableHasVersionHelp(), false)
   };
 
+
+
+  @SuppressWarnings("unused")
   public MavenCentralDeployTaskDescriptor() {
 
     super(TYPE_ID, MavenCentralDeployTask.class, messages.name(), TaskDescriptorSupport.VISIBLE,

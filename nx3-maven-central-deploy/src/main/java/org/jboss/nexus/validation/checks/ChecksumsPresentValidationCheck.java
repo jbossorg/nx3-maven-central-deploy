@@ -25,7 +25,7 @@ public class ChecksumsPresentValidationCheck extends CentralValidation {
    private static final Set<String> checkSumExtensions = Arrays.stream((new String[]{FileExtensions.EXTENSION_MD5, FileExtensions.EXTENSION_SHA1, FileExtensions.EXTENSION_SHA256, FileExtensions.EXTENSION_SHA512, FileExtensions.EXTENSION_ASC})).collect(Collectors.toSet());
    // asc is not a checksum, but it should not require checksums itself, so it should be treated as the optional one.
     @Override
-    public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<Asset> assets, @NotNull List<FailedCheck> listOfFailures) {
+    public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<FailedCheck> listOfFailures) {
        if(mavenCentralDeployTaskConfiguration.getDisableHasChecksumsMD5() && mavenCentralDeployTaskConfiguration.getDisableHasChecksumsSHA1())  {
           log.debug(mavenCentralDeployTaskConfiguration.getId()+": checksum validation disabled.");
           return;
@@ -33,7 +33,7 @@ public class ChecksumsPresentValidationCheck extends CentralValidation {
 
        Set<String> checksumFiles = new HashSet<>();
         Set<String> nonChecksumFiles = new HashSet<>();
-        for(Asset asset : assets) {
+        for(Asset asset : component.assetsInside()) {
             log.debug(asset.toString());
 
             int dot = asset.name().lastIndexOf('.');

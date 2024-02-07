@@ -20,7 +20,7 @@ public class SourceAndJavaDocValidationCheck extends CentralValidation {
 	private static final Set<String> requiresSourceAndJavadocExtensions = Arrays.stream((new String[]{FileExtensions.EXTENSION_JAR, FileExtensions.EXTENSION_WAR, FileExtensions.EXTENSION_EAR})).collect(Collectors.toSet());
 
 	@Override
-	public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<Asset> assets, @NotNull List<FailedCheck> listOfFailures) {
+	public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<FailedCheck> listOfFailures) {
 		if(mavenCentralDeployTaskConfiguration.getDisableHasJavaDoc() && mavenCentralDeployTaskConfiguration.getDisableHasSourceCodes())  {
 			log.debug(mavenCentralDeployTaskConfiguration.getId()+": javadoc and source code validation disabled.");
 			return;
@@ -30,7 +30,7 @@ public class SourceAndJavaDocValidationCheck extends CentralValidation {
 		Set<String> sourceFiles = new HashSet<>();
 		Set<String> checkedFiles = new HashSet<>();
 
-		for(Asset asset : assets) {
+		for(Asset asset : component.assetsInside()) {
 			log.debug(asset.toString());
 
 			int dot = asset.name().lastIndexOf('.');

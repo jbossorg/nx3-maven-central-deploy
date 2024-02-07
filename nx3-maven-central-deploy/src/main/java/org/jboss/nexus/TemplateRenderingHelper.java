@@ -12,6 +12,8 @@ import javax.inject.Named;
 import java.io.*;
 import java.util.*;
 
+import static org.jboss.nexus.MavenCentralDeployCentralSettingsConfiguration.CENTRAL_PASSWORD;
+
 /** Class to generate template parameters for Velocity rendering
  *
  */
@@ -46,6 +48,7 @@ public class TemplateRenderingHelper {
 			try (StringReader reader = new StringReader(variablesString)) {
 				properties.load(reader);
 				properties.forEach((key, value) -> result.put((String)key, value));
+				properties.remove(CENTRAL_PASSWORD); // we do not want to disclose the password if given there
 			} catch (IOException e) {
 				throw new RuntimeException("Error parsing variables from the task configuration", e);
 			}

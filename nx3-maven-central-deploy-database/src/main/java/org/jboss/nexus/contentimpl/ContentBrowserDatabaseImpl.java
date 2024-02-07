@@ -6,7 +6,6 @@ import com.sonatype.nexus.tags.service.TagService;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.nexus.Filter;
 import org.jboss.nexus.MavenCentralDeployTaskConfiguration;
-import org.jboss.nexus.content.Asset;
 import org.jboss.nexus.content.Component;
 import org.jboss.nexus.content.ContentBrowser;
 import org.jboss.nexus.validation.checks.CentralValidation;
@@ -27,7 +26,6 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.validation.constraints.NotNull;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.jboss.nexus.MavenCentralDeploy.SEARCH_COMPONENT_PAGE_SIZE;
 
@@ -118,9 +116,8 @@ public class ContentBrowserDatabaseImpl implements ContentBrowser {
                         log.info("Validating component: " + component.toStringExternal());
                         toDeploy.add(component);
 
-                        List<Asset> assetsInside = fluentComponent.assets().stream().map(AssetDatabaseImpl::new).collect(Collectors.toList());
                         for (CentralValidation validation : validations) {
-                            validation.validateComponent(configuration, component, assetsInside, listOfFailures);
+                            validation.validateComponent(configuration, component, listOfFailures);
                         }
                     } else
                         throw new RuntimeException("Unexpected error: Unable to find component "+fluentComponent.toStringExternal()+"!");

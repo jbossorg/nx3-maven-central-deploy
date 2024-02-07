@@ -4,6 +4,7 @@ import com.sonatype.nexus.tags.Tag;
 import com.sonatype.nexus.tags.TagStore;
 import com.sonatype.nexus.tags.service.TagService;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.validator.routines.UrlValidator;
 import org.jboss.nexus.content.Component;
 import org.jboss.nexus.content.ContentBrowser;
 import org.jboss.nexus.tagging.MCDTagSetupConfiguration;
@@ -19,12 +20,14 @@ import org.sonatype.nexus.repository.manager.RepositoryManager;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.io.IOException;
-import java.io.StringReader;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.jboss.nexus.MavenCentralDeployCentralSettingsConfiguration.*;
 
 
 @Named
@@ -100,16 +103,74 @@ public class MavenCentralDeploy extends ComponentSupport {
           List<FailedCheck> errors = listOfFailures.stream().sorted(failedCheckComparator).collect(Collectors.toList());
           Map<String, Object> templateVariables = templateRenderingHelper.generateTemplateParameters(configuration, errors, toDeploy.size());
 
-
           if (listOfFailures.isEmpty()) {
-             long latestComponentTime = configuration.getLatestComponentTime();
-             for (Component component : toDeploy) {
-                 if (!configuration.getDryRun())
-                    publishArtifact(component);
 
-                 if (component.getCreated() > latestComponentTime)
-                     latestComponentTime = component.getCreated();
-             }
+              MavenCentralDeployCentralSettingsConfiguration deployConfiguration = findConfigurationForPlugin(MavenCentralDeployCentralSettingsConfiguration.class);
+
+              final String centralUser, centralPassword, centralURL, centralMode;
+
+              if (deployConfiguration != null) {
+                  centralUser = deployConfiguration.getCentralUser(configuration);
+                  centralPassword = deployConfiguration.getCentralPassword(configuration);
+                  centralMode = deployConfiguration.getCentralMode(configuration);
+                  centralURL = deployConfiguration.getCentralURL(configuration);
+              } else {
+                  centralUser = configuration.fetchVariable(CENTRAL_USER);
+                  centralPassword = configuration.fetchVariable(CENTRAL_PASSWORD);
+                  centralMode = configuration.fetchVariable(CENTRAL_MODE);
+                  centralURL = configuration.fetchVariable(CENTRAL_URL);
+              }
+
+              boolean publishPossible = true;
+              if (StringUtils.isBlank(centralUser)) {
+                  log.error("The artifacts can not be published. Username of the Maven Central account is missing!");
+                  publishPossible = false;
+              }
+              if (StringUtils.isBlank(centralPassword)) {
+                  log.error("The artifacts can not be published. Password of the Maven Central account is missing!");
+                  publishPossible = false;
+              }
+              if (!"USER_MANAGED".equalsIgnoreCase(centralMode) && !"AUTOMATIC".equalsIgnoreCase(centralMode)) {
+                  log.error("The artifacts can not be published. Deployment mode should either be USER_MANAGED or AUTOMATIC! It is " + centralMode);
+                  publishPossible = false;
+              }
+              if (!UrlValidator.getInstance().isValid(centralURL)) {
+                  log.error("The artifacts can not be published. The URL of the Maven Central is not valid! The value is " + centralURL);
+                  publishPossible = false;
+              }
+
+              long latestComponentTime = configuration.getLatestComponentTime();
+
+              if (publishPossible && !configuration.getDryRun()) {
+
+                  // FIXME 2024-01-29 - just testing zip here
+                  File zipTestFile =  new File("/Users/dhladky/xxx/empty/uploadtest/testZip.zip");
+                  try {
+                      //noinspection ResultOfMethodCallIgnored
+                      zipTestFile.createNewFile();
+                  } catch (IOException e) {
+                      throw new RuntimeException(e);
+                  }
+                  try (ZipOutputStream zipStream = new ZipOutputStream(new FileOutputStream(zipTestFile))) {
+
+                      for (Component component : toDeploy) {
+                          publishArtifact(component, zipStream);
+
+                          if (component.getCreated() > latestComponentTime)
+                              latestComponentTime = component.getCreated();
+                      }
+                  } catch (FileNotFoundException ex) {
+                      throw new RuntimeException(ex);// TODO: 2024-01-30 - zip error handling
+                  } catch (IOException ex) {
+                      throw new RuntimeException(ex); // TODO: 2024-01-30 - zip error handling
+                  }
+              } else {
+                  // do not publish (dry run or error)
+                  Optional<Long> oldestFound = toDeploy.stream().map(Component::getCreated).max(Long::compareTo);
+                  if(oldestFound.isPresent() && oldestFound.get() > latestComponentTime)
+                      latestComponentTime = oldestFound.get();
+
+              }
 
              if(configuration.getMarkArtifacts())
                 configuration.setLatestComponentTime(String.valueOf(latestComponentTime));
@@ -124,6 +185,8 @@ public class MavenCentralDeploy extends ComponentSupport {
                 } else {
                    log.info("Tagging " + listOfFailures.size() + " artifacts.");
                    verifyTag(publishedTag, mcdTagSetupConfiguration.getDeployedTagAttributes(), templateVariables);
+
+
 
                    toDeploy.forEach(component -> {
                       if (log.isDebugEnabled())
@@ -258,13 +321,37 @@ public class MavenCentralDeploy extends ComponentSupport {
        return  (T)registeredConfigurations.get(configurationClass);
     }
 
-    void publishArtifact(Component component) {
+    void publishArtifact(Component component, ZipOutputStream zipStream) throws IOException {
 
 
        // TODO: 06.03.2023 push the content to Maven Central
 
-        // TODO: 15.09.2023 also remove possible error tag from the artifact
+       // TODO: 15.09.2023 also remove possible error tag from the artifact
 
+       byte[] buffer = new byte[1024];
+
+       String zipName = (component.group().replace('.', '/')+"/" + component.name().replace('.', '/')+"/"+component.version()+"/");
+       ZipEntry zipEntry = new ZipEntry(zipName);
+       zipStream.putNextEntry(zipEntry);
+       zipStream.closeEntry();
+
+       component.assetsInside().forEach(asset -> {
+           String assetName = asset.name();
+           if(assetName.charAt(0)=='/')
+               assetName = assetName.substring(1);
+
+           final ZipEntry assetEntry = new ZipEntry(assetName);
+           try(InputStream inputStream = asset.openContentInputStream()) {
+                zipStream.putNextEntry(assetEntry);
+
+               int length;
+               while ((length = inputStream.read(buffer)) >= 0) {
+                   zipStream.write(buffer, 0, length);
+               }
+           } catch (IOException e) {
+               throw new RuntimeException("Error writing "+asset.name(), e);
+           }
+       });
     }
 }
 
