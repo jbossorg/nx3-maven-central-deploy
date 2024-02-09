@@ -93,8 +93,9 @@ public class ContentBrowserDatabaseImpl implements ContentBrowser {
 
         long currentProcessingEpochTime = System.currentTimeMillis()/1000 - 60L * configuration.getProcessingTimeOffset();
 
-        browse.stream().filter(filter::checkComponent)
+        browse.stream()
                 .filter(fluentComponent ->  fluentComponent.created().toEpochSecond() > configuration.getLatestComponentTime() && fluentComponent.created().toEpochSecond() < currentProcessingEpochTime )
+                .filter(filter::checkComponent)
                 .forEach(
                 fluentComponent -> {
                     List<SearchFilter> searchFilters = new ArrayList<>();
@@ -113,11 +114,13 @@ public class ContentBrowserDatabaseImpl implements ContentBrowser {
                             throw new RuntimeException("Unexpected error: more than one "+fluentComponent.toStringExternal()+" found!");
 
                         final Component component = new ComponentDatabaseImpl(searchResult, fluentComponent, this);
-                        log.info("Validating component: " + component.toStringExternal());
-                        toDeploy.add(component);
+                        if(filter.checkComponentTag(component)) {
+                            log.info("Validating component: " + component.toStringExternal());
+                            toDeploy.add(component);
 
-                        for (CentralValidation validation : validations) {
-                            validation.validateComponent(configuration, component, listOfFailures);
+                            for (CentralValidation validation : validations) {
+                                validation.validateComponent(configuration, component, listOfFailures);
+                            }
                         }
                     } else
                         throw new RuntimeException("Unexpected error: Unable to find component "+fluentComponent.toStringExternal()+"!");

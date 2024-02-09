@@ -1,6 +1,5 @@
 package org.jboss.nexus;
 
-import org.apache.commons.lang.StringUtils;
 
 import java.util.Map;
 
@@ -17,12 +16,22 @@ public class MavenCentralDeployCentralSettingsConfiguration extends MavenCentral
     public static final String CENTRAL_URL = "centralURL";
 
     public static final String CENTRAL_MODE = "centralMode";
+    /** Constant for {@link #setCentralMode(String)}. Stays for deployment, that will wait for the deployer
+     * to acknowledge the final push to Maven Central.
+     */
+    public static final String USER_MANAGED = "USER_MANAGED";
 
-   public MavenCentralDeployCentralSettingsConfiguration(final Map<String, String> properties) {
+    /** Constant for {@link #setCentralMode(String)}. Stays for deployment, that will be done immediately
+     * unless Sonatype finds some issues with the content.
+     */
+    public static final String AUTOMATIC = "AUTOMATIC";
+
+
+    public MavenCentralDeployCentralSettingsConfiguration(final Map<String, String> properties) {
        setCentralUser(properties.get(CENTRAL_USER));
        setCentralPassword(properties.get(CENTRAL_PASSWORD));
        setCentralURL(properties.getOrDefault(CENTRAL_URL, "https://central.sonatype.com"));
-       setCentralMode(properties.getOrDefault(CENTRAL_MODE, "USER_MANAGED"));
+       setCentralMode(properties.getOrDefault(CENTRAL_MODE, USER_MANAGED));
    }
 
     private String centralUser;
@@ -42,18 +51,6 @@ public class MavenCentralDeployCentralSettingsConfiguration extends MavenCentral
         return centralUser;
     }
 
-    /** Gets the user. If the user is defined inside the task configuration, this value has precedence.
-     *
-     * @return the user in Maven Central service
-     */
-    public String getCentralUser(MavenCentralDeployTaskConfiguration localConfiguration ) {
-
-        String variableValue = localConfiguration.fetchVariable(CENTRAL_USER);
-        if(StringUtils.isNotBlank(variableValue))
-            return variableValue;
-
-        return localConfiguration.getString(CENTRAL_USER,  getCentralUser() );
-    }
 
     public void setCentralUser(String centralUser) {
         this.centralUser = centralUser;
@@ -65,19 +62,6 @@ public class MavenCentralDeployCentralSettingsConfiguration extends MavenCentral
      */
     public String getCentralPassword() {
         return centralPassword;
-    }
-
-    /** The password of the user in Maven Central service. If defined in the task configuration, that value
-     * has precedence.
-     *
-     * @return password
-     */
-    public String getCentralPassword(MavenCentralDeployTaskConfiguration localConfiguration) {
-        String variableValue = localConfiguration.fetchVariable(CENTRAL_PASSWORD);
-        if(StringUtils.isNotBlank(variableValue))
-            return variableValue;
-
-        return localConfiguration.getString(CENTRAL_PASSWORD, getCentralPassword());
     }
 
     public void setCentralPassword(String centralPassword) {
@@ -92,18 +76,6 @@ public class MavenCentralDeployCentralSettingsConfiguration extends MavenCentral
         return centralURL;
     }
 
-    /** Returns the URL of the Maven Central service. The information from the tasks local configuration has precedence.
-     *
-     * @return URL as a string
-     */
-    public String getCentralURL(MavenCentralDeployTaskConfiguration localConfiguration) {
-        String variableValue = localConfiguration.fetchVariable(CENTRAL_URL);
-        if(StringUtils.isNotBlank(variableValue))
-            return variableValue;
-
-        return localConfiguration.getString(CENTRAL_URL, getCentralURL());
-    }
-
     public void setCentralURL(String centralURL) {
         this.centralURL = centralURL;
     }
@@ -114,18 +86,6 @@ public class MavenCentralDeployCentralSettingsConfiguration extends MavenCentral
      */
     public String getCentralMode() {
         return centralMode;
-    }
-
-    /** Gets mode of the deployment. If defined in local configuration, the value has precedence.
-     *
-     * @return "USER_MANAGED" or "AUTOMATIC"
-     */
-    public String getCentralMode(MavenCentralDeployTaskConfiguration localConfiguration) {
-        String variableValue = localConfiguration.fetchVariable(CENTRAL_MODE);
-        if(StringUtils.isNotBlank(variableValue))
-            return variableValue;
-
-        return localConfiguration.getString(CENTRAL_MODE, getCentralMode());
     }
 
     public void setCentralMode(String centralMode) {

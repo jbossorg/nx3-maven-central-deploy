@@ -105,21 +105,12 @@ public class MavenCentralDeploy extends ComponentSupport {
 
           if (listOfFailures.isEmpty()) {
 
-              MavenCentralDeployCentralSettingsConfiguration deployConfiguration = findConfigurationForPlugin(MavenCentralDeployCentralSettingsConfiguration.class);
+              MavenCentralDeployCentralSettingsConfiguration deployDefaultConfiguration = findConfigurationForPlugin(MavenCentralDeployCentralSettingsConfiguration.class);
 
-              final String centralUser, centralPassword, centralURL, centralMode;
-
-              if (deployConfiguration != null) {
-                  centralUser = deployConfiguration.getCentralUser(configuration);
-                  centralPassword = deployConfiguration.getCentralPassword(configuration);
-                  centralMode = deployConfiguration.getCentralMode(configuration);
-                  centralURL = deployConfiguration.getCentralURL(configuration);
-              } else {
-                  centralUser = configuration.fetchVariable(CENTRAL_USER);
-                  centralPassword = configuration.fetchVariable(CENTRAL_PASSWORD);
-                  centralMode = configuration.fetchVariable(CENTRAL_MODE);
-                  centralURL = configuration.fetchVariable(CENTRAL_URL);
-              }
+              final String centralUser = configuration.getCentralUser(deployDefaultConfiguration),
+                      centralPassword = configuration.getCentralPassword(deployDefaultConfiguration),
+                      centralURL = configuration.getCentralURL(deployDefaultConfiguration),
+                      centralMode = configuration.getCentralMode(deployDefaultConfiguration);
 
               boolean publishPossible = true;
               if (StringUtils.isBlank(centralUser)) {
@@ -130,7 +121,7 @@ public class MavenCentralDeploy extends ComponentSupport {
                   log.error("The artifacts can not be published. Password of the Maven Central account is missing!");
                   publishPossible = false;
               }
-              if (!"USER_MANAGED".equalsIgnoreCase(centralMode) && !"AUTOMATIC".equalsIgnoreCase(centralMode)) {
+              if (!"USER_MANAGED".equalsIgnoreCase(centralMode) && !AUTOMATIC.equalsIgnoreCase(centralMode)) {
                   log.error("The artifacts can not be published. Deployment mode should either be USER_MANAGED or AUTOMATIC! It is " + centralMode);
                   publishPossible = false;
               }
@@ -208,27 +199,29 @@ public class MavenCentralDeploy extends ComponentSupport {
                 report.createReport(configuration, listOfFailures,  new HashMap<>(templateVariables)); // re-pack template variables so each report may work within its space
              }
 
-             final String failedTagName;
-             if (/*configuration.getMarkArtifacts() && */ mcdTagSetupConfiguration != null && StringUtils.isNotBlank((failedTagName = mcdTagSetupConfiguration.getFailedTagName()))) {
-                if (tagStore == null || tagService == null) {
-                   String msg = "Cannot mark failed artifacts! This version of Nexus does not support tagging.";
-                   log.error(msg);
-                   response.append("\n- Warning: ").append(msg);
-                } else {
-                   log.info("Tagging " + listOfFailures.size() + " failures.");
+             if(configuration.getMarkArtifacts()) {
+                 final String failedTagName;
+                 if (/*configuration.getMarkArtifacts() && */ mcdTagSetupConfiguration != null && StringUtils.isNotBlank((failedTagName = mcdTagSetupConfiguration.getFailedTagName()))) {
+                     if (tagStore == null || tagService == null) {
+                         String msg = "Cannot mark failed artifacts! This version of Nexus does not support tagging.";
+                         log.error(msg);
+                         response.append("\n- Warning: ").append(msg);
+                     } else {
+                         log.info("Tagging " + listOfFailures.size() + " failures.");
 
-                   verifyTag(failedTagName, mcdTagSetupConfiguration.getFailedTagAttributes(), templateVariables);
+                         verifyTag(failedTagName, mcdTagSetupConfiguration.getFailedTagAttributes(), templateVariables);
 
-                   listOfFailures.stream().map(FailedCheck::getComponent).distinct().forEach(component -> {
+                         listOfFailures.stream().map(FailedCheck::getComponent).distinct().forEach(component -> {
 
-                      if (log.isDebugEnabled())
-                         log.debug("Tagging failed artifact: " + component.toStringExternal());
+                             if (log.isDebugEnabled())
+                                 log.debug("Tagging failed artifact: " + component.toStringExternal());
 
-                      //noinspection ConstantConditions
+                             //noinspection ConstantConditions
 
-                      tagService.maybeAssociateById(failedTagName, repository, component.entityId());
-                   });
-                }
+                             tagService.maybeAssociateById(failedTagName, repository, component.entityId());
+                         });
+                     }
+                 }
              }
 
              throw new RuntimeException("Validations failed!"); // throw an exception so the task is reported as failed

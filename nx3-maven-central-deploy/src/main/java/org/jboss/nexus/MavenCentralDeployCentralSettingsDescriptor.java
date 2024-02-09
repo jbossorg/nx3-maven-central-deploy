@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static org.jboss.nexus.MavenCentralDeployCentralSettingsConfiguration.USER_MANAGED;
 import static org.jboss.nexus.MavenCentralDeployTaskDescriptor.CATEGORY;
 
 @Singleton
@@ -69,7 +70,7 @@ public class MavenCentralDeployCentralSettingsDescriptor extends CapabilityDescr
         final List<FormField> initializeFormFields = new ArrayList<>(4);
         initializeFormFields.add(new StringTextFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_USER, messages.centralUserLabel(), messages.centralUserHelp(), FormField.MANDATORY));
         initializeFormFields.add(new PasswordFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_PASSWORD, messages.centralPasswordLabel(), messages.centralPasswordHelp(), FormField.MANDATORY));
-        initializeFormFields.add(new StringTextFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_MODE, messages.centralModeLabel(), messages.centralModeHelp(), FormField.MANDATORY, "USER_MANAGED|AUTOMATIC").withInitialValue("USER_MANAGED"));
+        initializeFormFields.add(new StringTextFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_MODE, messages.centralModeLabel(), messages.centralModeHelp(), FormField.MANDATORY, "USER_MANAGED|AUTOMATIC").withInitialValue(USER_MANAGED));
         initializeFormFields.add(new StringTextFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_URL, messages.centralUrlLabel(), messages.centralUrlHelp(), FormField.MANDATORY).withInitialValue("https://central.sonatype.com"));
 
         formFields = Collections.unmodifiableList(initializeFormFields);

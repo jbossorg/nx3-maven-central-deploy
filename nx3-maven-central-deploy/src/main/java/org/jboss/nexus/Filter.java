@@ -1,9 +1,11 @@
 package org.jboss.nexus;
 
+import com.sonatype.nexus.tags.Tag;
 import com.sonatype.nexus.tags.orient.OrientTag;
 import com.sonatype.nexus.tags.orient.TagComponent;
 import org.apache.commons.lang3.StringUtils;
 
+import org.jboss.nexus.content.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -348,7 +350,7 @@ public class Filter {
 	}
 
 
-	/** Verifies, that the current (database component matches the filter conditions.
+	/** Verifies, that the current database component matches the filter conditions. It does not check the tags, because they are not part of the component information like in the case of OrientDB components
 	 *
 	 * @param component component to be checked
 	 *
@@ -358,33 +360,43 @@ public class Filter {
 		// no evaluation of group and artifact as those should be filtered out through database query
 
 		if(StringUtils.isNotEmpty(getVersion()))
-			if(!FunctionMapping.resolve(getVersionOperation(), component.version(), getVersion()))
-				return false;
+            return FunctionMapping.resolve(getVersionOperation(), component.version(), getVersion());
 
-//		if (StringUtils.isNotEmpty(getTag()))
-//			if(((TagComponent)component).tags().stream().noneMatch( t -> FunctionMapping.resolve(getTagOperation(), t.name(), getTag())))
-//				return false;
-//
-//		if (!tagAttributeOperations.isEmpty() ) {
-//			for(TagAttributeExpression tagAttributeExpression : tagAttributeOperations) {
-//				boolean found = false;
-//				for (OrientTag tag : ((TagComponent) component).tags()) {
-//					Object object = tag.attributes().get(tagAttributeExpression.tagAttr);
-//					if (object != null && String.class.isAssignableFrom(object.getClass())) {
-//						found = FunctionMapping.resolve(tagAttributeExpression.tagAttrOperation, (String) object, tagAttributeExpression.tagAttrValue);
-//						if (found)
-//							break;
-//					}
-//				}
-//				if(!found)
-//					return false;
-//			}
-
-
-
-		return true; // todo resolve tag verification
+		return true;
 
 	}
+
+	/** Checks, if the component corresponds to the
+	 *
+	 * @param component component to be investigated
+	 *
+	 * @return true if the component tags correspond to the filter requirements
+	 */
+	public boolean checkComponentTag(Component component) {
+		if (StringUtils.isNotEmpty(getTag()))
+			if(component.tags().stream().noneMatch( t -> FunctionMapping.resolve(getTagOperation(), t.name(), getTag())))
+				return false;
+
+		if (!tagAttributeOperations.isEmpty() ) {
+			for (TagAttributeExpression tagAttributeExpression : tagAttributeOperations) {
+				boolean found = false;
+				for (Tag tag : component.tags()) {
+					Object object = tag.attributes().get(tagAttributeExpression.tagAttr);
+					if (object != null && String.class.isAssignableFrom(object.getClass())) {
+						found = FunctionMapping.resolve(tagAttributeExpression.tagAttrOperation, (String) object, tagAttributeExpression.tagAttrValue);
+						if (found)
+							break;
+					}
+				}
+				if (!found)
+					return false;
+			}
+		}
+
+		return true;
+	}
+
+
 
 	/** Verifies, that the current (OrientDB) component matches the filter conditions.
 	 *

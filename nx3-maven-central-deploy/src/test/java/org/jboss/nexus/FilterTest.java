@@ -1,5 +1,6 @@
 package org.jboss.nexus;
 
+import com.sonatype.nexus.tags.Tag;
 import com.sonatype.nexus.tags.orient.OrientTag;
 import com.sonatype.nexus.tags.orient.TagComponent;
 import org.junit.Test;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 
@@ -26,16 +28,6 @@ public class FilterTest {
 
 	@Mock
 	private TagComponent tagComponent;
-
-
-	@Test
-	public void parseFilterString() {
-		// TODO: 01.02.2023 all the testing
-	}
-
-
-	// TODO: 2024-02-01 - tests against database implementation!!!!!
-
 
 	@Test
 	public void checkComponentNull() {
@@ -254,10 +246,10 @@ public class FilterTest {
 		}
 	}
 
+	@SuppressWarnings("SpellCheckingInspection")
 	@Test(expected = Filter.ParseException.class)
 	public void parseFilterStringTypo() {
 		try {
-			//noinspection SpellCheckingInspection
 			Filter.parseFilterString("goup=org.jboss&artifact=nexus&version>=2.3.1&tag=TO_DEPLOY&tagAttr=OS<>MacOS"); // misspelled group
 		} catch (Filter.ParseException e ) {
 			assertEquals("Incorrect filter expression: allowed fields are group, artifact, name, version, tag, tagAttr: goup=org.jboss", e.getMessage());
@@ -346,4 +338,84 @@ public class FilterTest {
 			assertEquals("", logicalOperation.getAttribute());
 	}
 
+	//------------ tag tests Database implementation
+	@Test
+	public void checkComponentTagDatabase() {
+		Filter tested = Filter.parseFilterString("tag=DEPLOYED");
+
+		org.jboss.nexus.content.Component component = new TemplateRenderingHelper.FictiveComponent("org.jboss", "nexus", "1.0");
+		assertFalse(tested.checkComponentTag(component));
+		
+		Tag tag = mock(Tag.class);
+		when(tag.name()).thenReturn("DEPLOYED");
+		component.tags().add(tag);
+		
+		assertTrue(tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tag>=DEPLOYED");
+		assertTrue(tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tag>DEPLOYED");
+		assertFalse(tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tag>=Z");
+		assertFalse(tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tag>=A");
+		assertTrue(tested.checkComponentTag(component));
+	}
+
+	@Test
+	public void checkComponentTagAttrDatabase() {
+		Filter tested = Filter.parseFilterString("tagAttr=OS=macOS");
+
+		org.jboss.nexus.content.Component component = new TemplateRenderingHelper.FictiveComponent("org.jboss", "nexus", "1.0");
+		assertFalse("No tag attributes", tested.checkComponentTag(component));
+
+		Tag tag = mock(Tag.class);
+		// when(tag.name()).thenReturn("DEPLOYED_EMPTY");
+		when(tag.attributes()).thenReturn(new NestedAttributesMap());
+		component.tags().add(tag);		
+		
+
+		Map<String, Object> attributes = new HashMap<>();
+		attributes.put("OS", "macOS");
+		attributes.put("build", "23");
+		attributes.put("java-vm", "11");
+
+		tag = mock(Tag.class);
+		// when(tag.name()).thenReturn("DEPLOYED_MULTIPLE");
+		when(tag.attributes()).thenReturn(new NestedAttributesMap("attributes", attributes));
+		component.tags().add(tag);
+
+		// ------------
+
+		tested = Filter.parseFilterString("tagAttr=OS=macOS");
+		assertTrue("Equals", tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tagAttr=OS<=macOS");
+		assertTrue("less or equal", tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tagAttr=OS>=macOS");
+		assertTrue("more or equal", tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tagAttr=OS<macOS");
+		assertFalse("lesser", tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tagAttr=OS>macOS");
+		assertFalse("", tested.checkComponentTag(component));
+
+
+		tested = Filter.parseFilterString("tagAttr=build>0");
+		assertTrue("greater", tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tagAttr=build<25");
+		assertTrue("smaller", tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tagAttr=build<25&tagAttr=OS=macOS");
+		assertTrue("Multiple attributes matches", tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tagAttr=build<25&tagAttr=OS=Windows");
+		assertFalse("Multiple attributes does not match", tested.checkComponentTag(component));
+	}
 }

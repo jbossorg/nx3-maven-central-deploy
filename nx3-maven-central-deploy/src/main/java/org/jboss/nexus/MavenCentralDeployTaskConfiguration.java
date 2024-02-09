@@ -10,6 +10,7 @@ import java.io.StringReader;
 import java.util.Properties;
 
 import static com.google.common.base.Preconditions.checkState;
+import static org.jboss.nexus.MavenCentralDeployCentralSettingsConfiguration.*;
 
 public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
 
@@ -214,5 +215,134 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
             }
         }
         return null;
+    }
+
+    ////////////////////////
+    /** Gets the deployment user.
+     *
+     * @return the user in Maven Central service
+     */
+    public String getCentralUser() {
+        return getString(CENTRAL_USER);
+    }
+
+    /** Gets the user. If the user is defined inside the task configuration, this value has precedence. The highest
+     * precedence has the variable value.
+     *
+     * @param registeredDefaults  optional default configuration of the deployment
+     *
+     * @return the user in Maven Central service
+     */
+    public String getCentralUser(MavenCentralDeployCentralSettingsConfiguration registeredDefaults ) {
+        String variableValue = fetchVariable(CENTRAL_USER);
+        if(StringUtils.isNotEmpty(variableValue))
+            return variableValue;
+
+        variableValue = getCentralUser();
+        if(StringUtils.isNotEmpty(variableValue))
+            return variableValue;
+
+        if(registeredDefaults != null)
+            return registeredDefaults.getCentralUser();
+
+        return null;
+    }
+
+    public void setCentralUser(String centralUser) {
+        setString(CENTRAL_USER, centralUser);
+    }
+
+    /** The password of the user in Maven Central service
+     *
+     * @return password
+     */
+    public String getCentralPassword() {
+        return getString(CENTRAL_PASSWORD);
+    }
+
+    /** The password of the user in Maven Central service. If defined in the task configuration, that value
+     * has precedence.
+     *
+     * @return password
+     */
+    public String getCentralPassword(MavenCentralDeployCentralSettingsConfiguration registeredDefaults) {
+        String variableValue = fetchVariable(CENTRAL_PASSWORD);
+        if(StringUtils.isNotEmpty(variableValue))
+            return variableValue;
+
+        variableValue = getCentralPassword();
+        if(StringUtils.isNotEmpty(variableValue))
+            return variableValue;
+
+        if(registeredDefaults != null)
+            return registeredDefaults.getCentralPassword();
+
+        return null;
+    }
+
+    public void setCentralPassword(String centralPassword) {
+        setString(CENTRAL_PASSWORD, centralPassword);
+    }
+
+    /** Returns the URL of the Maven Central service
+     *
+     * @return URL as a string
+     */
+    public String getCentralURL() {
+        return getString(CENTRAL_URL);
+    }
+
+    /** Returns the URL of the Maven Central service. The information from the tasks local configuration has precedence.
+     *
+     * @return URL as a string
+     */
+    public String getCentralURL(MavenCentralDeployCentralSettingsConfiguration registeredDefaults) {
+        String variableValue = fetchVariable(CENTRAL_URL);
+        if(StringUtils.isNotEmpty(variableValue))
+            return variableValue;
+
+        variableValue = getCentralURL();
+        if(StringUtils.isNotEmpty(variableValue))
+            return variableValue;
+
+        if(registeredDefaults != null)
+            return registeredDefaults.getCentralURL();
+
+        return null;
+    }
+
+    public void setCentralURL(String centralURL) {
+        setString(CENTRAL_URL, centralURL);
+    }
+
+    /** Gets mode of the deployment
+     *
+     * @return "USER_MANAGED" or "AUTOMATIC"
+     */
+    public String getCentralMode() {
+        return getString(CENTRAL_MODE, USER_MANAGED);
+    }
+
+    /** Gets mode of the deployment. If defined in local configuration, the value has precedence.
+     *
+     * @return "USER_MANAGED" or "AUTOMATIC"
+     */
+    public String getCentralMode(MavenCentralDeployCentralSettingsConfiguration registeredDefaults) {
+        String variableValue = fetchVariable(CENTRAL_MODE);
+        if(StringUtils.isNotEmpty(variableValue))
+            return variableValue;
+
+        variableValue = getCentralMode();
+        if(StringUtils.isNotEmpty(variableValue))
+            return variableValue;
+
+        if(registeredDefaults != null)
+            return registeredDefaults.getCentralMode();
+
+        return null;
+    }
+
+    public void setCentralMode(String centralMode) {
+        setString(CENTRAL_MODE, centralMode);
     }
 }

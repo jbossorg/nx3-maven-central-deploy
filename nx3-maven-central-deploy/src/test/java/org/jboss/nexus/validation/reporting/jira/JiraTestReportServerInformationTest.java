@@ -64,7 +64,7 @@ public class JiraTestReportServerInformationTest {
 	}
 
 
-	@Test
+	//@Test
 	public void findSecurityIDReal() {
 		tested = new JiraTestReportServerInformation(new JiraTestReportCapabilityDescriptor());
 		tested.setJiraConnectionInformation("https://issues.stage.redhat.com", null, "", null,"squid.corp.redhat.com", 3128); // fixme credentials remove!
@@ -145,8 +145,6 @@ public class JiraTestReportServerInformationTest {
 
 		Integer result = tested.findSecurityLevelID("NEXUS", "Company Internal");
 		assertEquals((Integer)101, result);
-
-		result = tested.findSecurityLevelID("ANOTHER", "Company Internal");
 
 		assertEquals((Integer) 101, tested.findSecurityLevelID("NEXUS", "Company Internal"));
 		assertEquals((Integer) 303, tested.findSecurityLevelID("NEXUS", "Security Issue"));
