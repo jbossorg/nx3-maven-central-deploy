@@ -248,7 +248,7 @@ public class MavenCentralDeploy extends ComponentSupport {
     */
      void verifyTag(@NotNull String tagName, @Nullable String tagAttributes, @NotNull final Map<String, Object> taskConfiguration) {
       tagName = templateRenderingHelper.render(tagName, taskConfiguration);
-      Tag result = tagStore.get(tagName); // TODO: 02.03.2023 Junit testing
+      Tag result = tagStore.get(tagName);
 
       Map<String, Object> attributes = new HashMap<>();
       if(StringUtils.isNotBlank(tagAttributes)) {

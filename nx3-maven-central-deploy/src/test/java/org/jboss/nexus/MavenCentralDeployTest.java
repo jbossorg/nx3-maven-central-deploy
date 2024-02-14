@@ -427,11 +427,38 @@ public class MavenCentralDeployTest{
         assertEquals("myTag-value1 and value2", testTag.name());
     }
 
-    // TODO: 2024-02-09 -  add the tests for these four cases:
-    // 11:45:47.975 ERROR [main] org.jboss.nexus.MavenCentralDeploy - The artifacts can not be published. Username of the Maven Central account is missing!
-    // 11:45:47.976 ERROR [main] org.jboss.nexus.MavenCentralDeploy - The artifacts can not be published. Password of the Maven Central account is missing!
-    // 11:45:47.976 ERROR [main] org.jboss.nexus.MavenCentralDeploy - The artifacts can not be published. Deployment mode should either be USER_MANAGED or AUTOMATIC! It is null
-    // 11:45:47.981 ERROR [main] org.jboss.nexus.MavenCentralDeploy - The artifacts can not be published. The URL of the Maven Central is not valid! The value is null
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void verifyMavenCentralInformationIsMising() throws IOException {
+        testConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DRY_RUN, false);
+
+        TestReportCapability report = mock(TestReportCapability.class);
+        reports.add(report);
+
+        String value = testConfiguration.getCentralURL();
+        testConfiguration.setCentralURL(null);
+        mavenCentralDeploy.processDeployment(testConfiguration);
+        verify(mavenCentralDeploy, never()).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // missing information
+        testConfiguration.setCentralURL(value);
+
+        value = testConfiguration.getCentralUser();
+        testConfiguration.setCentralUser(null);
+        mavenCentralDeploy.processDeployment(testConfiguration);
+        verify(mavenCentralDeploy, never()).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // missing information
+        testConfiguration.setCentralUser(value);
+
+        value = testConfiguration.getCentralPassword();
+        testConfiguration.setCentralPassword(null);
+        mavenCentralDeploy.processDeployment(testConfiguration);
+        verify(mavenCentralDeploy, never()).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // missing information
+        testConfiguration.setCentralPassword(value);
+
+        // the full information is present
+        mavenCentralDeploy.processDeployment(testConfiguration);
+        verify(mavenCentralDeploy).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // deployed once
+    }
+
+
 
     // TODO: 2024-02-09 - test publish information with registered default configuration
 

@@ -320,7 +320,7 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
      * @return "USER_MANAGED" or "AUTOMATIC"
      */
     public String getCentralMode() {
-        return getString(CENTRAL_MODE, USER_MANAGED);
+        return getString(CENTRAL_MODE);
     }
 
     /** Gets mode of the deployment. If defined in local configuration, the value has precedence.
