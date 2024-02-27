@@ -24,6 +24,8 @@ public class MavenCentralDeployTaskConfigurationTest {
         defaultConfiguration.put(CENTRAL_USER, "default_user");
         defaultConfiguration.put(CENTRAL_PASSWORD, "default_password");
         defaultConfiguration.put(CENTRAL_MODE, "default_mode");
+        defaultConfiguration.put(CENTRAL_PROXY, "proxy.company.org");
+        defaultConfiguration.put(CENTRAL_PROXY_PORT, "3127");
     }
 
     @Before
@@ -99,5 +101,41 @@ public class MavenCentralDeployTaskConfigurationTest {
         tested.setString(VARIABLES, CENTRAL_MODE+"=variable_mode");
         assertEquals("Variable precedence", "variable_mode", tested.getCentralMode(null));
         assertEquals("Variable precedence 2", "variable_mode", tested.getCentralMode(registeredDefaultConfiguration));
+    }
+
+
+    @Test
+    public void getCentralProxy() {
+        assertNull(tested.getCentralProxy());
+        assertNull(tested.getCentralProxy(null));
+
+        assertEquals("proxy.company.org", tested.getCentralProxy(registeredDefaultConfiguration));
+
+        tested.setCentralProxy("new.proxy.company.org");
+        assertEquals("new.proxy.company.org", tested.getCentralProxy());
+        assertEquals("Direct configuration precedence", "new.proxy.company.org", tested.getCentralProxy(null));
+        assertEquals("Direct configuration precedence 2", "new.proxy.company.org", tested.getCentralProxy(registeredDefaultConfiguration));
+
+        tested.setString(VARIABLES, CENTRAL_PROXY+"=variable.proxy.company.org");
+        assertEquals("Variable precedence", "variable.proxy.company.org", tested.getCentralProxy(null));
+        assertEquals("Variable precedence 2", "variable.proxy.company.org", tested.getCentralProxy(registeredDefaultConfiguration));
+    }
+
+
+    @Test
+    public void getCentralProxyPort() {
+        assertNull(tested.getCentralProxyPort());
+        assertNull(tested.getCentralProxyPort(null));
+
+        assertEquals(Integer.valueOf(3127), tested.getCentralProxyPort(registeredDefaultConfiguration));
+
+        tested.setCentralProxyPort(3129);
+        assertEquals(Integer.valueOf(3129), tested.getCentralProxyPort());
+        assertEquals("Direct configuration precedence", Integer.valueOf(3129), tested.getCentralProxyPort(null));
+        assertEquals("Direct configuration precedence 2", Integer.valueOf(3129), tested.getCentralProxyPort(registeredDefaultConfiguration));
+
+        tested.setString(VARIABLES, CENTRAL_PROXY_PORT+"=3140");
+        assertEquals("Variable precedence", Integer.valueOf(3140), tested.getCentralProxyPort(null));
+        assertEquals("Variable precedence 2", Integer.valueOf(3140), tested.getCentralProxyPort(registeredDefaultConfiguration));
     }
 }

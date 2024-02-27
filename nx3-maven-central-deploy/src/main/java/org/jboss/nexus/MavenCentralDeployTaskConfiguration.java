@@ -342,7 +342,102 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
         return null;
     }
 
+    /** The method suggests a nice name of the bundle from the current configuration
+     *
+     * @return human-readable name of the bundle
+     */
+    public String getBundleName() {
+        StringBuilder builder = new StringBuilder();
+        if(StringUtils.isNotEmpty(getName())) {
+            builder.append(getName().trim().replace(" ", "_"));
+        } else {
+            builder.append("bundle");
+        }
+
+        if( getRunNumber() != null)
+            builder.append('-').append(getRunNumber());
+
+        return builder.toString();
+    }
+
     public void setCentralMode(String centralMode) {
         setString(CENTRAL_MODE, centralMode);
     }
+
+
+
+    /** Gets the proxy server host.
+     *
+     * @return hostname or null
+     */
+    public String getCentralProxy() {
+        return getString(CENTRAL_PROXY);
+    }
+
+    /** Gets mode of the deployment. If defined in local configuration, the value has precedence.
+     *
+     * @param registeredDefaults registered defaults for the Maven Central deployment
+     *
+     * @return host name or null
+     */
+    public String getCentralProxy(MavenCentralDeployCentralSettingsConfiguration registeredDefaults) {
+        String variableValue = fetchVariable(CENTRAL_PROXY);
+        if(StringUtils.isNotEmpty(variableValue))
+            return variableValue;
+
+        variableValue = getCentralProxy();
+        if(StringUtils.isNotEmpty(variableValue))
+            return variableValue;
+
+        if(registeredDefaults != null)
+            return registeredDefaults.getCentralProxy();
+
+        return null;
+    }
+
+
+    /** Sets proxy server.
+     *
+     * @param centralProxy host name of the proxy server
+     */
+    public void setCentralProxy(String centralProxy) {
+        setString(CENTRAL_PROXY, centralProxy);
+    }
+
+    /** Gets port of the proxy server used to connect to Maven Central.
+     *
+     * @return proxy server port
+     */
+    public Integer getCentralProxyPort() {
+        return getInteger(CENTRAL_PROXY_PORT);
+    }
+
+    /** Gets port of the proxy server used to connect to Maven Central. If defined in local configuration, the value has precedence.
+     *
+     * @return port number
+     */
+    public Integer getCentralProxyPort(MavenCentralDeployCentralSettingsConfiguration registeredDefaults) {
+        String variableValue = fetchVariable(CENTRAL_PROXY_PORT);
+        if(StringUtils.isNotEmpty(variableValue))
+            return Integer.parseInt(variableValue);
+
+        Integer proxyPort = getCentralProxyPort();
+        if(proxyPort != null)
+            return proxyPort;
+
+        if(registeredDefaults != null)
+            return registeredDefaults.getCentralProxyPort();
+
+        return null;
+    }
+
+
+    /** Sets  port of the proxy server used to connect to Maven Central.
+     *
+     * @param centralProxyPort port number
+     */
+    public void setCentralProxyPort(Integer centralProxyPort) {
+        setInteger(CENTRAL_PROXY_PORT, centralProxyPort);
+    }
+
 }

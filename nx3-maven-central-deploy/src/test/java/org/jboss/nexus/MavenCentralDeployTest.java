@@ -3,6 +3,12 @@ package org.jboss.nexus;
 import com.sonatype.nexus.tags.Tag;
 import com.sonatype.nexus.tags.TagStore;
 import com.sonatype.nexus.tags.service.TagService;
+import org.apache.http.HttpEntity;
+import org.apache.http.StatusLine;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.jboss.nexus.content.Component;
 import org.jboss.nexus.content.ContentBrowser;
 import org.jboss.nexus.tagging.MCDTagSetupConfiguration;
@@ -14,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.slf4j.Logger;
 import org.sonatype.nexus.common.collect.NestedAttributesMap;
@@ -21,7 +28,10 @@ import org.sonatype.nexus.common.entity.EntityId;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.manager.RepositoryManager;
 
+import javax.net.ssl.SSLException;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.zip.ZipOutputStream;
 
@@ -31,6 +41,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings({"FieldCanBeLocal", "unchecked", "rawtypes"})
 @RunWith(MockitoJUnitRunner.class)
 public class MavenCentralDeployTest{
     private MavenCentralDeploy mavenCentralDeploy;
@@ -52,6 +63,29 @@ public class MavenCentralDeployTest{
     @Mock
     private Component testComponent;
 
+    @Mock
+    private HttpClientBuilder httpClientBuilder;
+
+    @Mock
+    private CloseableHttpClient closeableHttpClient;
+
+    @Mock
+    private CloseableHttpClient closeableHttpClientStatus;
+
+    @Mock
+    private CloseableHttpResponse closeableHttpResponse1;
+
+    @Mock
+    private CloseableHttpResponse closeableHttpResponse2;
+    @Mock
+    private CloseableHttpResponse closeableHttpResponseStatus1, closeableHttpResponseStatus2;
+
+    @Mock
+    private StatusLine statusLine1, statusLine2;
+
+    @Mock
+    private StatusLine statusLineStatus1, statusLineStatus2;
+
     private MavenCentralDeployTaskConfiguration testConfiguration;
 
     private List<FailedCheck> failedChecks;
@@ -62,9 +96,61 @@ public class MavenCentralDeployTest{
 
     private List<Component> okComponentsToDeploy;
 
+
+    private final String errorSample1 = "{\n" +
+            "   \"deploymentId\":\"cbfe2fa8-c84c-4ec0-8e45-c71cdb5f6390\",\n" +
+            "   \"deploymentName\":\"xcom\",\n" +
+            "   \"deploymentState\":\"FAILED\",\n" +
+            "   \"purls\":[\n" +
+            "      \"pkg:maven/xcom.sonatype.central.testing.david-hladky/kie-api@7.42.0.Final?type=bundle\"\n" +
+            "   ],\n" +
+            "   \"errors\":{\n" +
+            "      \"pkg:maven/xcom.sonatype.central.testing.david-hladky/kie-api@7.42.0.Final?type=bundle\":[\n" +
+            "         \"Invalid 'md5' checksum for file: kie-api-7.42.0.Final.pom\",\n" +
+            "         \"Invalid 'sha1' checksum for file: kie-api-7.42.0.Final.pom\",\n" +
+            "         \"Missing signature for file: kie-api-7.42.0.Final-javadoc.jar\",\n" +
+            "         \"Missing signature for file: kie-api-7.42.0.Final-sources.jar\",\n" +
+            "         \"Missing signature for file: kie-api-7.42.0.Final-test-sources.jar\",\n" +
+            "         \"Missing signature for file: kie-api-7.42.0.Final-tests.jar\",\n" +
+            "         \"Missing signature for file: kie-api-7.42.0.Final.jar\",\n" +
+            "         \"Missing signature for file: kie-api-7.42.0.Final.pom\",\n" +
+            "         \"Namespace 'xcom.sonatype.central.testing.david-hladky' is not allowed\",\n" +
+            "         \"Dependency version information is missing\",\n" +
+            "         \"Developers information is missing\",\n" +
+            "         \"License information is missing\",\n" +
+            "         \"Project URL is not defined\",\n" +
+            "         \"SCM URL is not defined\"\n" +
+            "      ]\n" +
+            "   },\n" +
+            "   \"cherryBomUrl\":null\n" +
+            "}";
+
+    private final String pendingSample = "{\n" +
+            "   \"deploymentId\":\"cbfe2fa8-c84c-4ec0-8e45-c71cdb5f6390\",\n" +
+            "   \"deploymentName\":\"com\",\n" +
+            "   \"deploymentState\":\"PENDING\",\n" +
+            "   \"purls\":[\n" +
+            "      \"pkg:maven/com.sonatype.central.testing.david-hladky/kie-api@7.42.0.Final?type=bundle\"\n" +
+            "   ],\n" +
+            "   \"errors\":{ },\n" +
+            "   \"cherryBomUrl\":null\n" +
+            "}";
+
+    private final String publishedSample = "{\n" +
+            "   \"deploymentId\":\"cbfe2fa8-c84c-4ec0-8e45-c71cdb5f6390\",\n" +
+            "   \"deploymentName\":\"com\",\n" +
+            "   \"deploymentState\":\"PUBLISHED\",\n" +
+            "   \"purls\":[\n" +
+            "      \"pkg:maven/com.sonatype.central.testing.david-hladky/kie-api@7.42.0.Final?type=bundle\"\n" +
+            "   ],\n" +
+            "   \"errors\":{ },\n" +
+            "   \"cherryBomUrl\":null\n" +
+            "}";
+
+
     @SuppressWarnings("ExtractMethodRecommender")
     @Before
-    public void setup() {
+    public void setup() throws IOException {
         //validations = new HashSet<>();
         reports = new HashSet<>();
         failedChecks = new ArrayList<>();
@@ -95,6 +181,47 @@ public class MavenCentralDeployTest{
 
         okComponentsToDeploy = new ArrayList<>();
         okComponentsToDeploy.add(testComponent);
+
+        when(httpClientBuilder.build())
+                .thenReturn(closeableHttpClient).thenReturn(closeableHttpClient)
+                .thenReturn(closeableHttpClientStatus);
+
+        when(closeableHttpClient.execute(any(HttpUriRequest.class))) // responses for the first and the second call of upload endpoint
+                .thenReturn(closeableHttpResponse1)
+                .thenReturn(closeableHttpResponse2);
+
+        when(closeableHttpResponse1.getStatusLine()).thenReturn(statusLine1);
+        when(closeableHttpResponse2.getStatusLine()).thenReturn(statusLine2);
+
+        when(statusLine1.getStatusCode()).thenReturn(401); // first call not authenticated
+        when(statusLine2.getStatusCode()).thenReturn(201); // second call if successful
+
+        HttpEntity httpIdEntity = mock(HttpEntity.class);
+        when(httpIdEntity.getContent()).thenReturn(new ByteArrayInputStream("some-id".getBytes(StandardCharsets.UTF_8)));
+
+        when(closeableHttpResponse2.getEntity()).thenReturn(httpIdEntity);
+
+       // ---- status checking - first request Maven Central Processing, second request Maven Central published
+       when(closeableHttpClientStatus.execute(any(HttpUriRequest.class))) // responses for the status calls
+               .thenReturn(closeableHttpResponseStatus1)
+               .thenReturn(closeableHttpResponseStatus2);
+
+        when(closeableHttpResponseStatus1.getStatusLine()).thenReturn(statusLineStatus1);
+        when(closeableHttpResponseStatus2.getStatusLine()).thenReturn(statusLineStatus2);
+
+        when(statusLineStatus1.getStatusCode()).thenReturn(200);
+        when(statusLineStatus2.getStatusCode()).thenReturn(200);
+
+        HttpEntity httpEntity = mock(HttpEntity.class);
+        when(httpEntity.getContent()).thenReturn(new ByteArrayInputStream(pendingSample.getBytes(StandardCharsets.UTF_8)));
+
+        when(closeableHttpResponseStatus1.getEntity()).thenReturn(httpEntity);
+
+        httpEntity = mock(HttpEntity.class);
+        when(httpEntity.getContent()).thenReturn(new ByteArrayInputStream(publishedSample.getBytes(StandardCharsets.UTF_8)));
+
+        when(closeableHttpResponseStatus2.getEntity()).thenReturn(httpEntity);
+
     }
 
     @Test
@@ -180,8 +307,11 @@ public class MavenCentralDeployTest{
         TestReportCapability report = mock(TestReportCapability.class);
         reports.add(report);
 
+        try (MockedStatic<MavenCentralDeploy> mockedStatic = mockStatic(MavenCentralDeploy.class)) {
+            mockedStatic.when(() -> MavenCentralDeploy.getHttpClientBuilder(nullable(String.class), nullable(Integer.class))).thenReturn(httpClientBuilder);
 
-        mavenCentralDeploy.processDeployment(testConfiguration);
+            mavenCentralDeploy.processDeployment(testConfiguration);
+        }
 
         verify(mavenCentralDeploy).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // deployed once
         verify(report, never()).createReport(any(), any(), any());
@@ -193,7 +323,11 @@ public class MavenCentralDeployTest{
 
         setupTagging();
 
-        mavenCentralDeploy.processDeployment(testConfiguration);
+        try (MockedStatic<MavenCentralDeploy> mockedStatic = mockStatic(MavenCentralDeploy.class)) {
+            mockedStatic.when(() -> MavenCentralDeploy.getHttpClientBuilder(nullable(String.class), nullable(Integer.class))).thenReturn(httpClientBuilder);
+
+            mavenCentralDeploy.processDeployment(testConfiguration);
+        }
 
         verify(mavenCentralDeploy).publishArtifact(same(testComponent), any(ZipOutputStream.class));
         verify(mavenCentralDeploy).verifyTag(eq("deployTag"), nullable(String.class), any());
@@ -209,7 +343,11 @@ public class MavenCentralDeployTest{
 
         testConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.MARK_ARTIFACTS, false);
 
-        mavenCentralDeploy.processDeployment(testConfiguration);
+        try (MockedStatic<MavenCentralDeploy> mockedStatic = mockStatic(MavenCentralDeploy.class)) {
+            mockedStatic.when(() -> MavenCentralDeploy.getHttpClientBuilder(nullable(String.class), nullable(Integer.class))).thenReturn(httpClientBuilder);
+
+            mavenCentralDeploy.processDeployment(testConfiguration);
+        }
 
         verify(mavenCentralDeploy).publishArtifact(same(testComponent), any(ZipOutputStream.class));
         verify(mavenCentralDeploy, never()).verifyTag(eq("deployTag"), nullable(String.class), any());
@@ -274,7 +412,6 @@ public class MavenCentralDeployTest{
     }
 
 
-
     private void setupTagging() throws IOException {
         HashMap<String, String> tagSetupMap = new HashMap<>();
         tagSetupMap.put(MCDTagSetupConfiguration.DEPLOYED_TAG_NAME, "deployTag");
@@ -291,10 +428,6 @@ public class MavenCentralDeployTest{
         mavenCentralDeploy.registerConfiguration(tagSetupConfiguration);
     }
 
-    @Test
-    public void verifyTagEmpty() {
-        // TODO: 21.03.2023 what was this?
-    }
 
     private static class TestTag implements Tag {
 
@@ -429,7 +562,7 @@ public class MavenCentralDeployTest{
 
     @SuppressWarnings("rawtypes")
     @Test
-    public void verifyMavenCentralInformationIsMising() throws IOException {
+    public void verifyMavenCentralInformationIsMissing() throws IOException {
         testConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DRY_RUN, false);
 
         TestReportCapability report = mock(TestReportCapability.class);
@@ -454,15 +587,138 @@ public class MavenCentralDeployTest{
         testConfiguration.setCentralPassword(value);
 
         // the full information is present
-        mavenCentralDeploy.processDeployment(testConfiguration);
+        try (MockedStatic<MavenCentralDeploy> mockedStatic = mockStatic(MavenCentralDeploy.class)) {
+            mockedStatic.when(() -> MavenCentralDeploy.getHttpClientBuilder(nullable(String.class), nullable(Integer.class))).thenReturn(httpClientBuilder);
+
+            mavenCentralDeploy.processDeployment(testConfiguration);
+        }
         verify(mavenCentralDeploy).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // deployed once
     }
 
 
+    @Test(expected = RuntimeException.class)
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void processDeploymentMavenCentralConnectionFailureSSL() throws IOException {
+        testConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DRY_RUN, false);
 
-    // TODO: 2024-02-09 - test publish information with registered default configuration
+        TestReportCapability report = mock(TestReportCapability.class);
+        reports.add(report);
 
-    // TODO: 2024-02-09 - test the publish information being overridden by variable
+        try (MockedStatic<MavenCentralDeploy> mockedStatic = mockStatic(MavenCentralDeploy.class)) {
+            mockedStatic.when(() -> MavenCentralDeploy.getHttpClientBuilder(nullable(String.class), nullable(Integer.class))).thenReturn(httpClientBuilder);
+
+            when(closeableHttpClient.execute(any(HttpUriRequest.class)))
+                    .thenThrow(new SSLException("Something went wrong with SSL"));
+
+
+            mavenCentralDeploy.processDeployment(testConfiguration);
+        } catch (RuntimeException e) {
+            assertEquals("Validations failed!", e.getMessage());
+
+            verify(mavenCentralDeploy).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // deployed once
+            verify(closeableHttpClient).execute(any(HttpUriRequest.class)); // called just once
+            verify(closeableHttpClientStatus, never()).execute(any(HttpUriRequest.class));
+            verify(report).createReport(any(), any(), any());
+            throw e;
+        }
+
+
+    }
+    @Test(expected = RuntimeException.class)
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void processDeploymentMavenCentralConnectionFailure500Error() throws IOException {
+        testConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DRY_RUN, false);
+
+        TestReportCapability report = mock(TestReportCapability.class);
+        reports.add(report);
+
+        try (MockedStatic<MavenCentralDeploy> mockedStatic = mockStatic(MavenCentralDeploy.class)) {
+            mockedStatic.when(() -> MavenCentralDeploy.getHttpClientBuilder(nullable(String.class), nullable(Integer.class))).thenReturn(httpClientBuilder);
+
+            StatusLine statusLine500 = mock(StatusLine.class);
+            when(statusLine500.getStatusCode()).thenReturn(500);
+
+            when(closeableHttpResponse1.getStatusLine()).thenReturn(statusLine500);
+
+            mavenCentralDeploy.processDeployment(testConfiguration);
+        } catch (RuntimeException e) {
+            assertEquals("Validations failed!", e.getMessage());
+            verify(mavenCentralDeploy).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // deployed once
+            verify(closeableHttpClient).execute(any(HttpUriRequest.class)); // called just once
+            verify(closeableHttpClientStatus, never()).execute(any(HttpUriRequest.class));
+            verify(report).createReport(any(), any(), any()); // there needs to be a status error for failed push
+            throw e;
+        }
+    }
+
+    @Test
+    public void processDeploymentDeploymentFullySuccessful() throws IOException {
+        testConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DRY_RUN, false);
+
+        TestReportCapability report = mock(TestReportCapability.class);
+        reports.add(report);
+
+        try (MockedStatic<MavenCentralDeploy> mockedStatic = mockStatic(MavenCentralDeploy.class)) {
+            mockedStatic.when(() -> MavenCentralDeploy.getHttpClientBuilder(nullable(String.class), nullable(Integer.class))).thenReturn(httpClientBuilder);
+
+            mavenCentralDeploy.processDeployment(testConfiguration);
+        }
+
+        verify(mavenCentralDeploy).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // deployed once
+        verify(closeableHttpClient, times(2)).execute(any(HttpUriRequest.class));
+        verify(closeableHttpClientStatus, times(2)).execute(any(HttpUriRequest.class));
+        verify(report, never()).createReport(any(), any(), any());
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void processDeploymentAuthenticationError() throws IOException {
+        testConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DRY_RUN, false);
+
+        TestReportCapability report = mock(TestReportCapability.class);
+        reports.add(report);
+
+        try (MockedStatic<MavenCentralDeploy> mockedStatic = mockStatic(MavenCentralDeploy.class)) {
+            mockedStatic.when(() -> MavenCentralDeploy.getHttpClientBuilder(nullable(String.class), nullable(Integer.class))).thenReturn(httpClientBuilder);
+
+            when(closeableHttpResponse2.getStatusLine()).thenReturn(statusLine1); // also call with credentials complains about wrong credentials
+
+            mavenCentralDeploy.processDeployment(testConfiguration);
+        } catch (RuntimeException e) {
+            assertEquals("Validations failed!", e.getMessage());
+            verify(mavenCentralDeploy).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // deployed once
+            verify(closeableHttpClient, times(2)).execute(any(HttpUriRequest.class)); // called once for ssl check and once with wrong credentials
+            verify(closeableHttpClientStatus, never()).execute(any(HttpUriRequest.class));
+            verify(report).createReport(any(), any(), any()); // there needs to be a status error for failed push
+            throw e;
+        }
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void processDeploymentMavenCentralErrorsFound() throws IOException {
+        testConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DRY_RUN, false);
+
+        TestReportCapability report = mock(TestReportCapability.class);
+        reports.add(report);
+
+        try (MockedStatic<MavenCentralDeploy> mockedStatic = mockStatic(MavenCentralDeploy.class)) {
+            mockedStatic.when(() -> MavenCentralDeploy.getHttpClientBuilder(nullable(String.class), nullable(Integer.class))).thenReturn(httpClientBuilder);
+
+            HttpEntity httpEntity = mock(HttpEntity.class);
+            when(httpEntity.getContent()).thenReturn(new ByteArrayInputStream(errorSample1.getBytes(StandardCharsets.UTF_8)));
+            when(closeableHttpResponseStatus2.getEntity()).thenReturn(httpEntity);
+
+            mavenCentralDeploy.processDeployment(testConfiguration);
+        } catch (RuntimeException e) {
+            assertEquals("Validations failed!", e.getMessage());
+            verify(mavenCentralDeploy).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // deployed once
+            verify(closeableHttpClient, times(2)).execute(any(HttpUriRequest.class)); // called once for ssl check and once with wrong credentials
+            verify(closeableHttpClientStatus, times(2)).execute(any(HttpUriRequest.class));
+            verify(report).createReport(any(), any(), any()); // there needs to be a status error for failed push
+            throw e;
+        }
+
+    }
+
 
 
     /** Helper class to mock the failing tests.

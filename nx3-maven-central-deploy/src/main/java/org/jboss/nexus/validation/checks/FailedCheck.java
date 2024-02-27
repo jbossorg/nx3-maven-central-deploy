@@ -1,5 +1,6 @@
 package org.jboss.nexus.validation.checks;
 
+import org.jboss.nexus.TemplateRenderingHelper;
 import org.jboss.nexus.content.Component;
 
 import java.util.Objects;
@@ -10,8 +11,16 @@ public class FailedCheck {
     private final Component component;
     private final String problem;
 
+    public FailedCheck(String problem) {
+        this(null, problem);
+    }
+
     public FailedCheck(Component component, String problem) {
-        this.component = component;
+        if(component == null) {
+            this.component = NO_COMPONENT;
+        } else
+            this.component = component;
+
         this.problem = problem;
     }
 
@@ -23,6 +32,14 @@ public class FailedCheck {
     /** The description of the problem */
     public String getProblem() {
         return problem;
+    }
+
+    /** The method returns true, if it contains a component
+     *
+     * @return true if the check has an error associated with
+     */
+    public boolean isHasComponent() {
+        return component != NO_COMPONENT;
     }
 
 
@@ -38,4 +55,6 @@ public class FailedCheck {
     public int hashCode() {
         return Objects.hash(getComponent().group(), getComponent().name(), getComponent().version(), getProblem());
     }
+
+    public static final Component NO_COMPONENT = new TemplateRenderingHelper.FictiveComponent(" ", "-", " ");
 }

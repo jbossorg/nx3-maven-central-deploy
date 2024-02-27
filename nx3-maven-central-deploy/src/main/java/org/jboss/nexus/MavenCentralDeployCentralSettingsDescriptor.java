@@ -7,6 +7,7 @@ import org.sonatype.nexus.capability.CapabilityType;
 import org.sonatype.nexus.capability.Tag;
 import org.sonatype.nexus.capability.Taggable;
 import org.sonatype.nexus.formfields.FormField;
+import org.sonatype.nexus.formfields.NumberTextFormField;
 import org.sonatype.nexus.formfields.PasswordFormField;
 import org.sonatype.nexus.formfields.StringTextFormField;
 
@@ -55,6 +56,19 @@ public class MavenCentralDeployCentralSettingsDescriptor extends CapabilityDescr
         @DefaultMessage("Change only in case you want to publish the artifacts to a different (e.g. test) environment.")
         String centralUrlHelp();
 
+        @DefaultMessage("Proxy host")
+        String centralProxyLabel();
+
+        @DefaultMessage("Host name of the proxy server to connect to Maven Central service.")
+        String centralProxyHelp();
+
+        @DefaultMessage("Proxy port")
+        String centralProxyPortLabel();
+
+        @DefaultMessage("Port number of the proxy server used to connect to Maven Central service.")
+        String centralProxyPortHelp();
+
+
         @DefaultMessage("MCD - Publishing Configuration")
         String name();
 
@@ -72,6 +86,8 @@ public class MavenCentralDeployCentralSettingsDescriptor extends CapabilityDescr
         initializeFormFields.add(new PasswordFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_PASSWORD, messages.centralPasswordLabel(), messages.centralPasswordHelp(), FormField.MANDATORY));
         initializeFormFields.add(new StringTextFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_MODE, messages.centralModeLabel(), messages.centralModeHelp(), FormField.MANDATORY, "USER_MANAGED|AUTOMATIC").withInitialValue(USER_MANAGED));
         initializeFormFields.add(new StringTextFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_URL, messages.centralUrlLabel(), messages.centralUrlHelp(), FormField.MANDATORY).withInitialValue("https://central.sonatype.com"));
+        initializeFormFields.add(new StringTextFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_PROXY, messages.centralProxyLabel(), messages.centralProxyHelp(), FormField.MANDATORY));
+        initializeFormFields.add(new NumberTextFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_PROXY_PORT, messages.centralProxyPortLabel(), messages.centralProxyPortHelp(), FormField.MANDATORY).withInitialValue(3128).withMinimumValue(0));
 
         formFields = Collections.unmodifiableList(initializeFormFields);
     }

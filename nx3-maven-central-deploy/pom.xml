@@ -10,6 +10,16 @@
   <artifactId>nx3-maven-central-deploy</artifactId>
 
   <name>${project.groupId}:${project.artifactId}</name>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpmime</artifactId>
+    </dependency>
+  </dependencies>
+
+
   <packaging>bundle</packaging>
 
   <build>
@@ -24,6 +34,7 @@
         <configuration>
           <instructions>
             <Export-Package>org.jboss.nexus.*</Export-Package>
+            <Private-Package>org.apache.http.*</Private-Package>
           </instructions>
         </configuration>
       </plugin>
