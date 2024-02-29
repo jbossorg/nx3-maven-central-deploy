@@ -511,12 +511,11 @@ public class MavenCentralDeploy extends ComponentSupport {
                        String deploymentState = deploymentStateNode.asText();
                        switch (deploymentState) {
                            case "PENDING":
-                               // TODO: 2024-02-26 - what does it mean???
-
                            case "VALIDATING":
                            case "PUBLISHING":
                                waitSomeTime(5000);
                                break;
+                           case "VALIDATED":
                            case "PUBLISHED":
                                return; // all is done and OK, nothing to report
                            case "FAILED":

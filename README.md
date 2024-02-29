@@ -39,9 +39,11 @@ The features here are ordered based on the current development priority - the to
 - tag artifacts, where errors were found making them not suitable for publishing
 - report validation errors in customizable text file format
 - integrate validation reporting with Jira
+- push released artifacts into Maven Central
+
 
 ## In Development
-- push released artifacts into Maven Central
+- improve filtering possibilities for the deployed content 
 
 ## Coming Soon
 - combine your validation with nx3-maven-central-deploy pre-prepared tests by adding simple custom modules

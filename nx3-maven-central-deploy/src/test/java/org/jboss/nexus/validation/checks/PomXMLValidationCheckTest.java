@@ -72,7 +72,12 @@ public class PomXMLValidationCheckTest {
 				  "   <name>nam</name>" +
 				  "   <description>des</description>" +
 				  "   <url>http://localhost</url>" +
-				  "   <organization></organization>" +
+				  "   <developers>  " +
+				  "      <developer>  " +
+				  "         <organization>Some Organization</organization>" +
+				  "      </developer>" +
+				  "   </developers>" +
+
 				  "   <groupId>group</groupId>" +
 				  "   <artifactId>artifact</artifactId>" +
 				  "   <version>version</version>" +

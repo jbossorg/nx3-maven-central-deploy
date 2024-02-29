@@ -98,7 +98,7 @@ public class PomXMLValidationCheck extends CentralValidation {
 									break;
 								case "organization":
 									// this can be considered developer info as well
-									hasDeveloperInfo = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "source code source (scm)", level, 2);
+									hasDeveloperInfo = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "source code source (scm)", level, 4);
 									break;
 								case "name":
 									if(level == 2) // element named name appears in many tags, but we need the one on level 2
