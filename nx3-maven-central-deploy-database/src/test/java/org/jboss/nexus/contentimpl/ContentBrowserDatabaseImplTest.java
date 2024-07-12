@@ -156,7 +156,7 @@ public class ContentBrowserDatabaseImplTest {
         final int componentCount = SEARCH_COMPONENT_PAGE_SIZE * 3+2;
         for(int i = 0; i < componentCount; i++ ) {
             FluentComponent fluentComponent = mock(FluentComponent.class);
-            when(fluentComponent.kind()).thenReturn("maven2");
+            //when(fluentComponent.kind()).thenReturn("maven2"); // eventually add back when needed
             when(fluentComponent.name()).thenReturn("some-artifact");
             when(fluentComponent.version()).thenReturn("version-"+i);
             when(fluentComponent.namespace()).thenReturn("org.jboss.nexus");

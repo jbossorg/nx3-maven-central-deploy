@@ -1,6 +1,8 @@
 package org.jboss.nexus;
 
 
+import org.apache.commons.lang.StringUtils;
+
 import java.util.Map;
 
 /** Default Configuration for Deploying to Maven Central.
@@ -39,7 +41,8 @@ public class MavenCentralDeployCentralSettingsConfiguration extends MavenCentral
        setCentralURL(properties.getOrDefault(CENTRAL_URL, "https://central.sonatype.com"));
        setCentralMode(properties.getOrDefault(CENTRAL_MODE, USER_MANAGED));
        setCentralProxy(properties.get(CENTRAL_PROXY));
-       setCentralProxyPort(properties.get(CENTRAL_PROXY_PORT) != null ? Integer.parseInt(properties.get(CENTRAL_PROXY_PORT)): null) ;
+       String port = properties.get(CENTRAL_PROXY_PORT);
+       setCentralProxyPort(StringUtils.isNotBlank(port) ? Integer.parseInt(port): null) ;
    }
 
     private String centralUser;

@@ -86,8 +86,8 @@ public class MavenCentralDeployCentralSettingsDescriptor extends CapabilityDescr
         initializeFormFields.add(new PasswordFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_PASSWORD, messages.centralPasswordLabel(), messages.centralPasswordHelp(), FormField.MANDATORY));
         initializeFormFields.add(new StringTextFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_MODE, messages.centralModeLabel(), messages.centralModeHelp(), FormField.MANDATORY, "USER_MANAGED|AUTOMATIC").withInitialValue(USER_MANAGED));
         initializeFormFields.add(new StringTextFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_URL, messages.centralUrlLabel(), messages.centralUrlHelp(), FormField.MANDATORY).withInitialValue("https://central.sonatype.com"));
-        initializeFormFields.add(new StringTextFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_PROXY, messages.centralProxyLabel(), messages.centralProxyHelp(), FormField.MANDATORY));
-        initializeFormFields.add(new NumberTextFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_PROXY_PORT, messages.centralProxyPortLabel(), messages.centralProxyPortHelp(), FormField.MANDATORY).withInitialValue(3128).withMinimumValue(0));
+        initializeFormFields.add(new StringTextFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_PROXY, messages.centralProxyLabel(), messages.centralProxyHelp(), FormField.OPTIONAL));
+        initializeFormFields.add(new NumberTextFormField(MavenCentralDeployCentralSettingsConfiguration.CENTRAL_PROXY_PORT, messages.centralProxyPortLabel(), messages.centralProxyPortHelp(), FormField.OPTIONAL).withInitialValue(3128).withMinimumValue(0));
 
         formFields = Collections.unmodifiableList(initializeFormFields);
     }

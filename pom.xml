@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.sonatype.nexus.plugins</groupId>
         <artifactId>nexus-plugins</artifactId>
-        <version>3.64.0-04</version>
+        <version>3.69.0-02</version>
     </parent>
 
     <name>${project.groupId}:${project.artifactId}</name>
@@ -14,12 +14,12 @@
 
     <groupId>org.jboss.nexus</groupId>
     <artifactId>nx3-maven-central-deploy-parent</artifactId>
-    <version>3.64.0-04-SNAPSHOT</version>
+    <version>3.69.0-02-SNAPSHOT</version>
     <description>Plugin for deployment of artifacts from Sonatype Nexus 3 repositories to Maven Central.</description>
 
     <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mockitoversion>4.9.0</mockitoversion>
     </properties>
