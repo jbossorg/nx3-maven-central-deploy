@@ -9,7 +9,6 @@ import org.sonatype.nexus.formfields.*;
 
 import javax.inject.Named;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -126,7 +125,7 @@ public class JiraTestReportCapabilityDescriptor extends TestReportCapabilityDesc
 		@DefaultMessage("Bug")
 		String defaultIssueType();
 
-		@DefaultMessage("Maven Central Synchronization Validation Error")
+		@DefaultMessage("Maven Central Synchronization Error ${name} - run ${run}")
 		String defaultIssueSummary();
 
 		@DefaultMessage("Issue main template")
@@ -141,6 +140,30 @@ public class JiraTestReportCapabilityDescriptor extends TestReportCapabilityDesc
 	}
 
 	private static final Messages messages = I18N.create(JiraTestReportCapabilityDescriptor.Messages.class);
+
+	private static final String DEFAULT_TEMPLATE = "{\n" +
+			"  \"fields\" : {\n" +
+			"    \"labels\" : [${labels} ],\n" +
+			"    \"components\" : [${components} ],\n" +
+			"    \"description\" : \"${description}\",\n" +
+			"    \"summary\" : \"${summary}\",\n" +
+			"    \"project\" : {\n" +
+			"      \"id\" : \"${project_id}\"\n" +
+			"    },\n" +
+			"    \"issuetype\" : {\n" +
+			"      \"id\" : \"${issue_type_id}\"\n" +
+			"    },\n" +
+			"    \"priority\" : {\n" +
+			"      \"id\" : \"${priority_id}\"\n" +
+			"    },\n" +
+			"    \"reporter\" : {\n" +
+			"      \"id\" : \"${reporter_id}\"\n" +
+			"    },\n" +
+			"    \"assignee\" : {\n" +
+			"      \"id\" : \"${assignee_id}\"\n" +
+			"    }\n" +
+			"  }\n" +
+			"}";
 
 	private static final String DEFAULT_DESCRIPTION = "h2. $name $run on $date\\r\\n\n" +
 			"\\r\\n\n" +
@@ -174,7 +197,7 @@ public class JiraTestReportCapabilityDescriptor extends TestReportCapabilityDesc
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.SECURITY, messages.securityLabel(), messages.securityHelp(), false));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.ASSIGNEE, messages.assigneeLabel(), messages.assigneeHelp(), false));
 		formFields.add(new StringTextFormField(JiraTestReportCapabilityConfiguration.REPORTER, messages.reporterLabel(), messages.reporterHelp(), false));
-		formFields.add(new TextAreaFormField(JiraTestReportCapabilityConfiguration.TEMPLATE, messages.templateLabel(), messages.templateHelp(), true)); // TODO: 22.06.2023 add default template 
+		formFields.add(new TextAreaFormField(JiraTestReportCapabilityConfiguration.TEMPLATE, messages.templateLabel(), messages.templateHelp(), true).withInitialValue(DEFAULT_TEMPLATE));
 	}
 
 

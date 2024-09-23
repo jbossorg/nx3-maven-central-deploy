@@ -11,6 +11,7 @@ import org.jboss.nexus.validation.checks.FailedCheck;
 import org.jboss.nexus.validation.reporting.TestReportCapability;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.sonatype.nexus.scheduling.TaskState;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+@SuppressWarnings("CdiInjectionPointsInspection")
 @Named(JiraTestReportCapabilityDescriptor.TYPE_ID)
 public class JiraTestReportCapability extends TestReportCapability<JiraTestReportCapabilityConfiguration> {
 
@@ -142,6 +144,9 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 
 		if(configuration == null)
 			return; // feature is disabled or not configured
+
+		if(mavenCentralDeployTaskConfiguration instanceof MavenCentralDeployTaskWithJiraConfiguration && !((MavenCentralDeployTaskWithJiraConfiguration)mavenCentralDeployTaskConfiguration).getCreateTestTicket() || mavenCentralDeployTaskConfiguration.hasLastRunState() && Objects.requireNonNull(mavenCentralDeployTaskConfiguration.getLastRunState()).getEndState().equals(TaskState.FAILED))
+			return; // it failed previously, so we do not want to report errors over and over. But the test run should work
 
 		Objects.requireNonNull(templateHelper);
 

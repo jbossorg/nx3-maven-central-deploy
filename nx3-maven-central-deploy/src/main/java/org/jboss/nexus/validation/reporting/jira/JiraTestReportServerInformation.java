@@ -637,14 +637,8 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 				fieldNode.set("security", security);
 			} else {
 				ObjectNode security = (ObjectNode) fieldNode.get("security");
-				if(security.isMissingNode()) {
-					log.error("Missing node - security!");
-					String message = "Unexpected format of returned JSON - missing security!";
-					jiraReadKnownJiraIssueTaskConfiguration.setLatestResult(message);
-					throw new RuntimeException(message);
-				}
-
-				for(String toRemove : securityRemovedFields) {
+				if(security != null && !security.isMissingNode()) {
+				  for(String toRemove : securityRemovedFields)
 					security.remove(toRemove);
 				}
 			}
@@ -652,21 +646,21 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 			// add reporter
 			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
 				String userIdentifierField;
-				ObjectNode reporter = (ObjectNode)fieldNode.get(REPORTER);
+				ObjectNode reporter =  fieldNode.get(REPORTER) == null || fieldNode.get(REPORTER).isNull() ? null : (ObjectNode)fieldNode.get(REPORTER);
 				if(reporter != null && reporter.get("name") != null) { // end of support for names https://developer.atlassian.com/cloud/jira/platform/deprecation-notice-user-privacy-api-migration-guide/
 					userIdentifierField = "name";
 				} else
 					userIdentifierField = "accountId";
 
-				fieldNode.remove("reporter");
+				fieldNode.remove(REPORTER);
 				reporter = mapper.createObjectNode();
 				reporter.put(userIdentifierField, variableWrap(REPORTER));
-				fieldNode.set("reporter", reporter);
+				fieldNode.set(REPORTER, reporter);
 			} else {
-				ObjectNode reporter = (ObjectNode) fieldNode.get("reporter");
-				if(reporter.isMissingNode()) {
+				ObjectNode reporter = fieldNode.get(REPORTER) == null || fieldNode.get(REPORTER).isNull() ? null : (ObjectNode) fieldNode.get(REPORTER);
+				if(reporter == null) {
 					log.error("Missing node - reporter!");
-					String message = "Unexpected format of returned JSON - missing reporter!";
+					String message = "Unexpected format of returned JSON - missing reporter in the target Jira issue!";
 					jiraReadKnownJiraIssueTaskConfiguration.setLatestResult(message);
 					throw new RuntimeException(message);
 				}
@@ -679,7 +673,7 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 			// add assignee
 			if(jiraReadKnownJiraIssueTaskConfiguration.getUseVelocityVariables()) {
 				String userIdentifierField;
-				ObjectNode assignee = (ObjectNode)fieldNode.get("assignee");
+				ObjectNode assignee = fieldNode.get(ASSIGNEE) == null || fieldNode.get(ASSIGNEE).isNull() ? null : (ObjectNode)fieldNode.get(ASSIGNEE);
 				if(assignee != null && assignee.get("name") != null) { // end of support for names https://developer.atlassian.com/cloud/jira/platform/deprecation-notice-user-privacy-api-migration-guide/
 					userIdentifierField = "name";
 				} else
@@ -688,18 +682,12 @@ public class JiraTestReportServerInformation extends ComponentSupport {
 				fieldNode.remove("assignee");
 				assignee = mapper.createObjectNode();
 				assignee.put(userIdentifierField, variableWrap(ASSIGNEE));
-				fieldNode.set("assignee", assignee);
+				fieldNode.set(ASSIGNEE, assignee);
 			} else {
-				ObjectNode assignee = (ObjectNode) fieldNode.get("assignee");
-				if(assignee.isMissingNode()) {
-					log.error("Missing node - assignee!");
-					String message = "Unexpected format of returned JSON - missing assignee!";
-					jiraReadKnownJiraIssueTaskConfiguration.setLatestResult(message);
-					throw new RuntimeException(message);
-				}
-
-				for(String toRemove : personRemovedFields) {
-					assignee.remove(toRemove);
+				ObjectNode assignee = fieldNode.get(ASSIGNEE) == null || fieldNode.get(ASSIGNEE).isNull() ? null : (ObjectNode) fieldNode.get(ASSIGNEE);
+				if(assignee != null && !assignee.isMissingNode()) {
+					for(String toRemove : personRemovedFields)
+						assignee.remove(toRemove);
 				}
 			}
 
