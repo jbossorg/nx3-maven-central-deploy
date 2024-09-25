@@ -4,7 +4,7 @@
   <parent>
     <artifactId>nx3-maven-central-deploy-parent</artifactId>
     <groupId>org.jboss.nexus</groupId>
-    <version>3.70.1-02-SNAPSHOT</version>
+    <version>3.72.0-04-SNAPSHOT</version>
   </parent>
 
   <artifactId>nx3-maven-central-deploy-database</artifactId>

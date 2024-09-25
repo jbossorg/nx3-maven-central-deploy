@@ -1,8 +1,6 @@
 package org.jboss.nexus;
 
 import com.sonatype.nexus.tags.Tag;
-import com.sonatype.nexus.tags.orient.OrientTag;
-import com.sonatype.nexus.tags.orient.TagComponent;
 import org.apache.commons.lang3.StringUtils;
 
 import org.jboss.nexus.content.Component;
@@ -264,29 +262,6 @@ public class Filter {
 	}
 
 
-	/** Returns string, that will be searched for by Nexus based on the filter setting to narrow the selection of artifacts.
-	 * It should be used, when
-	 * <i>nexus.datastore.enabled=false</i>
-	 *
-	 * @return null or string, that will be matched against group OR artifact OR version during repository crawling
-	 */
-	public String getOrientDBSearchString() {
-		if(StringUtils.isNotBlank(getUnspecified()))
-			return getUnspecified();
-
-		if(StringUtils.isNotBlank(getArtifact()))
-			return getArtifact();
-
-		if(StringUtils.isNotBlank(getVersion()) && getVersionOperation() == LogicalOperation.Operator.EQ )
-			return getVersion();
-
-		if(StringUtils.isNotBlank(getGroup()))
-			return getGroup();
-
-		return null;
-	}
-
-
 	/** Search string when <br>
 	 * <i>nexus.datastore.enabled=true</i>
 	 *
@@ -395,68 +370,6 @@ public class Filter {
 
 		return true;
 	}
-
-
-
-	/** Verifies, that the current (OrientDB) component matches the filter conditions.
-	 *
-	 * @param component component to be checked
-	 *
-	 * @return true if the component corresponds to the search conditions
-	 */
-	public boolean checkComponent(org.sonatype.nexus.repository.storage.Component component) {
-		if(StringUtils.isNotEmpty(getGroup()))
-			if(!Objects.equals(getGroup(), component.group()))
-				return false;
-
-		if(StringUtils.isNotEmpty(getArtifact()))
-			if(!Objects.equals(getArtifact(), component.name()))
-				return false;
-
-		if(StringUtils.isNotEmpty(getVersion()))
-			if(!FunctionMapping.resolve(getVersionOperation(), component.version(), getVersion()))
-				return false;
-
-		if(StringUtils.isNotEmpty(getUnspecified())) {
-			if(!getUnspecified().equals(component.group()) && ! getUnspecified().equals(component.name()) && !getUnspecified().equals(component.version())){
-				return false;
-			}
-		}
-
-		// NXRM3 Professional tagging
-		if(TagComponent.class.isAssignableFrom(component.getClass())) {
-
-			if (StringUtils.isNotEmpty(getTag()))
-				if(((TagComponent)component).tags().stream().noneMatch( t -> FunctionMapping.resolve(getTagOperation(), t.name(), getTag())))
-					return false;
-
-			if (!tagAttributeOperations.isEmpty() ) {
-				for(TagAttributeExpression tagAttributeExpression : tagAttributeOperations) {
-					boolean found = false;
-					for (OrientTag tag : ((TagComponent) component).tags()) {
-						Object object = tag.attributes().get(tagAttributeExpression.tagAttr);
-						if (object != null && String.class.isAssignableFrom(object.getClass())) {
-							found = FunctionMapping.resolve(tagAttributeExpression.tagAttrOperation, (String) object, tagAttributeExpression.tagAttrValue);
-							if (found)
-								break;
-						}
-					}
-					if(!found)
-						return false;
-				}
-
-				return true;
-			}
-
-		} else {
-			// requested filter on tags while tags are not supported
-			if(StringUtils.isNotEmpty(getTag()) || !tagAttributeOperations.isEmpty()) {
-				throw new RuntimeException("Filter error: attempt to filter based on a tag or tagAttr. Tags are only supported in NXRM3 Professional.");
-			}
-		}
-		return true;
-	}
-
 
 	private static class FunctionMapping {
 		static boolean resolve(LogicalOperation.Operator operator, String s1, String s2) {

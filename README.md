@@ -62,10 +62,10 @@ Download the version suitable for your version of Nexus and copy it to the *{nex
 For the application to work in your environment, you always need two jar files: 
 
 - _always_ **nx3-maven-central-deploy-{version}.jar**
-- with _OrientDB_ **nx3-maven-central-deploy-orientdb-{version}.jar**
+- _OrientDB_ was removed as of NXRM3 version 3.72.0. If H2 version will be implemented, it will have its own entry here.  
 - with _external Postgres database_ **nx3-maven-central-deploy-database-{version}.jar**
 
-Make sure not to deploy both orientdb and database jars together. If you install all the three jars, the plugin fails. By default, Nexus 3 uses the OrientDB implementation. See Nexus [documentation](https://help.sonatype.com/en/planning-your-implementation.html#planning-your-implementation).    
+Make sure not to deploy H2/Postgres jars together. If you install all the three jars, the plugin fails. See Nexus [documentation](https://help.sonatype.com/en/planning-your-implementation.html#planning-your-implementation).    
 
 Unless you already have it, enable **Schedule** capability under *System->Capabilities* in Nexus.
 
