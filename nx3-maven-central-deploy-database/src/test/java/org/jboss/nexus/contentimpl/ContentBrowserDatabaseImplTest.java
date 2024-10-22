@@ -18,21 +18,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonatype.nexus.common.entity.Continuation;
 import org.sonatype.nexus.content.maven.MavenContentFacet;
+import org.sonatype.nexus.content.maven.internal.MavenVariableResolverAdapter;
 import org.sonatype.nexus.repository.Repository;
+import org.sonatype.nexus.repository.content.fluent.FluentAsset;
 import org.sonatype.nexus.repository.content.fluent.FluentComponent;
 import org.sonatype.nexus.repository.content.fluent.FluentComponents;
 import org.sonatype.nexus.repository.content.fluent.FluentQuery;
+import org.sonatype.nexus.repository.maven.internal.Maven2MavenPathParser;
 import org.sonatype.nexus.repository.search.ComponentSearchResult;
 import org.sonatype.nexus.repository.search.SearchRequest;
 import org.sonatype.nexus.repository.search.SearchService;
+import org.sonatype.nexus.repository.security.VariableResolverAdapterManager;
+import org.sonatype.nexus.selector.SelectorConfiguration;
+import org.sonatype.nexus.selector.SelectorManager;
 
 import java.time.OffsetDateTime;
 import java.util.*;
 
 import static org.jboss.nexus.MavenCentralDeploy.SEARCH_COMPONENT_PAGE_SIZE;
 import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -57,10 +62,18 @@ public class ContentBrowserDatabaseImplTest {
     @Mock
     private SearchService searchService;
 
+    @Mock
+    private SelectorManager selectorManager;
+
     private final TagService tagService = null; // We do not need this
 
     @Mock
     private MavenContentFacet mavenContentFacet;
+
+    @Mock
+    private VariableResolverAdapterManager variableResolverAdapterManager;
+
+
 
 
     private static int idCounter = 100;
@@ -71,6 +84,8 @@ public class ContentBrowserDatabaseImplTest {
         listOfFailures = new ArrayList<>();
         toDeploy = new ArrayList<>();
         configuration = new MavenCentralDeployTaskConfiguration();
+
+        when(variableResolverAdapterManager.get(anyString())).thenReturn(new MavenVariableResolverAdapter(new Maven2MavenPathParser()));
 
         when(repository.optionalFacet(MavenContentFacet.class)).thenReturn( java.util.Optional.of(mavenContentFacet));
         when(repository.getName()).thenReturn("some-repository");
@@ -104,7 +119,7 @@ public class ContentBrowserDatabaseImplTest {
             return Collections.singleton(result);
         });
 
-        tested = new ContentBrowserDatabaseImpl(searchService, validations, tagService);
+        tested = new ContentBrowserDatabaseImpl(searchService, validations, tagService, selectorManager, variableResolverAdapterManager);
     }
 
 
@@ -149,6 +164,47 @@ public class ContentBrowserDatabaseImplTest {
 
     }
 
+    @Test
+    public void prepareValidationDataSelectorUsed() {
+        Filter filter =  Filter.parseFilterString(null); // no filtering by filter
+
+        ArrayList<FluentComponent> testComponents = getTestComponents();
+
+        FluentComponents fluentComponentsMock = mock(FluentComponents.class);
+        when(mavenContentFacet.components()).thenReturn(fluentComponentsMock);
+        when(fluentComponentsMock.browse(anyInt(), nullable(String.class))).thenReturn(getFluentQuery(testComponents).browse(testComponents.size(), null )); // let us emulate simple continuation
+
+        tested.prepareValidationData(repository, filter, configuration, listOfFailures, toDeploy, log );
+
+        assertTrue(listOfFailures.isEmpty());
+        assertEquals(testComponents.size() , toDeploy.size()); // no filter = all components pass
+
+        assertTrue(toDeploy.stream().anyMatch(component -> "version-3".equals(component.version())) );
+        assertTrue(toDeploy.stream().anyMatch(component -> "version-5".equals(component.version())) );
+        assertTrue(toDeploy.stream().anyMatch(component -> "version-7".equals(component.version())) );
+        assertTrue(toDeploy.stream().anyMatch(component -> "version-9".equals(component.version())) );
+        assertTrue(toDeploy.stream().anyMatch(component -> ("version-"+ (testComponents.size()-1)).equals(component.version())) );
+
+        SelectorConfiguration selectorConfiguration = mock(SelectorConfiguration.class);
+        when(selectorConfiguration.getName()).thenReturn("TestSelector");
+//        when(selectorConfiguration.getType()).thenReturn("csel");
+//        when(selectorConfiguration.getAttributes()).thenReturn(Collections.singletonMap("expression", "expression -> path =^ \"/org/jboss/nexus/blah-blah\""));
+
+        configuration.setString(MavenCentralDeployTaskConfiguration.CONTENT_SELECTOR, selectorConfiguration.getName());
+        when(selectorManager.findByName(eq(selectorConfiguration.getName()))).thenReturn(Optional.of(selectorConfiguration));
+
+        listOfFailures.clear();
+        toDeploy.clear();
+
+        tested = new ContentBrowserDatabaseImpl(searchService, validations, tagService, selectorManager, variableResolverAdapterManager); // apply the selector change
+
+        tested.prepareValidationData(repository, filter, configuration, listOfFailures, toDeploy, log );
+
+        assertEquals(0, toDeploy.size()); // we do not have a way of testing actual expression validation so all the components are filtered out by the filter
+    }
+
+
+
     @NotNull
     private ArrayList<FluentComponent> getTestComponents() {
         ArrayList<FluentComponent> result = new ArrayList<>();
@@ -156,13 +212,18 @@ public class ContentBrowserDatabaseImplTest {
         final int componentCount = SEARCH_COMPONENT_PAGE_SIZE * 3+2;
         for(int i = 0; i < componentCount; i++ ) {
             FluentComponent fluentComponent = mock(FluentComponent.class);
-            //when(fluentComponent.kind()).thenReturn("maven2"); // eventually add back when needed
             when(fluentComponent.name()).thenReturn("some-artifact");
-            when(fluentComponent.version()).thenReturn("version-"+i);
+            String version = "version-" + i;
+            when(fluentComponent.version()).thenReturn(version);
             when(fluentComponent.namespace()).thenReturn("org.jboss.nexus");
             when(fluentComponent.repository()).thenReturn(repository);
             when(fluentComponent.created()).thenReturn(OffsetDateTime.now().minusHours(1));
             when(fluentComponent.toStringExternal()).thenCallRealMethod();
+
+
+            FluentAsset asset = mock(FluentAsset.class);
+            when(asset.path()).thenReturn("/org/jboss/nexus/some-artifact/"+version+"/some-artifact-"+version+".jar");
+            when(fluentComponent.assets()).thenReturn(Collections.singleton(asset));
             result.add(fluentComponent);
         }
 
@@ -459,7 +520,7 @@ public class ContentBrowserDatabaseImplTest {
 
             @Override
             public String nextContinuationToken() {
-                if(adjustedLimit > content.size()) {
+                if(adjustedLimit >= content.size()) {
                     return null;
                 } else
                     return continuationString(content.get(adjustedLimit));

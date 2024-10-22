@@ -57,6 +57,11 @@ public class MavenCentralDeployTaskDescriptor
     @DefaultMessage("Test run with no push to Maven Central.")
     String dryRunHelp();
 
+    @DefaultMessage("Content Selector")
+    String contentSelector();
+
+    @DefaultMessage("Optionally you may filter artifacts by their content selector. If used alongside Filter, both will be used to narrow search (AND).")
+    String contentSelectorHelp();
 
     @DefaultMessage("Mark Completed")
     String markArtifactsAfterRunLabel(); // TODO: 06.03.2023  
@@ -197,6 +202,7 @@ public class MavenCentralDeployTaskDescriptor
           new CheckboxFormField(MavenCentralDeployTaskConfiguration.MARK_ARTIFACTS, messages.markArtifactsAfterRunLabel(), messages.markArtifactsAfterRunHelp(), FormField.OPTIONAL).withInitialValue(false),
           new NumberTextFormField(MavenCentralDeployTaskConfiguration.LATEST_COMPONENT_TIME, messages.latestRunTimeStampLabel(), messages.latestRunTimeStampHelp(), FormField.OPTIONAL),
           new NumberTextFormField(MavenCentralDeployTaskConfiguration.PROCESSING_TIME_OFFSET, messages.processingTimeOffsetLabel(), messages.processingTimeOffsetHelp(), FormField.OPTIONAL).withInitialValue(10).withMinimumValue(0),
+          new SelectorComboFormField(MavenCentralDeployTaskConfiguration.CONTENT_SELECTOR, messages.contentSelector(), messages.contentSelectorHelp(), FormField.OPTIONAL),
           new StringTextFormField(MavenCentralDeployTaskConfiguration.FILTER, messages.filterLabel(), messages.filterHelp(), FormField.OPTIONAL),
           new TextAreaFormField(MavenCentralDeployTaskConfiguration.VARIABLES, messages.variablesLabel(), messages.variablesHelp(), FormField.OPTIONAL),
 

@@ -15,6 +15,7 @@ import static org.jboss.nexus.MavenCentralDeployCentralSettingsConfiguration.*;
 public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
 
     public static final String REPOSITORY = "repository";
+    public static final String CONTENT_SELECTOR = "contentSelector";
     public static final String DRY_RUN = "dryRun";
     public static final String MARK_ARTIFACTS = "markArtifacts";
     public static final String FILTER = "filter";
@@ -71,6 +72,9 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
         return getBoolean(MARK_ARTIFACTS, false);
     }
 
+    public String getContentSelector() {
+        return getString(CONTENT_SELECTOR, "");
+    }
     public String getFilter() {
         return getString(FILTER, "");
     }
