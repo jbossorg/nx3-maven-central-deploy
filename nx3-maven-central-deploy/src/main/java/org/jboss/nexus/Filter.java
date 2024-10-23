@@ -7,12 +7,17 @@ import org.jboss.nexus.content.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 
 public class Filter {
 
 	private String group, artifact, version, tag;
+
+	private Long latestComponentTime;
 
 	private LogicalOperation.Operator versionOperation, tagOperation;
 
@@ -46,9 +51,23 @@ public class Filter {
 		}
 	}
 
-
 	public static Filter parseFilterString(@Nullable String filterString) throws ParseException {
+		return parseFilterString(filterString, null);
+	}
+
+	/** Parses the filter expression string and prepares the new filter object for use to filter objects.
+	 *
+	 * @param filterString the filter string
+	 * @param latestDeploymentComponentTime null or the
+	 * @return configured filter object
+	 * @throws ParseException if a parsing error appears
+	 */
+	public static Filter parseFilterString(@Nullable String filterString, @Nullable Long latestDeploymentComponentTime) throws ParseException {
 		Filter result = new Filter();
+
+		if(latestDeploymentComponentTime != null && latestDeploymentComponentTime > 0) {
+			result.latestComponentTime = latestDeploymentComponentTime;
+		}
 
 		if(StringUtils.isNotBlank(filterString)) {
 			for(String token : filterString.split("\\s*&\\s*")) {
@@ -262,6 +281,14 @@ public class Filter {
 	}
 
 
+	/** Returns the timestamp of latest component, that was successfully deployed to Maven Central.
+	 *
+	 * @return epoch time in seconds
+	 */
+	public Long getLatestComponentTime() {
+		return latestComponentTime;
+	}
+
 	/** Search string when <br>
 	 * <i>nexus.datastore.enabled=true</i>
 	 *
@@ -283,6 +310,10 @@ public class Filter {
 				result.append(" AND version = #{filterParams.version}");
 			} else if(getVersionOperation().equals(LogicalOperation.Operator.NE))
 				result.append(" AND version != #{filterParams.version}");
+		}
+
+		if(getLatestComponentTime() != null) {
+			result.append(" AND created > #{filterParams.created}");
 		}
 
 		if(StringUtils.isNotBlank(getUnspecified())) {
@@ -310,7 +341,7 @@ public class Filter {
 		}
 
 		if(StringUtils.isNotBlank(getArtifact())) {
-			result.put("name", getArtifact()); // todo verify the name!
+			result.put("name", getArtifact());
 		}
 
 
@@ -320,6 +351,10 @@ public class Filter {
 
 		if (StringUtils.isNotBlank(getUnspecified()))
 			result.put("unspecified", getUnspecified());
+
+		if(getLatestComponentTime() != null) {
+			result.put("created", OffsetDateTime.ofInstant(Instant.ofEpochSecond(getLatestComponentTime()), ZoneId.systemDefault()));
+		}
 
 		return Collections.unmodifiableMap(result); // TODO: junit
 	}

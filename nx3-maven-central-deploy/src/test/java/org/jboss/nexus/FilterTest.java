@@ -3,6 +3,7 @@ package org.jboss.nexus;
 import com.sonatype.nexus.tags.Tag;
 
 import org.junit.Test;
+import org.junit.platform.commons.util.StringUtils;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.sonatype.nexus.common.collect.NestedAttributesMap;
@@ -36,6 +37,29 @@ public class FilterTest {
 		assertEquals("OS", tagExpressions.get(0).getTagAttr());
 		assertEquals(Filter.LogicalOperation.Operator.NE, tagExpressions.get(0).getTagAttrOperation());
 		assertEquals("MacOS", tagExpressions.get(0).getTagAttrValue());
+	}
+
+	@Test
+	public void parseFilterStringEmpty() {
+		Filter tested = Filter.parseFilterString("");
+		assertNull(tested.getUnspecified());
+		assertNull(tested.getArtifact());
+		assertNull(tested.getGroup());
+		assertNull(tested.getArtifact());
+		assertNull(tested.getLatestComponentTime());
+
+		assertTrue(StringUtils.isBlank(tested.getDatabaseSearchString()));
+		assertTrue(tested.getDatabaseSearchParameters().isEmpty());
+
+
+		tested = Filter.parseFilterString("", 1729766001L);
+		assertNull(tested.getUnspecified());
+		assertNull(tested.getArtifact());
+		assertNull(tested.getGroup());
+		assertNull(tested.getArtifact());
+		assertEquals(Long.valueOf(1729766001L), tested.getLatestComponentTime());
+		assertEquals("created > #{filterParams.created}", tested.getDatabaseSearchString());
+		assertEquals(1L, tested.getDatabaseSearchParameters().size());
 	}
 
 	@Test
@@ -101,6 +125,8 @@ public class FilterTest {
 			throw e;
 		}
 	}
+
+
 
 	@Test
 	public void logicalOperationParseString() {

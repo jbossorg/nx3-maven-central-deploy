@@ -113,7 +113,7 @@ public class MavenCentralDeploy extends ComponentSupport {
 
        List<FailedCheck> listOfFailures = new ArrayList<>();
 
-       Filter filter = Filter.parseFilterString(configuration.getFilter());
+       Filter filter = Filter.parseFilterString(configuration.getFilter(), configuration.getLatestComponentTime());
 
         try {
           List<Component> toDeploy = new ArrayList<>();

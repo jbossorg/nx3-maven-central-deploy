@@ -79,7 +79,7 @@ public class ContentBrowserDatabaseImpl implements ContentBrowser {
                 do {
                     final Continuation<FluentComponent> browse = mavenContentFacet.components().browse(SEARCH_COMPONENT_PAGE_SIZE, continuationToken);
                     continuationToken = validateDatabaseAssets(configuration, listOfFailures, filter, toDeploy, browse, log);
-                }  while (StringUtils.isNotBlank(continuationToken)); // fixme Is this correct end of the continuation?
+                }  while (StringUtils.isNotBlank(continuationToken));
             }
         } else
             log.error("Database implementation of repository browsing is running in wrong environment. See the installation guidelines and deploy the right jars!");
