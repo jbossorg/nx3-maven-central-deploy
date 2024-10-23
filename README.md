@@ -113,7 +113,9 @@ While most of the [requirements](https://central.sonatype.org/publish/requiremen
 ### Filtering Artifacts
 You may have a big repository with released content and want to deploy only part of it to Maven Central. Or you want to split your deployment to several smaller deployments, so that possible validation errors are reported in Jira projects of the specific responsible teams. Whatever is your intention **Filter** field in the task configuration is your friend. 
 
-You can filter by group, artifact, version, tag name and tag attribute. You can also search without specifying the search field, and in that case the plugin will search for artifacts, that have this text in group, artifact or version. 
+There are two fields you can use to filter artifacts - *Content Selector* and freeform text *Filter*. With content selector you simply use one of the content selectors defined in Nexus. More information can be found on the [official Sonatype web site](https://help.sonatype.com/en/content-selectors.html).
+
+While the selectors are useful, they do not allow using tags and some other combinations, so for these cases we have the freeform *Filter* field. You can filter by group, artifact, version, tag name and tag attribute. You can also search without specifying the search field, and in that case the plugin will search for artifacts, that have this text in group, artifact or version. 
 
 | Field    | Operators      | Example             | Description                                                                                                                                                                                                                                                                                                                                                                   |
 |----------|----------------|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -133,6 +135,7 @@ You can combine several of these tests together and divide them by & character (
 
 *tagAttr=deployed=false&tagAttr=os=Windows* returns all artifacts, that have a tag with the attribute *deployed* with the value *false*, and they also have a tag with the attribute *os* with value *Windows*. The condition can be fulfilled by a single tag with both attributes or by two tags, that each define one of the values.  
 
+If you configure both content selector and filter, both will be used to limit the synchronized content (using AND logic). 
 
 ## Tag Setup Capability
 In order to help to navigate in the synchronized repository, nx3-maven-central-deploy can be customized to tag the deployed artifacts. In order to fight bugs it is also possible to configure it to mark artifacts, that do not pass the validation.
