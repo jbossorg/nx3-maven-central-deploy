@@ -5,6 +5,7 @@ import org.sonatype.goodies.i18n.I18N;
 import org.sonatype.goodies.i18n.MessageBundle;
 import org.sonatype.nexus.capability.Tag;
 import org.sonatype.nexus.capability.Taggable;
+import org.sonatype.nexus.common.upgrade.AvailabilityVersion;
 import org.sonatype.nexus.formfields.CheckboxFormField;
 import org.sonatype.nexus.formfields.StringTextFormField;
 import org.sonatype.nexus.formfields.TextAreaFormField;
@@ -18,6 +19,7 @@ import java.util.Set;
 
 @Named(JiraReadKnownJiraIssueTask.TYPE)
 @Singleton
+@AvailabilityVersion(from = "1.0")
 public class JiraReadKnownJiraIssueTaskDescriptor extends TaskDescriptorSupport implements Taggable {
 
 	public JiraReadKnownJiraIssueTaskDescriptor() {

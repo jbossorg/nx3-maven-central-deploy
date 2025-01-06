@@ -19,6 +19,7 @@ import org.sonatype.goodies.i18n.I18N;
 import org.sonatype.goodies.i18n.MessageBundle;
 import org.sonatype.nexus.capability.Tag;
 import org.sonatype.nexus.capability.Taggable;
+import org.sonatype.nexus.common.upgrade.AvailabilityVersion;
 import org.sonatype.nexus.formfields.*;
 import org.sonatype.nexus.scheduling.Task;
 import org.sonatype.nexus.scheduling.TaskDescriptorSupport;
@@ -28,6 +29,7 @@ import java.util.Set;
 
 @Named
 @Singleton
+@AvailabilityVersion(from = "1.0")
 public class MavenCentralDeployTaskDescriptor
     extends TaskDescriptorSupport implements Taggable
 {

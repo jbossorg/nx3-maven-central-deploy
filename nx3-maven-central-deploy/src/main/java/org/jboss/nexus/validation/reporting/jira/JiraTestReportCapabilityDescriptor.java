@@ -5,6 +5,7 @@ import org.jboss.nexus.validation.reporting.TestReportCapabilityDescriptorParent
 import org.sonatype.goodies.i18n.I18N;
 import org.sonatype.goodies.i18n.MessageBundle;
 import org.sonatype.nexus.capability.CapabilityType;
+import org.sonatype.nexus.common.upgrade.AvailabilityVersion;
 import org.sonatype.nexus.formfields.*;
 
 import javax.inject.Named;
@@ -16,6 +17,7 @@ import java.util.Map;
  *
  */
 @Named(JiraTestReportCapabilityDescriptor.TYPE_ID)
+@AvailabilityVersion(from = "1.0")
 public class JiraTestReportCapabilityDescriptor extends TestReportCapabilityDescriptorParent {
 	public static final String TYPE_ID = "nx3Deploy.jira.report";
 

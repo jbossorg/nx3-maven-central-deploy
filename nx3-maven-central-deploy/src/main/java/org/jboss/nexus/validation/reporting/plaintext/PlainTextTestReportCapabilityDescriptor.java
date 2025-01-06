@@ -6,6 +6,7 @@ import org.sonatype.goodies.i18n.I18N;
 import org.sonatype.goodies.i18n.MessageBundle;
 import org.sonatype.nexus.capability.CapabilityType;
 import org.sonatype.nexus.capability.Taggable;
+import org.sonatype.nexus.common.upgrade.AvailabilityVersion;
 import org.sonatype.nexus.formfields.CheckboxFormField;
 import org.sonatype.nexus.formfields.FormField;
 import org.sonatype.nexus.formfields.StringTextFormField;
@@ -20,6 +21,7 @@ import static org.sonatype.nexus.capability.CapabilityType.capabilityType;
 
 @Named(TYPE_ID)
 @Singleton
+@AvailabilityVersion(from = "1.0")
 public class PlainTextTestReportCapabilityDescriptor extends TestReportCapabilityDescriptorParent implements Taggable {
 
 	public static final String TYPE_ID = "nx3Deploy.textReport";

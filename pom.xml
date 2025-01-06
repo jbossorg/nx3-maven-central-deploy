@@ -6,26 +6,26 @@
     <parent>
         <groupId>org.sonatype.nexus.plugins</groupId>
         <artifactId>nexus-plugins</artifactId>
-        <version>3.72.0-04</version>
+        <version>3.74.0-05</version>
     </parent>
-
-
 
     <name>${project.groupId}:${project.artifactId}</name>
     <packaging>pom</packaging>
-
-    <groupId>org.jboss.nexus</groupId>
-    <artifactId>nx3-maven-central-deploy-parent</artifactId>
-    <version>3.72.0-04-SNAPSHOT</version>
-    <description>Plugin for deployment of artifacts from Sonatype Nexus 3 repositories to Maven Central.</description>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mockitoversion>4.9.0</mockitoversion>
-        <nexus.version>3.72.0-04</nexus.version>
+        <nexus.version>3.74.0-05</nexus.version>
+        <revision>${nexus.version}-SNAPSHOT</revision>
     </properties>
+
+    <groupId>org.jboss.nexus</groupId>
+    <artifactId>nx3-maven-central-deploy-parent</artifactId>
+    <version>3.74.0-05-SNAPSHOT</version>
+    <description>Plugin for deployment of artifacts from Sonatype Nexus 3 repositories to Maven Central.</description>
+
 
     <build>
        <directory>./target</directory>

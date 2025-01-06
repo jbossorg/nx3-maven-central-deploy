@@ -6,6 +6,7 @@ import org.sonatype.nexus.capability.CapabilityDescriptorSupport;
 import org.sonatype.nexus.capability.CapabilityType;
 import org.sonatype.nexus.capability.Tag;
 import org.sonatype.nexus.capability.Taggable;
+import org.sonatype.nexus.common.upgrade.AvailabilityVersion;
 import org.sonatype.nexus.formfields.FormField;
 import org.sonatype.nexus.formfields.StringTextFormField;
 import org.sonatype.nexus.formfields.TextAreaFormField;
@@ -20,6 +21,7 @@ import static org.jboss.nexus.tagging.MCDTagSetupDescriptor.TYPE_ID;
 @SuppressWarnings("rawtypes")
 @Singleton
 @Named(TYPE_ID)
+@AvailabilityVersion(from = "1.0")
 public class MCDTagSetupDescriptor extends CapabilityDescriptorSupport<MCDTagSetupConfiguration> implements Taggable {
 
 	public MCDTagSetupDescriptor() {

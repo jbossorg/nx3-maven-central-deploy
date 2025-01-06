@@ -4,6 +4,7 @@ import org.jboss.nexus.DescriptorUtils;
 import org.jboss.nexus.MavenCentralDeployTaskDescriptor;
 import org.sonatype.goodies.i18n.I18N;
 import org.sonatype.goodies.i18n.MessageBundle;
+import org.sonatype.nexus.common.upgrade.AvailabilityVersion;
 import org.sonatype.nexus.formfields.*;
 import org.sonatype.nexus.scheduling.TaskConfiguration;
 import org.sonatype.nexus.scheduling.TaskDescriptorSupport;
@@ -18,6 +19,7 @@ import static org.jboss.nexus.validation.reporting.jira.MavenCentralDeployTaskWi
 
 @Named(TYPE_ID)
 @Singleton
+@AvailabilityVersion(from = "1.0")
 public class MavenCentralDeployTaskWithJiraDescriptor extends MavenCentralDeployTaskDescriptor {
 
     public static final String TYPE_ID = "mvn.central.deploy.with.jira";
@@ -64,7 +66,6 @@ public class MavenCentralDeployTaskWithJiraDescriptor extends MavenCentralDeploy
 
 
         // re-create the mandatory fields from JiraTestReportCapabilityDescriptor, so they are always optional here. Default values exist in JiraTestReportCapabilityDescriptor
-        //noinspection unchecked
         taskFieldsWithJira = DescriptorUtils.combineDescriptors(fields, ignoredJiraFields, JiraTestReportCapabilityDescriptor.formFields);
     }
 
