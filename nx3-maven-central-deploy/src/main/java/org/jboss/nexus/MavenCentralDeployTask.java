@@ -41,7 +41,7 @@ public class MavenCentralDeployTask
   @Override
   protected String execute()  {
     mavenCentralDeploy.processDeployment((MavenCentralDeployTaskConfiguration) getConfiguration());
-    return "We are sending something!"; // FIXME: 09.06.2023 better text
+    return "Done!";
   }
 
   @Override

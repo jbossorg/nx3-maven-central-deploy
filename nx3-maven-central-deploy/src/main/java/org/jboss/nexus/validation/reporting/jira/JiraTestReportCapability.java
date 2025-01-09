@@ -145,9 +145,12 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 		if(configuration == null)
 			return; // feature is disabled or not configured
 
-		if(mavenCentralDeployTaskConfiguration instanceof MavenCentralDeployTaskWithJiraConfiguration && !((MavenCentralDeployTaskWithJiraConfiguration)mavenCentralDeployTaskConfiguration).getCreateTestTicket()
+		if(
+				// creating test Jira issues is considered troubleshooting so try to create the ticket as many times as necessary
+				mavenCentralDeployTaskConfiguration instanceof MavenCentralDeployTaskWithJiraConfiguration && !((MavenCentralDeployTaskWithJiraConfiguration)mavenCentralDeployTaskConfiguration).getCreateTestTicket()
+
 				&& mavenCentralDeployTaskConfiguration.hasLastRunState() && Objects.requireNonNull(mavenCentralDeployTaskConfiguration.getLastRunState()).getEndState().equals(TaskState.FAILED))
-			return; // it failed previously, so we do not want to report errors over and over. But the test run should work
+			return; // real deployment failed previously, so we do not want to report errors over and over.
 
 		Objects.requireNonNull(templateHelper);
 

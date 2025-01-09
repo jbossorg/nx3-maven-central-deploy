@@ -121,9 +121,6 @@ public class MavenCentralDeploy extends ComponentSupport {
           Repository repository = checkNotNull(repositoryManager.get(checkNotNull(configuration.getRepository(), "Repository not configured for the task!")), "Invalid repository configured!");
           contentBrowser.prepareValidationData(repository, filter, configuration, listOfFailures, toDeploy, log);
 
-          // todo now deploy, report and tag everything
-
-
           MCDTagSetupConfiguration mcdTagSetupConfiguration = findConfigurationForPlugin(MCDTagSetupConfiguration.class);
           response.append("Processed ").append(toDeploy.size()).append(" components.");
 
@@ -149,19 +146,27 @@ public class MavenCentralDeploy extends ComponentSupport {
 
               boolean publishPossible = true;
               if (StringUtils.isBlank(centralUser)) {
-                  log.error("The artifacts can not be published. Username of the Maven Central account is missing!");
+                  String msg = "The artifacts can not be published. Username of the Maven Central account is missing!";
+                  log.error(msg);
+                  response.append('\n').append(msg);
                   publishPossible = false;
               }
               if (StringUtils.isBlank(centralPassword)) {
-                  log.error("The artifacts can not be published. Password of the Maven Central account is missing!");
+                  String msg = "The artifacts can not be published. Password of the Maven Central account is missing!";
+                  log.error(msg);
+                  response.append('\n').append(msg);
                   publishPossible = false;
               }
               if (!"USER_MANAGED".equalsIgnoreCase(centralMode) && !AUTOMATIC.equalsIgnoreCase(centralMode)) {
-                  log.error("The artifacts can not be published. Deployment mode should either be USER_MANAGED or AUTOMATIC! It is " + centralMode);
+                  String msg = "The artifacts can not be published. Deployment mode should either be USER_MANAGED or AUTOMATIC! It is " + centralMode;
+                  log.error(msg);
+                  response.append('\n').append(msg);
                   publishPossible = false;
               }
               if (!UrlValidator.getInstance().isValid(centralURL)) {
-                  log.error("The artifacts can not be published. The URL of the Maven Central is not valid! The value is " + centralURL);
+                  String message = "The artifacts can not be published. The URL of the Maven Central is not valid! The value is " + centralURL;
+                  log.error(message);
+                  response.append('\n').append(message);
                   publishPossible = false;
               }
 
@@ -222,14 +227,15 @@ public class MavenCentralDeploy extends ComponentSupport {
 
                               }
                           }
-
                       }
                   } catch (IOException ex) {
                       errors.add(new FailedCheck("Failed to deploy "+ ex.getMessage()));
                       log.error(ex.getMessage());
                   } catch (AuthenticationException e) {
                       // it can not happen with basic authentication only
-                      log.error("Unexpected authentication error: "+e.getMessage());
+                      String problem = "Unexpected authentication error: " + e.getMessage();
+                      errors.add(new FailedCheck(problem));
+                      log.error(problem);
                       throw new RuntimeException(e);
                   }
 
@@ -239,7 +245,7 @@ public class MavenCentralDeploy extends ComponentSupport {
 
                           HttpClientBuilder httpClientBuilder = getHttpClientBuilder(centralProxy, centralProxyPort);
 
-                          // dhladky@dhladky-mac ~ % curl -u 'user:redacted'  -X POST 'https://central.sonatype.com/api/v1/publisher/status?id=cbfe2fa8-c84c-4ec0-8e45-c71cdb5f6390'
+                          // % curl -u 'user:redacted'  -X POST 'https://central.sonatype.com/api/v1/publisher/status?id=cbfe2fa8-c84c-4ec0-8e45-c71cdb5f6390'
                           HttpPost httpPost = new HttpPost(centralURL+STATUS_ENDPOINT+"?id="+deploymentCreated );
 
                           Header authenticateHeader;
@@ -255,9 +261,7 @@ public class MavenCentralDeploy extends ComponentSupport {
                           waitForMavenCentralResults(errors, httpClientBuilder, httpPost);
 
                       } catch (IOException e) {
-                          throw new RuntimeException(e); // TODO: 2024-02-26 - just workaround - proper error handling missing!
-
-
+                          throw new RuntimeException(e);
                       }
                   }
 
@@ -298,10 +302,6 @@ public class MavenCentralDeploy extends ComponentSupport {
                      response.append("\n- no errors were found.");
                  } else {
                      response.append("\n- deployment was not successful");
-
-                     errors.stream().map(FailedCheck::getProblem)
-                             .forEach(problem -> response.append("\n    - ").append(problem));
-
                  }
              } else {
                  response.append("\n- validation was OK, but the Maven Central deployment is not properly configured.");
@@ -314,6 +314,15 @@ public class MavenCentralDeploy extends ComponentSupport {
           if(!errors.isEmpty()) {
 
              response.append("\n- ").append(errors.size()).append(" problems found!");
+
+             // add errors without a component associated (limit to 50 errors)
+             errors.stream().filter(failedCheck -> !failedCheck.isHasComponent()).limit(50)
+                     .map(failedCheck -> "\n   -"+failedCheck.getProblem())
+                     .forEach(response::append);
+
+             // add errors with component (limit to first 100)
+              errors.stream().filter(FailedCheck::isHasComponent).limit(100)
+                      .map(failedCheck -> "\n   - "+failedCheck.formatComponent()+": "+failedCheck.getProblem()).forEach(response::append);
 
              for (TestReportCapability<?> report : reports) {
                 report.createReport(configuration, errors,  new HashMap<>(templateVariables)); // re-pack template variables so each report may work within its space
@@ -340,6 +349,7 @@ public class MavenCentralDeploy extends ComponentSupport {
                      }
                  }
              }
+
 
              throw new RuntimeException("Validations failed!"); // throw an exception so the task is reported as failed
           }
@@ -490,7 +500,7 @@ public class MavenCentralDeploy extends ComponentSupport {
      * @param httpPost the post request to be used
      */
     private void waitForMavenCentralResults(List<FailedCheck> errors, HttpClientBuilder httpClientBuilder, HttpPost httpPost) throws IOException {
-        // TODO: 2024-02-22 - wait for validation on Sonatype site finishes and analyze possible errors
+        //  wait for validation on Sonatype site finishes and analyze possible errors
 
 
         do {
@@ -553,7 +563,7 @@ public class MavenCentralDeploy extends ComponentSupport {
 
     /** Parses component from Sonatype defined package name
      *
-     * @param packageName name of the component in format pkg:maven/xcom.sonatype.central.testing.david-hladky/kie-api@7.42.0.Final?type=bundle
+     * @param packageName name of the component in format pkg:maven/com.sonatype.central.testing.david-hladky/kie-api@7.42.0.Final?type=bundle
      * @return either properly parsed component or {@link FailedCheck#NO_COMPONENT}
      */
     @NotNull

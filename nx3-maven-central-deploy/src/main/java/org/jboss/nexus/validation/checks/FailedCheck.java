@@ -57,4 +57,12 @@ public class FailedCheck {
     }
 
     public static final Component NO_COMPONENT = new TemplateRenderingHelper.FictiveComponent(" ", "-", " ");
+
+    /** Returns human-readable representation of component.
+     *
+      * @return name of the component
+     */
+    public String formatComponent() {
+        return "["+component.group()+':'+component.name()+':'+component.version()+"]";
+    }
 }

@@ -17,6 +17,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jboss.nexus.validation.reporting.jira.MavenCentralDeployTaskWithJiraDescriptor.TYPE_ID;
 import static org.sonatype.nexus.logging.task.TaskLogType.NEXUS_LOG_ONLY;
 
+@SuppressWarnings("CdiInjectionPointsInspection")
 @Named(TYPE_ID)
 @TaskLogging(NEXUS_LOG_ONLY)
 public class MavenCentralDeployTaskWithJiraTask extends MavenCentralDeployTask {
@@ -35,22 +36,22 @@ public class MavenCentralDeployTaskWithJiraTask extends MavenCentralDeployTask {
     @Override
     protected String execute() {
         MavenCentralDeployTaskWithJiraConfiguration configuration = (MavenCentralDeployTaskWithJiraConfiguration) getConfiguration();
-        try {
-            if (configuration.getCreateTestTicket()) {
-                // prepare fictive content
-                List<FailedCheck> errors = TemplateRenderingHelper.generateFictiveErrors();
-                Map<String, Object> templateVariables = templateRenderingHelper.generateTemplateParameters(configuration, errors, 42);
+        if (configuration.getCreateTestTicket()) {
+            try {
+                    // prepare fictive content
+                    List<FailedCheck> errors = TemplateRenderingHelper.generateFictiveErrors();
+                    Map<String, Object> templateVariables = templateRenderingHelper.generateTemplateParameters(configuration, errors, 42);
 
-                jiraTestReportCapability.createReport(configuration, errors, templateVariables);
+                    jiraTestReportCapability.createReport(configuration, errors, templateVariables);
 
-                getConfiguration().setString(MavenCentralDeployTaskWithJiraConfiguration.LATEST_STATUS, configuration.getLatestStatus());
-                return "Test report created.";
-            } else
-                return super.execute();
-        } catch (Exception e) {
-            getConfiguration().setString(MavenCentralDeployTaskWithJiraConfiguration.LATEST_STATUS, "Error in deployment: "+e.getMessage());
-            throw e;
-        }
+                    getConfiguration().setString(MavenCentralDeployTaskWithJiraConfiguration.LATEST_STATUS, configuration.getLatestStatus());
+                    return "Test report created.";
+            } catch (Exception e) {
+                getConfiguration().setString(MavenCentralDeployTaskWithJiraConfiguration.LATEST_STATUS, "Failed to create test Jira issue: "+e.getMessage());
+                throw e;
+            }
+        } else
+            return super.execute();
     }
 
     @Override
