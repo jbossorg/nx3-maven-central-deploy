@@ -397,6 +397,29 @@ public class PomXMLValidationCheckTest {
 		assertTrue(errorExist("some/SomeProject.pom does not have the project version specified!"));
 	}
 	@Test
+	public void validateComponentAllButProjectMissingWithParentClass() {
+		prepareInputStream("<project>" +
+				"<parent>" +
+				"<groupId>org.jboss.nexus.test</groupId>" +
+				"<artifactId>test-parent</artifactId>" +
+				"<version>test-parent</version>" +
+				"</parent>" + // let us still fail to deliver version
+				"</project>");
+
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
+
+		assertFalse(errorExist("some/SomeProject.pom does not have required project root!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have source code repository specified (scm)!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have any license specified!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have the project name specified!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have any developer information specified!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have the project description specified!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have the project URL specified!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have the project group specified!"));
+		assertTrue(errorExist("some/SomeProject.pom does not have the artifact specified!"));
+		assertFalse(errorExist("some/SomeProject.pom does not have the project version specified!"));
+	}
+	@Test
 	public void validateComponentDisableTest() {
 
 		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT, true);

@@ -64,7 +64,8 @@ public class PomXMLValidationCheck extends CentralValidation {
 						 hasDeveloperInfo = false,
 						 hasProjectName = false,
 						 hasProjectDescription = false,
-						 hasProjectURL = false;
+						 hasProjectURL = false,
+						 hasParentSection = false;
 
 
 					while (reader.hasNext()) {
@@ -113,6 +114,7 @@ public class PomXMLValidationCheck extends CentralValidation {
 									break;
 								case "parent":
 									parentSection  = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "parent", level, 2);
+									hasParentSection |= parentSection;
 									break;
 								case "groupId":
 									if(level==2 || level == 3 && parentSection)
@@ -163,35 +165,36 @@ public class PomXMLValidationCheck extends CentralValidation {
 						listOfFailures.add(new FailedCheck(component, msg));
 					}
 
+
 					if(hasProject) {
 						// if there is no project it does not make any sense to report anything else from here
 
-						if (!mavenCentralDeployTaskConfiguration.getDisableHasSCM() && !hasSCM) {
+						if (!hasParentSection && !mavenCentralDeployTaskConfiguration.getDisableHasSCM() && !hasSCM) {
 							String msg = asset.name() + " does not have source code repository specified (scm)!";
 							log.info("Failed PomXMLValidationCheck: " + msg);
 							listOfFailures.add(new FailedCheck(component, msg));
 						}
-						if (!mavenCentralDeployTaskConfiguration.getDisableHasLicense() && !hasLicense) {
+						if (!hasParentSection && !mavenCentralDeployTaskConfiguration.getDisableHasLicense() && !hasLicense) {
 							String msg = asset.name() + " does not have any license specified!";
 							log.info("Failed PomXMLValidationCheck: " + msg);
 							listOfFailures.add(new FailedCheck(component, msg));
 						}
-						if (!mavenCentralDeployTaskConfiguration.getDisableHasProjectName() && !hasProjectName) {
+						if (!hasParentSection && !mavenCentralDeployTaskConfiguration.getDisableHasProjectName() && !hasProjectName) {
 							String msg = asset.name() + " does not have the project name specified!";
 							log.info("Failed PomXMLValidationCheck: " + msg);
 							listOfFailures.add(new FailedCheck(component, msg));
 						}
-						if (!mavenCentralDeployTaskConfiguration.getDisableHasDeveloperInfo() && !hasDeveloperInfo) {
+						if (!hasParentSection && !mavenCentralDeployTaskConfiguration.getDisableHasDeveloperInfo() && !hasDeveloperInfo) {
 							String msg = asset.name() + " does not have any developer information specified!";
 							log.info("Failed PomXMLValidationCheck: " + msg);
 							listOfFailures.add(new FailedCheck(component, msg));
 						}
-						if (!mavenCentralDeployTaskConfiguration.getDisableHasProjectDescription() && !hasProjectDescription) {
+						if (!hasParentSection && !mavenCentralDeployTaskConfiguration.getDisableHasProjectDescription() && !hasProjectDescription) {
 							String msg = asset.name() + " does not have the project description specified!";
 							log.info("Failed PomXMLValidationCheck: " + msg);
 							listOfFailures.add(new FailedCheck(component, msg));
 						}
-						if (!mavenCentralDeployTaskConfiguration.getDisableHasProjectURL() && !hasProjectURL) {
+						if (!hasParentSection && !mavenCentralDeployTaskConfiguration.getDisableHasProjectURL() && !hasProjectURL) {
 							String msg = asset.name() + " does not have the project URL specified!";
 							log.info("Failed PomXMLValidationCheck: " + msg);
 							listOfFailures.add(new FailedCheck(component, msg));
