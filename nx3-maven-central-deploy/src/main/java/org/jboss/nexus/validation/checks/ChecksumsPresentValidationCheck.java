@@ -26,7 +26,11 @@ public class ChecksumsPresentValidationCheck extends CentralValidation {
    // asc is not a checksum, but it should not require checksums itself, so it should be treated as the optional one.
     @Override
     public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<FailedCheck> listOfFailures) {
-       if(mavenCentralDeployTaskConfiguration.getDisableHasChecksumsMD5() && mavenCentralDeployTaskConfiguration.getDisableHasChecksumsSHA1())  {
+        if(log.isDebugEnabled())
+            log.debug("ChecksumsPresentValidationCheck: Validating component {}", component.toStringExternal());
+
+
+        if(mavenCentralDeployTaskConfiguration.getDisableHasChecksumsMD5() && mavenCentralDeployTaskConfiguration.getDisableHasChecksumsSHA1())  {
           log.debug(mavenCentralDeployTaskConfiguration.getId()+": checksum validation disabled.");
           return;
        }

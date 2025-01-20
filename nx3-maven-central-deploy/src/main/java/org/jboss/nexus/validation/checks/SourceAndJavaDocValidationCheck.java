@@ -21,6 +21,10 @@ public class SourceAndJavaDocValidationCheck extends CentralValidation {
 
 	@Override
 	public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<FailedCheck> listOfFailures) {
+		if(log.isDebugEnabled())
+			log.debug("SourceAndJavaDocValidationCheck: Validating component {}", component.toStringExternal());
+
+
 		if(mavenCentralDeployTaskConfiguration.getDisableHasJavaDoc() && mavenCentralDeployTaskConfiguration.getDisableHasSourceCodes())  {
 			log.debug(mavenCentralDeployTaskConfiguration.getId()+": javadoc and source code validation disabled.");
 			return;
@@ -28,6 +32,7 @@ public class SourceAndJavaDocValidationCheck extends CentralValidation {
 
 		Set<String> javadocFiles = new HashSet<>();
 		Set<String> sourceFiles = new HashSet<>();
+		Set<String> signatureFiles = new HashSet<>();
 		Set<String> checkedFiles = new HashSet<>();
 
 		for(Asset asset : component.assetsInside()) {
@@ -39,6 +44,8 @@ public class SourceAndJavaDocValidationCheck extends CentralValidation {
 
 				if(asset.name().endsWith(FileExtensions.EXTENSION_SOURCES)) {
 					sourceFiles.add(asset.name());
+				} else if(asset.name().endsWith(FileExtensions.EXTENSION_ASC)) {
+					signatureFiles.add(asset.name());
 				} else if(asset.name().endsWith(FileExtensions.EXTENSION_JAVADOC)) {
 					javadocFiles.add(asset.name());
 				} else if(requiresSourceAndJavadocExtensions.contains(suffix)) {
@@ -54,6 +61,9 @@ public class SourceAndJavaDocValidationCheck extends CentralValidation {
 
 			if (!mavenCentralDeployTaskConfiguration.getDisableHasSourceCodes() && !sourceFiles.contains(makeSourceCodeName(file))) {
 				listOfFailures.add(new FailedCheck(component, "Source code is missing for " + file));
+			}
+			if (!mavenCentralDeployTaskConfiguration.getDisableHasSignatureFile() && !signatureFiles.contains(makeSignatureFileName(file))) {
+				listOfFailures.add(new FailedCheck(component, "Signature file is missing for " + file));
 			}
 
 		}
@@ -77,5 +87,15 @@ public class SourceAndJavaDocValidationCheck extends CentralValidation {
 	 */
 	 static String makeSourceCodeName(@NotNull String fileName) {
 		return fileName.substring(0, fileName.length()-4)+FileExtensions.EXTENSION_SOURCES;
+	}
+
+	/** From the file name makes the name it should have if it is a javadoc file
+	 *
+	 * @param fileName file name
+	 *
+	 * @return file name of supposed JavaDoc file
+	 */
+	 static String makeSignatureFileName(@NotNull String fileName) {
+		return fileName+FileExtensions.EXTENSION_ASC;
 	}
 }

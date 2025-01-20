@@ -44,6 +44,9 @@ public class PomXMLValidationCheck extends CentralValidation {
 
 	@Override
 	public void validateComponent(@NotNull MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, @NotNull Component component, @NotNull List<FailedCheck> listOfFailures) {
+		if(log.isDebugEnabled())
+			log.debug("PomXMLValidationCheck: Validating component {}", component.toStringExternal());
+
 		XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
 		for(Asset asset : component.assetsInside() ) {
 			if(asset.name().endsWith(EXTENSION_POM)) {

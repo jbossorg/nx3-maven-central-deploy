@@ -40,12 +40,14 @@ public class SourceAndJavaDocValidationCheckTest {
 
 		Asset component1Asset = mockedAsset("something/file.jar"),
 			 component1AssetSources = mockedAsset("something/file-sources.jar"),
+			 component1AssetSingatureFile= mockedAsset("something/file.jar.asc"),
 			 component1AssetJavaDoc = mockedAsset("something/file-javadoc.jar");
 
 		List<Asset> assets = new ArrayList<>();
 		assets.add(component1Asset);
 		assets.add(component1AssetSources);
 		assets.add(component1AssetJavaDoc);
+		assets.add(component1AssetSingatureFile);
 
 		when(component1.assetsInside()).thenReturn(assets);
 
@@ -72,6 +74,7 @@ public class SourceAndJavaDocValidationCheckTest {
 
 		assertTrue(errorExist("JavaDoc is missing for something/file.jar"));
 		assertFalse(errorExist("Source code is missing for something/file.jar"));
+		assertTrue(errorExist("Signature file is missing for something/file.jar"));
 	}
 
 	@Test
@@ -108,6 +111,7 @@ public class SourceAndJavaDocValidationCheckTest {
 
 		assertTrue(errorExist("JavaDoc is missing for something/file.jar"));
 		assertTrue(errorExist("Source code is missing for something/file.jar"));
+		assertTrue(errorExist("Signature file is missing for something/file.jar"));
 
 		assertSame(component1, failedChecks.get(0).getComponent());
 		assertSame(component1, failedChecks.get(1).getComponent());
@@ -129,6 +133,8 @@ public class SourceAndJavaDocValidationCheckTest {
 
 		assertFalse(errorExist("JavaDoc is missing for something/file.jar"));
 		assertTrue(errorExist("Source code is missing for something/file.jar"));
+		assertTrue(errorExist("Signature file is missing for something/file.jar"));
+
 	}
 
 
@@ -148,6 +154,29 @@ public class SourceAndJavaDocValidationCheckTest {
 
 		assertTrue(errorExist("JavaDoc is missing for something/file.jar"));
 		assertFalse(errorExist("Source code is missing for something/file.jar"));
+	}
+	@Test
+	public void validateComponentJarMissingSignatureFile() {
+		Component component1 = mock(Component.class);
+
+		Asset component1Asset = mockedAsset("something/file.jar"),
+		    component1SignatureFile = mockedAsset("something/file.jar.asc");
+
+		List<Asset> assets = new ArrayList<>();
+		assets.add(component1Asset);
+		when(component1.assetsInside()).thenReturn(assets);
+
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, failedChecks);
+		assertTrue(errorExist("Signature file is missing for something/file.jar"));
+
+		failedChecks.clear();
+		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SIGNATURE_FILE, true);
+		assertFalse(errorExist("Signature file is missing for something/file.jar"));
+
+		failedChecks.clear();
+		assets.add(component1SignatureFile);
+		mavenCentralDeployTaskConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SIGNATURE_FILE, false);
+		assertFalse(errorExist("Signature file is missing for something/file.jar"));
 	}
 
 	@Test
@@ -171,6 +200,7 @@ public class SourceAndJavaDocValidationCheckTest {
 		Component component1 = mock(Component.class);
 
 		Asset component1Asset = mockedAsset("something/file.war"),
+			component1AssetSignatureFile = mockedAsset("something/file.war.asc"),
 			component1AssetSources = mockedAsset("something/file-sources.jar"),
 			 component1AssetJavaDoc = mockedAsset("something/file-javadoc.jar");
 
@@ -178,6 +208,7 @@ public class SourceAndJavaDocValidationCheckTest {
 		assets.add(component1Asset);
 		assets.add(component1AssetSources);
 		assets.add(component1AssetJavaDoc);
+		assets.add(component1AssetSignatureFile);
 		when(component1.assetsInside()).thenReturn(assets);
 		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, failedChecks);
 
@@ -204,6 +235,7 @@ public class SourceAndJavaDocValidationCheckTest {
 		Component component1 = mock(Component.class);
 
 		Asset component1Asset = mockedAsset("something/file.ear"),
+			 component1AssetSignatueFile = mockedAsset("something/file.ear.asc"),
 			 component1AssetSources = mockedAsset("something/file-sources.jar"),
 			 component1AssetJavaDoc = mockedAsset("something/file-javadoc.jar");
 
@@ -211,6 +243,7 @@ public class SourceAndJavaDocValidationCheckTest {
 		assets.add(component1Asset);
 		assets.add(component1AssetSources);
 		assets.add(component1AssetJavaDoc);
+		assets.add(component1AssetSignatueFile);
 
 		when(component1.assetsInside()).thenReturn(assets);
 		tested.validateComponent(mavenCentralDeployTaskConfiguration, component1, failedChecks);

@@ -192,6 +192,12 @@ public class MavenCentralDeployTaskDescriptor
 
     @DefaultMessage("Disables checks of JavaDoc files")
     String disableHasJavaDocHelp();
+
+    @DefaultMessage("Disable signature file checking")
+    String disableHasSignatureFileLabel();
+
+    @DefaultMessage("Disables checks of missing signature files (.asc).")
+    String disableHasSignatureFileHelp();
   }
 
   private static final Messages messages = I18N.create(Messages.class);
@@ -217,6 +223,7 @@ public class MavenCentralDeployTaskDescriptor
           new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SNAPSHOT_VERSION, messages.disableHasSnapshotVersionLabel(), messages.disableHasSnapshotVersionHelp(), false),
           new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SOURCE_CODES, messages.disableHasSourceCodeLabel(), messages.disableHasSourceCodeHelp(), false),
           new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_JAVADOC, messages.disableHasJavaDocLabel(), messages.disableHasJavaDocHelp(), false),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_SIGNATURE_FILE, messages.disableHasSignatureFileLabel(), messages.disableHasSignatureFileHelp(), false),
           new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_CHECKSUMS_MD5, messages.disableHasChecksumMD5Label(), messages.disableHasChecksumMD5Help(), false),
           new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_CHECKSUMS_SHA1, messages.disableHasChecksumSHA1Label(), messages.disableHasChecksumSHA1Help(), false),
           new CheckboxFormField(MavenCentralDeployTaskConfiguration.DISABLE_HAS_PROJECT, messages.disableHasProjectLabel(), messages.disableHasProjectHelp(), false),

@@ -38,6 +38,7 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
     public static final String DISABLE_HAS_CHECKSUMS_SHA1 = "disableHasChecksumsSHA1";
     public static final String DISABLE_HAS_SOURCE_CODES = "disableHasSourceCodes";
     public static final String DISABLE_HAS_JAVADOC = "disableHasJavadoc";
+    public static final String DISABLE_HAS_SIGNATURE_FILE = "disableHasSignature";
 
     public static final String LATEST_COMPONENT_TIME = "latestComponentTime";
 
@@ -137,6 +138,10 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
 
     public Boolean getDisableHasJavaDoc() {
         return getBoolean(DISABLE_HAS_JAVADOC, false);
+    }
+
+    public Boolean getDisableHasSignatureFile() {
+        return getBoolean(DISABLE_HAS_SIGNATURE_FILE, false);
     }
 
     public String getVariables() {
