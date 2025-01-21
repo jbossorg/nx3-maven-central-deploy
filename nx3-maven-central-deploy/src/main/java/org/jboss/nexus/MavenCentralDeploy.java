@@ -8,7 +8,6 @@ import com.sonatype.nexus.tags.service.TagService;
 import org.apache.commons.io.input.QueueInputStream;
 import org.apache.commons.io.output.QueueOutputStream;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.validator.routines.UrlValidator;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthenticationException;
@@ -40,6 +39,8 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -163,12 +164,16 @@ public class MavenCentralDeploy extends ComponentSupport {
                   response.append('\n').append(msg);
                   publishPossible = false;
               }
-              if (!UrlValidator.getInstance().isValid(centralURL)) {
+
+              try {
+                  URI ignored = new URI(centralURL);
+              } catch (NullPointerException | URISyntaxException e) {
                   String message = "The artifacts can not be published. The URL of the Maven Central is not valid! The value is " + centralURL;
                   log.error(message);
                   response.append('\n').append(message);
                   publishPossible = false;
               }
+
 
               long latestComponentTime = configuration.getLatestComponentTime();
               String deploymentCreated = null;
@@ -354,7 +359,7 @@ public class MavenCentralDeploy extends ComponentSupport {
              throw new RuntimeException("Validations failed!"); // throw an exception so the task is reported as failed
           }
         } catch (RuntimeException e) {
-          if(response.length()>0)
+          if(!response.isEmpty())
              response.append('\n');
 
           response.append(e.getMessage());
