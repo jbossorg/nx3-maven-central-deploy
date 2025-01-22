@@ -8,16 +8,24 @@ import org.jboss.nexus.validation.checks.FailedCheck;
 import org.jboss.nexus.validation.reporting.TestReportCapability;
 import org.sonatype.nexus.scheduling.TaskInfo;
 
+import javax.inject.Inject;
 import javax.inject.Named;
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Named(PlainTextTestReportCapabilityDescriptor.TYPE_ID)
 public class PlainTextTestReportCapability extends TestReportCapability<PlainTextTestReportCapabilityConfiguration> {
 
+	private final Set<String> centralDeployTaskIDs;
 
+	@SuppressWarnings("CdiInjectionPointsInspection")
+	@Inject
+	public PlainTextTestReportCapability(List<MavenCentralDeployTaskDescriptor> taskDescriptors) {
+		this.centralDeployTaskIDs = taskDescriptors.stream().map(MavenCentralDeployTaskDescriptor::getId).collect(Collectors.toSet());
+	}
 
-	public void createReport(MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration,  List<FailedCheck> listOfFailures, Map<String, Object> printVariables) {
+	public void createReport(MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, List<FailedCheck> listOfFailures, Map<String, Object> printVariables) {
 		PlainTextTestReportCapabilityConfiguration plainTextTestReportCapabilityConfiguration = mavenCentralDeploy.findConfigurationForPlugin(PlainTextTestReportCapabilityConfiguration.class) ;
 
 		if(plainTextTestReportCapabilityConfiguration == null || StringUtils.isBlank(plainTextTestReportCapabilityConfiguration.getReportTemplate()))
@@ -72,8 +80,10 @@ public class PlainTextTestReportCapability extends TestReportCapability<PlainTex
 			result.append("Unable to find task scheduler!\n");
 
 		} else {
+			boolean validTaskFound = false;
 			for(TaskInfo taskInfo : taskSchedulerProvider.get().listsTasks()) {
-				if(taskInfo.getTypeId().equals(MavenCentralDeployTaskDescriptor.TYPE_ID)) {
+				if(centralDeployTaskIDs.contains(taskInfo.getTypeId())) {
+					validTaskFound = true;
 					result.append("<b>------------------------------- ").append(taskInfo.getName()).append(" -------------------------------</b>\n");
 					MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration = new MavenCentralDeployTaskConfiguration (taskInfo.getConfiguration());
 					result.append("<b>Output file:</b> ");
@@ -99,6 +109,10 @@ public class PlainTextTestReportCapability extends TestReportCapability<PlainTex
 					}
 					result.append('\n');
 				}
+			}
+
+			if(!validTaskFound) {
+				result.append("No configured deployment task found.");
 			}
 		}
 

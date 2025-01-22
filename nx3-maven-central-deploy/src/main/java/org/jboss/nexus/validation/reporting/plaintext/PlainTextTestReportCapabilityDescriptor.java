@@ -2,6 +2,7 @@ package org.jboss.nexus.validation.reporting.plaintext;
 
 import org.jboss.nexus.validation.reporting.TestReportCapabilityConfigurationParent;
 import org.jboss.nexus.validation.reporting.TestReportCapabilityDescriptorParent;
+import org.jetbrains.annotations.Nullable;
 import org.sonatype.goodies.i18n.I18N;
 import org.sonatype.goodies.i18n.MessageBundle;
 import org.sonatype.nexus.capability.CapabilityType;
@@ -98,4 +99,9 @@ public class PlainTextTestReportCapabilityDescriptor extends TestReportCapabilit
 		return messages.about();
 	}
 
+	@Nullable
+	@Override
+	protected Set<String> uniqueProperties() {
+		return Collections.singleton(PlainTextTestReportCapabilityConfiguration.FILE_NAME);
+	}
 }
