@@ -123,6 +123,15 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 		// values from task configuration if possible
 		result.putAll((mavenCentralDeployTaskConfiguration).asMap() );
 
+		// if default configuration has component(s) set, but Jira specific task has a different project set (probably wrong component by default), remove it from the configuration
+		if(! Objects.equals(jiraTestReportCapabilityConfiguration.getDefaultJiraConfiguration().getProject(), mavenCentralDeployTaskConfiguration.getString(JiraTestReportCapabilityConfiguration.PROJECT))
+			&& StringUtils.isNotEmpty(mavenCentralDeployTaskConfiguration.getString(JiraTestReportCapabilityConfiguration.PROJECT))
+		   && result.containsKey(JiraTestReportCapabilityConfiguration.COMPONENTS)
+		   && !mavenCentralDeployTaskConfiguration.containsKey(JiraTestReportCapabilityConfiguration.COMPONENTS)
+		) {
+			result.put(JiraTestReportCapabilityConfiguration.COMPONENTS, "");
+		}
+
 		// variable overload of those values
 		result.putAll(printVariables);
 

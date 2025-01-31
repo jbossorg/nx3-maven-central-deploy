@@ -102,7 +102,7 @@ public class PomXMLValidationCheck extends CentralValidation {
 									break;
 								case "organization":
 									// this can be considered developer info as well
-									hasDeveloperInfo = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "source code source (scm)", level, 4);
+									hasDeveloperInfo = checkLevelMultipleLevels(listOfFailures, component, asset.name(), event.getLocation(), "organization", level, 2, 4);
 									break;
 								case "name":
 									if(level == 2) // element named name appears in many tags, but we need the one on level 2
@@ -266,6 +266,33 @@ public class PomXMLValidationCheck extends CentralValidation {
 			return false;
 		}
 		return true;
+	}
+
+
+	/** Verifies the level of the specified tag
+	 *
+	 * @param failedCheckList list to report problems to
+	 * @param component component being analyzed
+	 * @param assetName name of the asset for the possible error message
+	 * @param location location of the targeted entity
+	 * @param testedTag what is being tested (human-readable)
+	 * @param currentLevel current level in xml
+	 * @param expectedLevels expected levels in xml
+	 *
+	 * @return true if it is OK
+	 */
+	@SuppressWarnings("SameParameterValue")
+	boolean checkLevelMultipleLevels(List<FailedCheck> failedCheckList, Component component, String assetName, Location location, String testedTag, int currentLevel, int... expectedLevels) {
+        for (int expectedLevel : expectedLevels) {
+            if (expectedLevel == currentLevel) {
+                return true; // one of the expected levels found
+            }
+        }
+
+		StringBuilder messageBuilder = errorMessage(assetName, location);
+		messageBuilder.append(testedTag).append(" appeared outside its expected location in xml.");
+		failedCheckList.add(new FailedCheck(component, messageBuilder.toString()));
+		return false;
 	}
 
 }

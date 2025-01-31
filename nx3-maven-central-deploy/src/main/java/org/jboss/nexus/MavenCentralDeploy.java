@@ -330,7 +330,12 @@ public class MavenCentralDeploy extends ComponentSupport {
                       .map(failedCheck -> "\n   - "+failedCheck.formatComponent()+": "+failedCheck.getProblem()).forEach(response::append);
 
              for (TestReportCapability<?> report : reports) {
-                report.createReport(configuration, errors,  new HashMap<>(templateVariables)); // re-pack template variables so each report may work within its space
+                 try {
+                     report.createReport(configuration, errors, new HashMap<>(templateVariables)); // re-pack template variables so each report may work within its space
+                 } catch (RuntimeException e) {
+                     // There was some error in reporting the issue, but we do not want to interrupt other reports
+                     response.append("\n- Report ").append(report.getClass().getName()).append(" error: ").append(e.getMessage());
+                 }
              }
 
              if(configuration.getMarkArtifacts()) {

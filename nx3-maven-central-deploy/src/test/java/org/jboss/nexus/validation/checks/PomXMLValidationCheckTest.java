@@ -21,6 +21,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("TextBlockMigration")
 @RunWith(MockitoJUnitRunner.class)
 public class PomXMLValidationCheckTest {
 	private PomXMLValidationCheck tested;
@@ -439,6 +440,142 @@ public class PomXMLValidationCheckTest {
 		assertTrue(failedCheckList.isEmpty());
 
 	}
+
+
+	@Test
+	public void validateJ2CLPomXML() {
+		prepareInputStream("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+				"<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd\">\n" +
+				"  <parent>\n" +
+				"    <artifactId>mapper-parent</artifactId>\n" +
+				"    <groupId>org.kie.j2cl.tools.xml.mapper</groupId>\n" +
+				"    <version>0.7</version>\n" +
+				"  </parent>\n" +
+				"  <modelVersion>4.0.0</modelVersion>\n" +
+				"  <artifactId>processor</artifactId>\n" +
+				"  <name>GWT/J2CL compatible JAXB-like XML marshallers Generator</name>\n" +
+				"  <description>GWT/J2CL compatible JAXB-like XML marshallers Generator</description>\n" +
+				"  <url>https://github.com/kiegroup/j2cl-tools</url>\n" +
+				"  <developers>\n" +
+				"    <developer>\n" +
+				"      <name>All developers are listed in the KIE GitHub organization</name>\n" +
+				"      <url>https://github.com/orgs/kiegroup/people</url>\n" +
+				"    </developer>\n" +
+				"  </developers>\n" +
+				"  <licenses>\n" +
+				"    <license>\n" +
+				"      <name>The Apache Software License, Version 2.0</name>\n" +
+				"      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>\n" +
+				"    </license>\n" +
+				"  </licenses>\n" +
+				"  <scm>\n" +
+				"    <connection>scm:git:git://github.com/kiegroup/j2cl-tools.git</connection>\n" +
+				"    <developerConnection>scm:git:ssh://github.com/kiegroup/j2cl-tools.git</developerConnection>\n" +
+				"    <url>https://github.com/kiegroup/j2cl-tools/tree/master</url>\n" +
+				"  </scm>\n" +
+				"  <organization>\n" +
+				"    <name>JBoss by Red Hat</name>\n" +
+				"    <url>http://www.jboss.org/</url>\n" +
+				"  </organization>\n" +
+				"  <build>\n" +
+				"    <resources>\n" +
+				"      <resource>\n" +
+				"        <directory>src/main/resources</directory>\n" +
+				"      </resource>\n" +
+				"    </resources>\n" +
+				"    <plugins>\n" +
+				"      <plugin>\n" +
+				"        <artifactId>maven-source-plugin</artifactId>\n" +
+				"        <executions>\n" +
+				"          <execution>\n" +
+				"            <id>attach-sources</id>\n" +
+				"            <phase>package</phase>\n" +
+				"            <goals>\n" +
+				"              <goal>jar</goal>\n" +
+				"            </goals>\n" +
+				"          </execution>\n" +
+				"        </executions>\n" +
+				"      </plugin>\n" +
+				"      <plugin>\n" +
+				"        <artifactId>maven-shade-plugin</artifactId>\n" +
+				"        <executions>\n" +
+				"          <execution>\n" +
+				"            <phase>package</phase>\n" +
+				"            <goals>\n" +
+				"              <goal>shade</goal>\n" +
+				"            </goals>\n" +
+				"            <configuration>\n" +
+				"              <minimizeJar>true</minimizeJar>\n" +
+				"              <filters>\n" +
+				"                <filter>\n" +
+				"                  <artifact>*:*:*:*</artifact>\n" +
+				"                  <excludes>\n" +
+				"                    <exclude>**/*.java</exclude>\n" +
+				"                  </excludes>\n" +
+				"                </filter>\n" +
+				"              </filters>\n" +
+				"            </configuration>\n" +
+				"          </execution>\n" +
+				"        </executions>\n" +
+				"      </plugin>\n" +
+				"    </plugins>\n" +
+				"  </build>\n" +
+				"  <profiles>\n" +
+				"    <profile>\n" +
+				"      <id>release</id>\n" +
+				"      <build>\n" +
+				"        <plugins>\n" +
+				"          <plugin>\n" +
+				"            <artifactId>maven-source-plugin</artifactId>\n" +
+				"            <executions>\n" +
+				"              <execution>\n" +
+				"                <id>attach-sources</id>\n" +
+				"                <goals>\n" +
+				"                  <goal>jar-no-fork</goal>\n" +
+				"                </goals>\n" +
+				"              </execution>\n" +
+				"            </executions>\n" +
+				"          </plugin>\n" +
+				"          <plugin>\n" +
+				"            <artifactId>maven-javadoc-plugin</artifactId>\n" +
+				"            <executions>\n" +
+				"              <execution>\n" +
+				"                <id>attach-javadocs</id>\n" +
+				"                <goals>\n" +
+				"                  <goal>jar</goal>\n" +
+				"                </goals>\n" +
+				"              </execution>\n" +
+				"            </executions>\n" +
+				"          </plugin>\n" +
+				"          <plugin>\n" +
+				"            <artifactId>maven-gpg-plugin</artifactId>\n" +
+				"            <executions>\n" +
+				"              <execution>\n" +
+				"                <id>sign-artifacts</id>\n" +
+				"                <phase>verify</phase>\n" +
+				"                <goals>\n" +
+				"                  <goal>sign</goal>\n" +
+				"                </goals>\n" +
+				"              </execution>\n" +
+				"            </executions>\n" +
+				"          </plugin>\n" +
+				"          <plugin>\n" +
+				"            <artifactId>maven-deploy-plugin</artifactId>\n" +
+				"            <configuration>\n" +
+				"              <skip>false</skip>\n" +
+				"            </configuration>\n" +
+				"          </plugin>\n" +
+				"        </plugins>\n" +
+				"      </build>\n" +
+				"    </profile>\n" +
+				"  </profiles>\n" +
+				"</project>\n");
+
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
+
+		assertTrue(failedCheckList.isEmpty());
+	}
+
 
 
 }

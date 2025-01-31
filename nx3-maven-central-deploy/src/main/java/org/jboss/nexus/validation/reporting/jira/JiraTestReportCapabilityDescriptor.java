@@ -16,6 +16,7 @@ import java.util.Map;
 /** This capability configures default information for all Jira Tasks
  *
  */
+@SuppressWarnings("TextBlockMigration")
 @Named(JiraTestReportCapabilityDescriptor.TYPE_ID)
 @AvailabilityVersion(from = "1.0")
 public class JiraTestReportCapabilityDescriptor extends TestReportCapabilityDescriptorParent {
@@ -176,7 +177,9 @@ public class JiraTestReportCapabilityDescriptor extends TestReportCapabilityDesc
 			"||Group||Artifact||Version||Error||\\r\\n\n" +
 			"#set ($previous=\"\")\n" +
 			"#foreach( $error in $errors )\n" +
+			"#if( $foreach.count < 501 ) \n" +
 			"|$error.component.group()|$error.component.name()|$error.component.version()|$error.problem|\\r\\n\n" +
+			"#end\n" +
 			"#end";
 
 	@SuppressWarnings("rawtypes")

@@ -3,11 +3,16 @@ package org.jboss.nexus.validation.reporting.jira;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.Map;
+
 import static org.junit.Assert.*;
 
+@SuppressWarnings("TextBlockMigration")
 public class JiraTestReportCapabilityTest {
 
     private static final JsonMapper mapper = new JsonMapper();
@@ -261,6 +266,60 @@ public class JiraTestReportCapabilityTest {
         String result = JiraTestReportCapability.fixProblematicArrays(content);
 
         assertEquals(content, result);
+    }
+
+    @Test
+    public void convertVariables() {
+
+        // test default values from the capability
+        Map<String, Object> printVariables = Collections.emptyMap();
+        MavenCentralDeployTaskWithJiraConfiguration mavenCentralDeployTaskConfiguration = new MavenCentralDeployTaskWithJiraConfiguration();
+        JiraTestReportCapabilityConfiguration jiraTestReportCapabilityConfiguration = new JiraTestReportCapabilityConfiguration();
+
+        jiraTestReportCapabilityConfiguration.getDefaultJiraConfiguration().setComponents("some component");
+        jiraTestReportCapabilityConfiguration.getDefaultJiraConfiguration().setReporter("some reporter");
+        jiraTestReportCapabilityConfiguration.getDefaultJiraConfiguration().setProject("project");
+        jiraTestReportCapabilityConfiguration.getDefaultJiraConfiguration().setAssignee("some assignee");
+        jiraTestReportCapabilityConfiguration.getDefaultJiraConfiguration().setPriority("some priority");
+        jiraTestReportCapabilityConfiguration.getDefaultJiraConfiguration().setLabels("label1, label2");
+
+        Map<String, Object> testResult = jiraTestReportCapability.convertVariables(printVariables,  mavenCentralDeployTaskConfiguration,  jiraTestReportCapabilityConfiguration  );
+
+        assertEquals("some component", testResult.get(JiraTestReportCapabilityConfiguration.COMPONENTS));
+        assertEquals("some reporter", testResult.get(JiraTestReportCapabilityConfiguration.REPORTER));
+        assertEquals("project", testResult.get(JiraTestReportCapabilityConfiguration.PROJECT));
+        assertEquals("some assignee", testResult.get(JiraTestReportCapabilityConfiguration.ASSIGNEE));
+        assertEquals("some priority", testResult.get(JiraTestReportCapabilityConfiguration.PRIORITY));
+        assertEquals("label1, label2", testResult.get(JiraTestReportCapabilityConfiguration.LABELS));
+
+
+
+        // test we override default values with task specific content
+        mavenCentralDeployTaskConfiguration.setComponents("another components");
+        mavenCentralDeployTaskConfiguration.setReporter("another reporter");
+        mavenCentralDeployTaskConfiguration.setProject("another project");
+        mavenCentralDeployTaskConfiguration.setAssignee("another assignee");
+        mavenCentralDeployTaskConfiguration.setPriority("another priority");
+        mavenCentralDeployTaskConfiguration.setLabels("label3");
+
+        testResult = jiraTestReportCapability.convertVariables(printVariables,  mavenCentralDeployTaskConfiguration,  jiraTestReportCapabilityConfiguration  );
+        assertEquals("another components", testResult.get(JiraTestReportCapabilityConfiguration.COMPONENTS));
+        assertEquals("another reporter", testResult.get(JiraTestReportCapabilityConfiguration.REPORTER));
+        assertEquals("another project", testResult.get(JiraTestReportCapabilityConfiguration.PROJECT));
+        assertEquals("another assignee", testResult.get(JiraTestReportCapabilityConfiguration.ASSIGNEE));
+        assertEquals("another priority", testResult.get(JiraTestReportCapabilityConfiguration.PRIORITY));
+        assertEquals("label3", testResult.get(JiraTestReportCapabilityConfiguration.LABELS));
+
+        // we remove component from task local components while keeping different default and local project
+        mavenCentralDeployTaskConfiguration.setComponents(null);
+        testResult = jiraTestReportCapability.convertVariables(printVariables,  mavenCentralDeployTaskConfiguration,  jiraTestReportCapabilityConfiguration  );
+
+        assertEquals( "", testResult.get(JiraTestReportCapabilityConfiguration.COMPONENTS));
+        assertEquals("another reporter", testResult.get(JiraTestReportCapabilityConfiguration.REPORTER));
+        assertEquals("another project", testResult.get(JiraTestReportCapabilityConfiguration.PROJECT));
+        assertEquals("another assignee", testResult.get(JiraTestReportCapabilityConfiguration.ASSIGNEE));
+        assertEquals("another priority", testResult.get(JiraTestReportCapabilityConfiguration.PRIORITY));
+        assertEquals("label3", testResult.get(JiraTestReportCapabilityConfiguration.LABELS));
     }
 
 }
