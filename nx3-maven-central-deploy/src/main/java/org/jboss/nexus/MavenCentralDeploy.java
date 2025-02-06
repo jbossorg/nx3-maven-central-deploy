@@ -90,7 +90,7 @@ public class MavenCentralDeploy extends ComponentSupport {
     }
 
     @SuppressWarnings("unused")
-    public static final int SEARCH_COMPONENT_PAGE_SIZE = 5;
+    public static final int SEARCH_COMPONENT_PAGE_SIZE = 200;
 
     /** Sonatype Central Bundle endpoint.
      *
