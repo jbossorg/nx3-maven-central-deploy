@@ -178,7 +178,7 @@ public class MavenCentralDeploy extends ComponentSupport {
               long latestComponentTime = configuration.getLatestComponentTime();
               String deploymentCreated = null;
 
-              if (publishPossible && !configuration.getDryRun()) {
+              if (publishPossible && !configuration.getDryRun() && !toDeploy.isEmpty()) {
                   if(centralURL.endsWith("/"))
                       centralURL = centralURL.substring(0, centralURL.length()-1);
 
