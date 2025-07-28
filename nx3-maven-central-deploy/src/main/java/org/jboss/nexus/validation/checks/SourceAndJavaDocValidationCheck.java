@@ -55,13 +55,18 @@ public class SourceAndJavaDocValidationCheck extends CentralValidation {
 		}
 
 		for(String file : checkedFiles) {
-			if (!mavenCentralDeployTaskConfiguration.getDisableHasJavaDoc() && !javadocFiles.contains(makeJavaDocName(file))) {
-				listOfFailures.add(new FailedCheck(component, "JavaDoc is missing for " + file));
+			String unclassifiedJarName = component.name() + "-" + component.version() + FileExtensions.EXTENSION_JAR;
+
+			if(file.endsWith(unclassifiedJarName)) {
+				if (!mavenCentralDeployTaskConfiguration.getDisableHasJavaDoc() && !javadocFiles.contains(makeJavaDocName(file))) {
+					listOfFailures.add(new FailedCheck(component, "JavaDoc is missing for " + file));
+				}
+
+				if (!mavenCentralDeployTaskConfiguration.getDisableHasSourceCodes() && !sourceFiles.contains(makeSourceCodeName(file))) {
+					listOfFailures.add(new FailedCheck(component, "Source code is missing for " + file));
+				}
 			}
 
-			if (!mavenCentralDeployTaskConfiguration.getDisableHasSourceCodes() && !sourceFiles.contains(makeSourceCodeName(file))) {
-				listOfFailures.add(new FailedCheck(component, "Source code is missing for " + file));
-			}
 			if (!mavenCentralDeployTaskConfiguration.getDisableHasSignatureFile() && !signatureFiles.contains(makeSignatureFileName(file))) {
 				listOfFailures.add(new FailedCheck(component, "Signature file is missing for " + file));
 			}
