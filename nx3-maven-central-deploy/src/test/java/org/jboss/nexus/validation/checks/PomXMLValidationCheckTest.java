@@ -116,23 +116,6 @@ public class PomXMLValidationCheckTest {
 	}
 
 	@Test
-	public void validateComponentLicensesWrongLevel() {
-		prepareInputStream(
-			 "<project>" +
-				  "   <scm>" +
-				  "      <licenses>" +
-				  "         <license/>" +
-				  "      </licenses>" +
-				  "   </scm>" +
-				  "</project>");
-
-		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
-
-		assertTrue( errorExist("pom.xml validation failed: some/SomeProject.pom at [1,34]: licenses section appeared outside its expected location in xml."));
-		assertTrue( errorExist("some/SomeProject.pom does not have any license specified!"));
-	}
-
-	@Test
 	public void validateComponentMissingLicense() {
 		prepareInputStream(
 			 "<project>" +
@@ -576,6 +559,145 @@ public class PomXMLValidationCheckTest {
 		assertTrue(failedCheckList.isEmpty());
 	}
 
+	@Test
+	public void validateWildflyPom() {
+		prepareInputStream("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+				"<!--\n" +
+				"  ~ Copyright The WildFly Authors\n" +
+				"  ~ SPDX-License-Identifier: Apache-2.0\n" +
+				"  -->\n" +
+				"<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" +
+				"    <modelVersion>4.0.0</modelVersion>\n" +
+				"\n" +
+				"    <parent>\n" +
+				"        <groupId>org.wildfly.core</groupId>\n" +
+				"        <artifactId>wildfly-core-parent</artifactId>\n" +
+				"        <!--\n" +
+				"        Maintain separation between the artifact id and the version to help prevent\n" +
+				"        merge conflicts between commits changing the GA and those changing the V.\n" +
+				"        -->\n" +
+				"        <version>29.0.0.Final</version>\n" +
+				"    </parent>\n" +
+				"\n" +
+				"    <groupId>org.wildfly.core</groupId>\n" +
+				"    <artifactId>wildfly-core-component-matrix-builder</artifactId>\n" +
+				"\n" +
+				"    <packaging>pom</packaging>\n" +
+				"\n" +
+				"    <name>WildFly Core: Component matrix builder</name>\n" +
+				"    <description>WildFly Core: Dependency Component matrix BOM Builder</description>\n" +
+				"\n" +
+				"    <build>\n" +
+				"        <plugins>\n" +
+				"            <plugin>\n" +
+				"                <groupId>org.wildfly.plugins</groupId>\n" +
+				"                <artifactId>wildfly-component-matrix-plugin</artifactId>\n" +
+				"                <executions>\n" +
+				"                    <execution>\n" +
+				"                        <id>build-bom</id>\n" +
+				"                        <goals>\n" +
+				"                            <goal>build-bom</goal>\n" +
+				"                        </goals>\n" +
+				"                        <configuration>\n" +
+				"                            <parent>\n" +
+				"                                <groupId>org.jboss</groupId>\n" +
+				"                                <artifactId>jboss-parent</artifactId>\n" +
+				"                                <relativePath/>\n" +
+				"                            </parent>\n" +
+				"                            <bomGroupId>${project.groupId}</bomGroupId>\n" +
+				"                            <bomArtifactId>wildfly-core-component-matrix</bomArtifactId>\n" +
+				"                            <bomVersion>${project.version}</bomVersion>\n" +
+				"                            <bomName>WildFly Core: Component Matrix</bomName>\n" +
+				"                            <bomDescription>WildFly Core: Component Matrix</bomDescription>\n" +
+				"                            <inheritExclusions>true</inheritExclusions>\n" +
+				"                            <licenses>true</licenses>\n" +
+				"                        </configuration>\n" +
+				"                    </execution>\n" +
+				"                </executions>\n" +
+				"            </plugin>\n" +
+				"        </plugins>\n" +
+				"    </build>\n" +
+				"\n" +
+				"    <profiles>\n" +
+				"        <!--\n" +
+				"             This module attaches an artifact (bom-pom.xml) under a different\n" +
+				"             Maven GA from the module's GA.\n" +
+				"             1) Disable the jboss-parent pom's jboss-release profule use of maven-gpg-plugin\n" +
+				"             for this one as it can't handle that; we need to use wildfly-maven-gpg-plugin\n" +
+				"             to deal with this.\n" +
+				"             2) Work around the nxrm3-maven-plugin's staging-deploy mojo's inability to directly\n" +
+				"             POST these artifacts to the remote repository.\n" +
+				"        -->\n" +
+				"        <profile>\n" +
+				"            <id>jboss-release</id>\n" +
+				"            <build>\n" +
+				"                <plugins>\n" +
+				"                    <plugin>\n" +
+				"                        <groupId>org.apache.maven.plugins</groupId>\n" +
+				"                        <artifactId>maven-gpg-plugin</artifactId>\n" +
+				"                        <executions>\n" +
+				"                            <execution>\n" +
+				"                                <id>gpg-sign</id>\n" +
+				"                                <phase>none</phase>\n" +
+				"                            </execution>\n" +
+				"                        </executions>\n" +
+				"                    </plugin>\n" +
+				"                    <plugin>\n" +
+				"                        <groupId>org.wildfly</groupId>\n" +
+				"                        <artifactId>wildfly-maven-gpg-plugin</artifactId>\n" +
+				"                        <executions>\n" +
+				"                            <execution>\n" +
+				"                                <id>gpg-sign</id>\n" +
+				"                                <goals>\n" +
+				"                                    <goal>sign</goal>\n" +
+				"                                </goals>\n" +
+				"                            </execution>\n" +
+				"                        </executions>\n" +
+				"                    </plugin>\n" +
+				"                    <plugin>\n" +
+				"                        <groupId>org.sonatype.plugins</groupId>\n" +
+				"                        <artifactId>nxrm3-maven-plugin</artifactId>\n" +
+				"                        <extensions>true</extensions>\n" +
+				"                        <executions>\n" +
+				"                            <!--\n" +
+				"                                 The staging-deploy mojo can't deal with directly deploying this project's artifacts\n" +
+				"                                 to a remote repo, because different artifacts have different maven GAs.\n" +
+				"                                 So, we configure it to stage locally, and then in a subsequent execution we upload.\n" +
+				"                                 The local staging writes a proper repo file layout, which the upload mojo\n" +
+				"                                 uses to determine the GAV info for what it uploads.\n" +
+				"                            -->\n" +
+				"                            <execution>\n" +
+				"                                <id>nexus-deploy</id>\n" +
+				"                                <configuration>\n" +
+				"                                    <stageLocally>true</stageLocally>\n" +
+				"                                    <altStagingDirectory>${project.build.directory}/nexus-staging</altStagingDirectory>\n" +
+				"                                </configuration>\n" +
+				"                            </execution>\n" +
+				"                            <execution>\n" +
+				"                                <id>nexus-upload</id>\n" +
+				"                                <phase>deploy</phase>\n" +
+				"                                <goals>\n" +
+				"                                    <goal>upload</goal>\n" +
+				"                                </goals>\n" +
+				"                                <configuration>\n" +
+				"                                    <altStagingDirectory>${project.build.directory}/nexus-staging</altStagingDirectory>\n" +
+				"                                    <repository>${nexus.repository.staging}</repository>\n" +
+				"                                    <tag>${nexus.staging.tag}</tag>\n" +
+				"                                </configuration>\n" +
+				"                            </execution>\n" +
+				"                        </executions>\n" +
+				"                    </plugin>\n" +
+				"                </plugins>\n" +
+				"            </build>\n" +
+				"        </profile>\n" +
+				"    </profiles>\n" +
+				"\n" +
+				"</project>\n");
+
+		tested.validateComponent(mavenCentralDeployTaskConfiguration, component, failedCheckList);
+
+		assertTrue(failedCheckList.isEmpty());
+	}
 
 
 }

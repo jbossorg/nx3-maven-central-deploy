@@ -90,7 +90,7 @@ public class PomXMLValidationCheck extends CentralValidation {
 										hasLicense |= licensesSection; // the right section is also required
 									break;
 								case "licenses":
-									licensesSection = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "licenses section", level, 2);
+									licensesSection |= level==2;
 									break;
 								case "developer":
 									// developer is in the expected place in xml (level and inside licenses block)
@@ -116,7 +116,7 @@ public class PomXMLValidationCheck extends CentralValidation {
 										hasProjectURL = true;
 									break;
 								case "parent":
-									parentSection  = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "parent", level, 2);
+									parentSection = level == 2; // parent section may appear elsewhere, but it is probably not a problem
 									hasParentSection |= parentSection;
 									break;
 								case "groupId":
