@@ -79,14 +79,14 @@ public class PomXMLValidationCheck extends CentralValidation {
 							StartElement startElement = event.asStartElement();
 							switch (startElement.getName().getLocalPart()) {
 								case "project":
-									hasProject = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "project", level, 1);
+									hasProject = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "project", level, 1, mavenCentralDeployTaskConfiguration.getDisableHasProject());
 									break;
 								case "scm":
-									hasSCM = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "source code source (scm)", level, 2);
+									hasSCM = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "source code source (scm)", level, 2, mavenCentralDeployTaskConfiguration.getDisableHasSourceCodes());
 									break;
 								case "license":
 									// license is in the expected place in xml (level and inside licenses block)
-									if(checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "license", level, 3))
+									if(checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "license", level, 3, mavenCentralDeployTaskConfiguration.getDisableHasLicense()))
 										hasLicense |= licensesSection; // the right section is also required
 									break;
 								case "licenses":
@@ -94,22 +94,22 @@ public class PomXMLValidationCheck extends CentralValidation {
 									break;
 								case "developer":
 									// developer is in the expected place in xml (level and inside licenses block)
-									if(checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "developer", level, 3))
+									if(checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "developer", level, 3, mavenCentralDeployTaskConfiguration.getDisableHasDeveloperInfo()))
 										hasDeveloperInfo |= developersSection; // the right section is also required
 									break;
 								case "developers":
-									developersSection = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "developers section", level, 2);
+									developersSection = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "developers section", level, 2, mavenCentralDeployTaskConfiguration.getDisableHasDeveloperInfo());
 									break;
 								case "organization":
 									// this can be considered developer info as well
-									hasDeveloperInfo = checkLevelMultipleLevels(listOfFailures, component, asset.name(), event.getLocation(), "organization", level, 2, 4);
+									hasDeveloperInfo = checkLevelMultipleLevels(listOfFailures, component, asset.name(), event.getLocation(), "organization" , level, mavenCentralDeployTaskConfiguration.getDisableHasDeveloperInfo() ,2, 4);
 									break;
 								case "name":
 									if(level == 2) // element named name appears in many tags, but we need the one on level 2
 										hasProjectName = true;
 									break;
 								case "description":
-									hasProjectDescription = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "description", level, 2);
+									hasProjectDescription = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "description", level, 2, mavenCentralDeployTaskConfiguration.getDisableHasProjectDescription());
 									break;
 								case "url":
 									if(level == 2) // url tag may be elsewhere, which is all right so no complaining
@@ -255,14 +255,17 @@ public class PomXMLValidationCheck extends CentralValidation {
 	 * @param testedTag what is being tested (human-readable)
 	 * @param currentLevel current level in xml
 	 * @param expectedLevel expected level in xml
+	 * @param suppress set to true to not report a problem
 	 *
 	 * @return true if it is OK
 	 */
-	boolean checkLevel(List<FailedCheck> failedCheckList, Component component, String assetName, Location location, String testedTag, int currentLevel, int expectedLevel) {
+	boolean checkLevel(List<FailedCheck> failedCheckList, Component component, String assetName, Location location, String testedTag, int currentLevel, int expectedLevel, boolean suppress) {
 		if(currentLevel != expectedLevel) {
-			StringBuilder messageBuilder = errorMessage(assetName, location);
-			messageBuilder.append(testedTag).append(" appeared outside its expected location in xml.");
-			failedCheckList.add(new FailedCheck(component, messageBuilder.toString()));
+			if(!suppress) {
+				StringBuilder messageBuilder = errorMessage(assetName, location);
+				messageBuilder.append(testedTag).append(" appeared outside its expected location in xml.");
+				failedCheckList.add(new FailedCheck(component, messageBuilder.toString()));
+			}
 			return false;
 		}
 		return true;
@@ -277,21 +280,25 @@ public class PomXMLValidationCheck extends CentralValidation {
 	 * @param location location of the targeted entity
 	 * @param testedTag what is being tested (human-readable)
 	 * @param currentLevel current level in xml
+	 * @param suppres set to true to suppress the error message
 	 * @param expectedLevels expected levels in xml
+	 *
 	 *
 	 * @return true if it is OK
 	 */
 	@SuppressWarnings("SameParameterValue")
-	boolean checkLevelMultipleLevels(List<FailedCheck> failedCheckList, Component component, String assetName, Location location, String testedTag, int currentLevel, int... expectedLevels) {
+	boolean checkLevelMultipleLevels(List<FailedCheck> failedCheckList, Component component, String assetName, Location location, String testedTag, int currentLevel, boolean suppres, int... expectedLevels) {
         for (int expectedLevel : expectedLevels) {
             if (expectedLevel == currentLevel) {
                 return true; // one of the expected levels found
             }
         }
 
-		StringBuilder messageBuilder = errorMessage(assetName, location);
-		messageBuilder.append(testedTag).append(" appeared outside its expected location in xml.");
-		failedCheckList.add(new FailedCheck(component, messageBuilder.toString()));
+		if(!suppres) {
+			StringBuilder messageBuilder = errorMessage(assetName, location);
+			messageBuilder.append(testedTag).append(" appeared outside its expected location in xml.");
+			failedCheckList.add(new FailedCheck(component, messageBuilder.toString()));
+		}
 		return false;
 	}
 
