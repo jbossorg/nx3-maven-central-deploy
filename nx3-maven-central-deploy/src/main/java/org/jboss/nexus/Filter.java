@@ -15,41 +15,17 @@ import java.util.*;
 
 public class Filter {
 
-	private String group, artifact, version, tag;
-
 	private Long latestComponentTime;
 
-	private LogicalOperation.Operator versionOperation, tagOperation;
+	private final List<LogicalOperation> groupFilters = new ArrayList<>(),
+			artifactFilters = new ArrayList<>(),
+			versionFilters = new ArrayList<>();
 
-	private final List<TagAttributeExpression> tagAttributeOperations = new ArrayList<>();
+	private final List<LogicalOperation> tagAttributeOperations = new ArrayList<>();
+
+	private final List<LogicalOperation> tagOperations = new ArrayList<>();
 
 	private String unspecified;
-
-	/** A class to hold information about tag operation
-	 *
-	 */
-	static class TagAttributeExpression {
-		public TagAttributeExpression(String tagAttr, String tagAttrValue, LogicalOperation.Operator tagAttrOperation) {
-			this.tagAttr = tagAttr;
-			this.tagAttrValue = tagAttrValue;
-			this.tagAttrOperation = tagAttrOperation;
-		}
-
-		private final String tagAttr, tagAttrValue;
-		private final LogicalOperation.Operator tagAttrOperation;
-
-		public String getTagAttr() {
-			return tagAttr;
-		}
-
-		public String getTagAttrValue() {
-			return tagAttrValue;
-		}
-
-		public LogicalOperation.Operator getTagAttrOperation() {
-			return tagAttrOperation;
-		}
-	}
 
 	public static Filter parseFilterString(@Nullable String filterString) throws ParseException {
 		return parseFilterString(filterString, null);
@@ -74,25 +50,23 @@ public class Filter {
 				LogicalOperation operation = LogicalOperation.parseString(token);
 				switch (operation.getAttribute().toLowerCase()) {
 					case "group":
-						if (operation.getOperator() != LogicalOperation.Operator.EQ) {
-							throw new ParseException("Incorrect filter expression: The only allowed logical operator for checking group in the filter field is '='");
+						if (operation.getOperator() != LogicalOperation.Operator.EQ && operation.getOperator() != LogicalOperation.Operator.NE) {
+							throw new ParseException("Incorrect filter expression: The only allowed logical operator for checking group in the filter field is '=' or '!='");
 						}
-						result.group = operation.getValue();
+						result.groupFilters.add(operation);
 						break;
 					case "name":
 					case "artifact":
-						if (operation.getOperator() != LogicalOperation.Operator.EQ) {
-							throw new ParseException("Incorrect filter expression: The only allowed logical operator for checking artifact in the filter field is '='");
+						if (operation.getOperator() != LogicalOperation.Operator.EQ && operation.getOperator() != LogicalOperation.Operator.NE) {
+							throw new ParseException("Incorrect filter expression: The only allowed logical operator for checking artifact in the filter field is '=' or '!='");
 						}
-						result.artifact = operation.getValue();
+						result.artifactFilters.add(operation);
 						break;
 					case "version":
-						result.version = operation.getValue();
-						result.versionOperation = operation.getOperator();
+						result.versionFilters.add(operation);
 						break;
 					case "tag":
-						result.tag = operation.getValue();
-						result.tagOperation = operation.getOperator();
+						result.tagOperations.add(operation );
 						break;
 					case "":
 						if(result.unspecified != null) {
@@ -107,7 +81,7 @@ public class Filter {
 							if (operation.getOperator() == LogicalOperation.Operator.NOOP) {
 								throw new ParseException("Incorrect filter expression: Missing operator in tagAttr: " + token);
 							}
-							result.tagAttributeOperations.add(new TagAttributeExpression(operation.getAttribute(), operation.getValue(), operation.getOperator()));
+							result.tagAttributeOperations.add(operation);
 							break;
 						} else
 							throw new ParseException("Incorrect filter expression: allowed fields are group, artifact, name, version, tag, tagAttr: "+token); // FIXME: 02.02.2023 maybe not the right text
@@ -121,7 +95,24 @@ public class Filter {
 	static class LogicalOperation {
 		private LogicalOperation() {}
 
-		enum Operator {EQ, NE, LT, GT, LE, GE, NOOP}
+		enum Operator {
+			EQ("="),
+			NE("!="),
+			LT("<"),
+			GT(">"),
+			LE("<="),
+			GE(">="),
+			NOOP("");
+
+			Operator(String sqlOperator) {
+				this.sqlOperator = sqlOperator;
+			}
+			private final String sqlOperator;
+
+			public String getSqlOperator() {
+				return sqlOperator;
+			}
+		}
 
 		String attribute;
 		String value;
@@ -214,36 +205,28 @@ public class Filter {
 		}
 	}
 
-	/** Returns group of the artifact to be searched for.
+	/** Returns group filters of the artifact to be searched for.
 	 *
-	 * @return group
+	 * @return group operations
 	 */
-	public String getGroup() {
-		return group;
+	 List<LogicalOperation> getGroupFilters() {
+		return groupFilters;
 	}
 
 	/** Returns artifact name to be searched for.
 	 *
 	 * @return artifact name
 	 */
-	public String getArtifact() {
-		return artifact;
+	 List<LogicalOperation> getArtifactFilters() {
+		return artifactFilters;
 	}
 
-	/** Returns version of the artifact to be searched for.
+	/** Returns version filters of the artifacts to be searched for.
 	 *
 	 * @return version
 	 */
-	public String getVersion() {
-		return version;
-	}
-
-	/** Returns tag name of the artifact to be searched for.
-	 *
-	 * @return tag name
-	 */
-	public String getTag() {
-		return tag;
+	 List<LogicalOperation> getVersionFilters() {
+		return versionFilters;
 	}
 
 
@@ -255,28 +238,19 @@ public class Filter {
 		return unspecified;
 	}
 
-	/** Logical operation to be used for checking on version.
+	/** Returns possible tag checks defined by parser
 	 *
-	 * @return {@link LogicalOperation.Operator#operator} value
+	 * @return list of tag operations
 	 */
-	 LogicalOperation.Operator getVersionOperation() {
-		return versionOperation;
+	List<LogicalOperation> getTagOperations() {
+		 return tagOperations;
 	}
-
-	/** Logical operation to be used for checking on tag name.
-	 *
-	 * @return {@link LogicalOperation.Operator#operator} value
-	 */
-	 LogicalOperation.Operator getTagOperation() {
-		return tagOperation;
-	}
-
 
 	/** Returns possible tag attribute expressions
 	 *
 	 * @return list of attribute expressions to be validated
 	 */
-	 List<TagAttributeExpression> getTagAttributeOperations() {
+	 List<LogicalOperation> getTagAttributeOperations() {
 		return tagAttributeOperations;
 	}
 
@@ -295,21 +269,44 @@ public class Filter {
 	 * @return search string for {@link org.sonatype.nexus.repository.content.fluent.FluentComponents#byFilter(String, Map)} or an empty string
 	 */
 	public String getDatabaseSearchString() {
-		StringBuilder result = new StringBuilder(); // todo check if the names are OK
+		StringBuilder result = new StringBuilder();
 
-		if (StringUtils.isNotBlank(getGroup())) {
-			result.append(" AND namespace = #{filterParams.groupId}");
+		int counter = 1;
+		for(LogicalOperation operation : getGroupFilters()) {
+			result
+				.append(" AND namespace ")
+			  	.append(operation.getOperator().getSqlOperator())
+				.append(" #{filterParams.groupId")
+				.append(counter++)
+				.append('}');
+
 		}
 
-		if (StringUtils.isNotBlank(getArtifact())) { // todo I do not know if it is the right name
-			result.append(" AND name = #{filterParams.name}");
+//		if (!getGroupFilters().isEmpty()) {
+//			result.append(" AND namespace = #{filterParams.groupId}");
+//		}
+
+
+		counter = 1;
+		for(LogicalOperation operation : getArtifactFilters()) {
+			result
+					.append(" AND name ")
+					.append(operation.getOperator().getSqlOperator())
+					.append(" #{filterParams.name")
+					.append(counter++)
+					.append('}');
+
 		}
 
-		if (StringUtils.isNotBlank(getVersion())) {
-			if(getVersionOperation().equals(LogicalOperation.Operator.EQ)) {
-				result.append(" AND version = #{filterParams.version}");
-			} else if(getVersionOperation().equals(LogicalOperation.Operator.NE))
-				result.append(" AND version != #{filterParams.version}");
+		counter = 1;
+		for(LogicalOperation operation : getVersionFilters()) {
+			result
+					.append(" AND version ")
+					.append(operation.getOperator().getSqlOperator())
+					.append(" #{filterParams.version")
+					.append(counter++)
+					.append('}');
+
 		}
 
 		if(getLatestComponentTime() != null) {
@@ -336,17 +333,19 @@ public class Filter {
 	@NotNull
 	public Map<String, Object> getDatabaseSearchParameters() {
 		final HashMap<String, Object>  result = new HashMap<>();
-		if (StringUtils.isNotBlank(getGroup()) ) {
-			result.put("groupId", getGroup());
+		int counter = 1;
+		for(LogicalOperation operation : getGroupFilters()) {
+			result.put("groupId"+counter++ , operation.getValue());
 		}
 
-		if(StringUtils.isNotBlank(getArtifact())) {
-			result.put("name", getArtifact());
+		counter = 1;
+		for(LogicalOperation operation :getArtifactFilters()) {
+			result.put("name"+counter++, operation.getValue());
 		}
 
-
-		if(StringUtils.isNotBlank(getVersion())) {
-			result.put("version", getVersion());
+		counter = 1;
+		for(LogicalOperation operation : getVersionFilters()) {
+			result.put("version"+counter++, operation.getValue());
 		}
 
 		if (StringUtils.isNotBlank(getUnspecified()))
@@ -356,24 +355,7 @@ public class Filter {
 			result.put("created", OffsetDateTime.ofInstant(Instant.ofEpochSecond(getLatestComponentTime()), ZoneId.systemDefault()));
 		}
 
-		return Collections.unmodifiableMap(result); // TODO: junit
-	}
-
-
-	/** Verifies, that the current database component matches the filter conditions. It does not check the tags, because they are not part of the component information like in the case of OrientDB components
-	 *
-	 * @param component component to be checked
-	 *
-	 * @return true if the component corresponds to the search conditions
-	 */
-	public boolean checkComponent(org.sonatype.nexus.repository.content.fluent.FluentComponent component) {
-		// no evaluation of group and artifact as those should be filtered out through database query
-
-		if(StringUtils.isNotEmpty(getVersion()))
-            return FunctionMapping.resolve(getVersionOperation(), component.version(), getVersion());
-
-		return true;
-
+		return Collections.unmodifiableMap(result);
 	}
 
 	/** Checks, if the component corresponds to the
@@ -383,17 +365,32 @@ public class Filter {
 	 * @return true if the component tags correspond to the filter requirements
 	 */
 	public boolean checkComponentTag(Component component) {
-		if (StringUtils.isNotEmpty(getTag()))
-			if(component.tags().stream().noneMatch( t -> FunctionMapping.resolve(getTagOperation(), t.name(), getTag())))
-				return false;
+
+		// EQ - at least one tag must fulfill
+		// NE - no tag is allowed to fulfill
+        for (LogicalOperation filterExpression : getTagOperations()) {
+            switch (filterExpression.getOperator()) {
+                case EQ:
+                    if (component.tags().stream().noneMatch(t -> FunctionMapping.resolve(filterExpression.getOperator(), t.name(), filterExpression.getValue())))
+                        return false;
+					break;
+                case NE:
+                    if (!component.tags().stream().allMatch(t -> FunctionMapping.resolve(filterExpression.getOperator(), t.name(), filterExpression.getValue())))
+                        return false;
+					break;
+                default:
+                    throw new RuntimeException("Unexpected operator for tag.");
+            }
+        }
+
 
 		if (!tagAttributeOperations.isEmpty() ) {
-			for (TagAttributeExpression tagAttributeExpression : tagAttributeOperations) {
+			for (LogicalOperation tagAttributeExpression : tagAttributeOperations) {
 				boolean found = false;
 				for (Tag tag : component.tags()) {
-					Object object = tag.attributes().get(tagAttributeExpression.tagAttr);
+					Object object = tag.attributes().get(tagAttributeExpression.getAttribute());
 					if (object != null && String.class.isAssignableFrom(object.getClass())) {
-						found = FunctionMapping.resolve(tagAttributeExpression.tagAttrOperation, (String) object, tagAttributeExpression.tagAttrValue);
+						found = FunctionMapping.resolve(tagAttributeExpression.getOperator(), (String) object, tagAttributeExpression.getValue());
 						if (found)
 							break;
 					}
@@ -408,22 +405,15 @@ public class Filter {
 
 	private static class FunctionMapping {
 		static boolean resolve(LogicalOperation.Operator operator, String s1, String s2) {
-			switch (operator) {
-				case EQ:
-					return EQ(s1, s2);
-				case NE:
-					return NE(s1, s2);
-				case LT:
-					return LT(s1, s2);
-				case GT:
-					return GT(s1, s2);
-				case GE:
-					return GE(s1, s2);
-				case LE:
-					return LE(s1, s2);
-				default:
-					throw new RuntimeException("Filtering: unknown operation - error in programing!");
-			}
+            return switch (operator) {
+                case EQ -> EQ(s1, s2);
+                case NE -> NE(s1, s2);
+                case LT -> LT(s1, s2);
+                case GT -> GT(s1, s2);
+                case GE -> GE(s1, s2);
+                case LE -> LE(s1, s2);
+                default -> throw new RuntimeException("Filtering: unknown operation - error in programing!");
+            };
 		}
 
 		private static boolean EQ(String s1, String s2) {

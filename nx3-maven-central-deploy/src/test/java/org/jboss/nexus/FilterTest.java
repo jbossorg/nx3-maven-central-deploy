@@ -22,41 +22,109 @@ public class FilterTest {
 
 	@Test
 	public void parseFilterStringAll() {
+
 		Filter tested = Filter.parseFilterString("group=org.jboss&artifact=nexus&version>=2.3.1&tag=TO_DEPLOY&tagAttr=OS<>MacOS");
 		assertNull(tested.getUnspecified());
-		assertEquals("org.jboss", tested.getGroup());
-		assertEquals("nexus", tested.getArtifact());
-		assertEquals("2.3.1", tested.getVersion());
-		assertEquals(Filter.LogicalOperation.Operator.GE, tested.getVersionOperation());
-		assertEquals("TO_DEPLOY", tested.getTag());
-		assertEquals(Filter.LogicalOperation.Operator.EQ, tested.getTagOperation());
+		assertEquals(1, tested.getGroupFilters().size());
+		assertEquals("org.jboss", tested.getGroupFilters().get(0).getValue());
+		assertEquals(Filter.LogicalOperation.Operator.EQ, tested.getGroupFilters().get(0).getOperator());
 
+		assertEquals(1, tested.getArtifactFilters().size());
+		assertEquals("nexus", tested.getArtifactFilters().get(0).getValue());
+		assertEquals(Filter.LogicalOperation.Operator.EQ, tested.getArtifactFilters().get(0).getOperator());
 
-		List<Filter.TagAttributeExpression> tagExpressions = tested.getTagAttributeOperations();
+		assertEquals(1, tested.getVersionFilters().size());
+		assertEquals("2.3.1", tested.getVersionFilters().get(0).getValue());
+		assertEquals(Filter.LogicalOperation.Operator.GE, tested.getVersionFilters().get(0).getOperator());
+
+		assertEquals(1, tested.getTagOperations().size());
+		assertEquals("TO_DEPLOY", tested.getTagOperations().get(0).getValue());
+		assertEquals(Filter.LogicalOperation.Operator.EQ, tested.getTagOperations().get(0).getOperator());
+
+		List<Filter.LogicalOperation> tagExpressions = tested.getTagAttributeOperations();
 		assertEquals(1, tagExpressions.size());
-		assertEquals("OS", tagExpressions.get(0).getTagAttr());
-		assertEquals(Filter.LogicalOperation.Operator.NE, tagExpressions.get(0).getTagAttrOperation());
-		assertEquals("MacOS", tagExpressions.get(0).getTagAttrValue());
+		assertEquals("OS", tagExpressions.get(0).getAttribute());
+		assertEquals(Filter.LogicalOperation.Operator.NE, tagExpressions.get(0).getOperator());
+		assertEquals("MacOS", tagExpressions.get(0).getValue());
 	}
 
 	@Test
+	public void parseFilterStringMultipleGroups() {
+		Filter tested = Filter.parseFilterString("group=org.jboss&group!=org.jboss.unwanted");
+		assertNull(tested.getUnspecified());
+		assertTrue(tested.getArtifactFilters().isEmpty());
+		assertTrue(tested.getVersionFilters().isEmpty());
+		assertTrue(tested.getTagOperations().isEmpty());
+		assertTrue(tested.getTagAttributeOperations().isEmpty());
+		assertNull(tested.getLatestComponentTime());
+
+		assertEquals(2, tested.getGroupFilters().size());
+		assertEquals("org.jboss", tested.getDatabaseSearchParameters().get("groupId1"));
+		assertEquals("org.jboss.unwanted", tested.getDatabaseSearchParameters().get("groupId2"));
+
+		assertEquals("namespace = #{filterParams.groupId1} AND namespace != #{filterParams.groupId2}", tested.getDatabaseSearchString());
+	}
+
+	@Test
+	public void parseFilterStringMultipleArtifacts() {
+		Filter tested = Filter.parseFilterString("name!=wildfly-dist&artifact!=wildfly-unwanted");
+		assertNull(tested.getUnspecified());
+		assertTrue(tested.getGroupFilters().isEmpty());
+		assertTrue(tested.getVersionFilters().isEmpty());
+		assertTrue(tested.getTagOperations().isEmpty());
+		assertTrue(tested.getTagAttributeOperations().isEmpty());
+		assertNull(tested.getLatestComponentTime());
+
+		assertEquals(2, tested.getArtifactFilters().size());
+		assertEquals("wildfly-dist", tested.getDatabaseSearchParameters().get("name1"));
+		assertEquals("wildfly-unwanted", tested.getDatabaseSearchParameters().get("name2"));
+
+		assertEquals("name != #{filterParams.name1} AND name != #{filterParams.name2}", tested.getDatabaseSearchString());
+	}
+
+
+	@Test
+	public void parseFilterStringMultipleVersion() {
+		Filter tested = Filter.parseFilterString("version!=1.2&version<=10&version>0.5.7");
+		assertNull(tested.getUnspecified());
+		assertTrue(tested.getGroupFilters().isEmpty());
+		assertTrue(tested.getArtifactFilters().isEmpty());
+		assertTrue(tested.getTagOperations().isEmpty());
+		assertTrue(tested.getTagAttributeOperations().isEmpty());
+		assertNull(tested.getLatestComponentTime());
+
+		assertEquals(3, tested.getVersionFilters().size());
+		assertEquals("1.2", tested.getDatabaseSearchParameters().get("version1"));
+		assertEquals("10", tested.getDatabaseSearchParameters().get("version2"));
+		assertEquals("0.5.7", tested.getDatabaseSearchParameters().get("version3"));
+
+		assertEquals("version != #{filterParams.version1} AND version <= #{filterParams.version2} AND version > #{filterParams.version3}", tested.getDatabaseSearchString());
+	}
+
+
+	@Test
 	public void parseFilterStringEmpty() {
+
 		Filter tested = Filter.parseFilterString("");
 		assertNull(tested.getUnspecified());
-		assertNull(tested.getArtifact());
-		assertNull(tested.getGroup());
-		assertNull(tested.getArtifact());
+		assertTrue(tested.getGroupFilters().isEmpty());
+		assertTrue(tested.getArtifactFilters().isEmpty());
+		assertTrue(tested.getVersionFilters().isEmpty());
+		assertTrue(tested.getTagOperations().isEmpty());
+		assertTrue(tested.getTagAttributeOperations().isEmpty());
+
 		assertNull(tested.getLatestComponentTime());
 
 		assertTrue(StringUtils.isBlank(tested.getDatabaseSearchString()));
 		assertTrue(tested.getDatabaseSearchParameters().isEmpty());
 
-
 		tested = Filter.parseFilterString("", 1729766001L);
 		assertNull(tested.getUnspecified());
-		assertNull(tested.getArtifact());
-		assertNull(tested.getGroup());
-		assertNull(tested.getArtifact());
+		assertTrue(tested.getGroupFilters().isEmpty());
+		assertTrue(tested.getArtifactFilters().isEmpty());
+		assertTrue(tested.getVersionFilters().isEmpty());
+		assertTrue(tested.getTagOperations().isEmpty());
+		assertTrue(tested.getTagAttributeOperations().isEmpty());
 		assertEquals(Long.valueOf(1729766001L), tested.getLatestComponentTime());
 		assertEquals("created > #{filterParams.created}", tested.getDatabaseSearchString());
 		assertEquals(1L, tested.getDatabaseSearchParameters().size());
@@ -64,20 +132,30 @@ public class FilterTest {
 
 	@Test
 	public void parseFilterStringAllWithNameAndSpaces() {
+
 		Filter tested = Filter.parseFilterString("group    =     org.jboss&name = nexus&version>=2.3.1&  tag=       TO_DEPLOY& tagAttr= OS <>    MacOS");
 		assertNull(tested.getUnspecified());
-		assertEquals("org.jboss", tested.getGroup());
-		assertEquals("nexus", tested.getArtifact());
-		assertEquals("2.3.1", tested.getVersion());
-		assertEquals(Filter.LogicalOperation.Operator.GE, tested.getVersionOperation());
-		assertEquals("TO_DEPLOY", tested.getTag());
-		assertEquals(Filter.LogicalOperation.Operator.EQ, tested.getTagOperation());
+		assertEquals(1, tested.getGroupFilters().size());
+		assertEquals("org.jboss", tested.getGroupFilters().get(0).getValue());
+		assertEquals(Filter.LogicalOperation.Operator.EQ, tested.getGroupFilters().get(0).getOperator());
 
-		List<Filter.TagAttributeExpression> tagExpressions = tested.getTagAttributeOperations();
+		assertEquals(1, tested.getArtifactFilters().size());
+		assertEquals("nexus", tested.getArtifactFilters().get(0).getValue());
+		assertEquals(Filter.LogicalOperation.Operator.EQ, tested.getArtifactFilters().get(0).getOperator());
+
+		assertEquals(1, tested.getVersionFilters().size());
+		assertEquals("2.3.1", tested.getVersionFilters().get(0).getValue());
+		assertEquals(Filter.LogicalOperation.Operator.GE, tested.getVersionFilters().get(0).getOperator());
+
+		assertEquals(1, tested.getTagOperations().size());
+		assertEquals("TO_DEPLOY", tested.getTagOperations().get(0).getValue());
+		assertEquals(Filter.LogicalOperation.Operator.EQ, tested.getTagOperations().get(0).getOperator());
+
+		List<Filter.LogicalOperation> tagExpressions = tested.getTagAttributeOperations();
 		assertEquals(1, tagExpressions.size());
-		assertEquals("OS", tagExpressions.get(0).getTagAttr());
-		assertEquals(Filter.LogicalOperation.Operator.NE, tagExpressions.get(0).getTagAttrOperation());
-		assertEquals("MacOS", tagExpressions.get(0).getTagAttrValue());
+		assertEquals("OS", tagExpressions.get(0).getAttribute());
+		assertEquals(Filter.LogicalOperation.Operator.NE, tagExpressions.get(0).getOperator());
+		assertEquals("MacOS", tagExpressions.get(0).getValue());
 	}
 
 	@Test(expected = Filter.ParseException.class)
@@ -107,13 +185,17 @@ public class FilterTest {
 		Filter tested = Filter.parseFilterString("kie-releases");
 
 		assertEquals("kie-releases", tested.getUnspecified());
-		assertNull(tested.getGroup());
-		assertNull(tested.getArtifact());
-		assertNull(tested.getVersion());
-		assertNull(tested.getVersionOperation());
-		assertNull(tested.getTag());
-		assertNull(tested.getTagOperation());
+		assertTrue(tested.getGroupFilters().isEmpty());
+		assertTrue(tested.getArtifactFilters().isEmpty());
+		assertTrue(tested.getVersionFilters().isEmpty());
+		assertTrue(tested.getTagOperations().isEmpty());
 		assertTrue(tested.getTagAttributeOperations().isEmpty());
+		assertNull(tested.getLatestComponentTime());
+
+		assertEquals("(version = #{filterParams.unspecified} OR name = #{filterParams.unspecified} OR namespace = #{filterParams.unspecified})", tested.getDatabaseSearchString());
+
+		assertEquals(1, tested.getDatabaseSearchParameters().size());
+		assertEquals("kie-releases", tested.getDatabaseSearchParameters().get("unspecified"));
 	}
 
 	@Test(expected = Filter.ParseException.class)
@@ -198,17 +280,84 @@ public class FilterTest {
 		
 		assertTrue(tested.checkComponentTag(component));
 
-		tested = Filter.parseFilterString("tag>=DEPLOYED");
+		tested = Filter.parseFilterString("tag!=FAILED");
 		assertTrue(tested.checkComponentTag(component));
 
-		tested = Filter.parseFilterString("tag>DEPLOYED");
+		tested = Filter.parseFilterString("tag=FAILED");
 		assertFalse(tested.checkComponentTag(component));
 
-		tested = Filter.parseFilterString("tag>=Z");
+		tested = Filter.parseFilterString("tag!=DEPLOYED");
 		assertFalse(tested.checkComponentTag(component));
 
-		tested = Filter.parseFilterString("tag>=A");
+		tag = mock(Tag.class);
+		when(tag.name()).thenReturn("ANOTHER-TAG");
+		component.tags().add(tag);
+
+		tested = Filter.parseFilterString("tag!=ANOTHER-TAG");
+		assertFalse(tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tag=ANOTHER-TAG");
 		assertTrue(tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tag!=DEPLOYED");
+		assertFalse(tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tag=DEPLOYED");
+		assertTrue(tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tag=DEPLOYED&tag=ANOTHER-TAG");
+		assertTrue(tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tag=DEPLOYED&tag!=ANOTHER-TAG");
+		assertFalse(tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tag!=DEPLOYED&tag=ANOTHER-TAG");
+		assertFalse(tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tag!=DEPLOYED&tag!=ANOTHER-TAG");
+		assertFalse(tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tag=DEPLOYED&tag!=EXCLUDE-TAG");
+		assertTrue(tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tag=ANOTHER-TAG&tag!=EXCLUDE-TAG");
+		assertTrue(tested.checkComponentTag(component));
+
+		tested = Filter.parseFilterString("tag=ANOTHER-TAG&tag=EXCLUDE-TAG");
+		assertFalse(tested.checkComponentTag(component));
+
+		try {
+			tested = Filter.parseFilterString("tag>=DEPLOYED");
+			tested.checkComponentTag(component);
+			fail("Exception should have been raised");
+		} catch (RuntimeException e) {
+			assertEquals("Unexpected operator for tag.", e.getMessage());
+		}
+
+		try {
+			tested = Filter.parseFilterString("tag>DEPLOYED");
+			tested.checkComponentTag(component);
+			fail("Exception should have been raised");
+		} catch (RuntimeException e) {
+			assertEquals("Unexpected operator for tag.", e.getMessage());
+		}
+
+		try {
+			tested = Filter.parseFilterString("tag<=DEPLOYED");
+			tested.checkComponentTag(component);
+			fail("Exception should have been raised");
+		} catch (RuntimeException e) {
+			assertEquals("Unexpected operator for tag.", e.getMessage());
+		}
+
+		try {
+			tested = Filter.parseFilterString("tag<DEPLOYED");
+			tested.checkComponentTag(component);
+			fail("Exception should have been raised");
+		} catch (RuntimeException e) {
+			assertEquals("Unexpected operator for tag.", e.getMessage());
+		}
+
 	}
 
 	@Test
@@ -250,7 +399,6 @@ public class FilterTest {
 
 		tested = Filter.parseFilterString("tagAttr=OS>macOS");
 		assertFalse("", tested.checkComponentTag(component));
-
 
 		tested = Filter.parseFilterString("tagAttr=build>0");
 		assertTrue("greater", tested.checkComponentTag(component));

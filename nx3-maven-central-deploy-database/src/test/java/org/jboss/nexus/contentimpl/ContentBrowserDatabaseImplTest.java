@@ -230,28 +230,6 @@ public class ContentBrowserDatabaseImplTest {
         return result;
     }
 
-    @Test
-    public void prepareValidationDataFilterComponents() {
-        Filter filter =  Filter.parseFilterString("group=org.jboss.nexus&version!=version-3");
-
-        ArrayList<FluentComponent> testComponents = getTestComponents();
-        FluentQuery<FluentComponent> fluentQuery = getFluentQuery(testComponents);
-
-        FluentComponents fluentComponentsMock = mock(FluentComponents.class);
-        when(fluentComponentsMock.byFilter(anyString(), any())).thenReturn(fluentQuery);
-        when(mavenContentFacet.components()).thenReturn(fluentComponentsMock);
-
-        tested.prepareValidationData(repository, filter, configuration, listOfFailures, toDeploy, log );
-
-        assertTrue(listOfFailures.isEmpty());
-        assertEquals(testComponents.size()-1 , toDeploy.size());
-
-        assertFalse(toDeploy.stream().anyMatch(component -> "version-3".equals(component.version())) );
-        assertTrue(toDeploy.stream().anyMatch(component -> "version-5".equals(component.version())) );
-        assertTrue(toDeploy.stream().anyMatch(component -> "version-7".equals(component.version())) );
-        assertTrue(toDeploy.stream().anyMatch(component -> "version-9".equals(component.version())) );
-        assertTrue(toDeploy.stream().anyMatch(component -> ("version-"+ (testComponents.size()-1)).equals(component.version())) );
-    }
 
     @Test
     public void prepareValidationDataRemoveAlreadyDeployed() {
@@ -361,7 +339,7 @@ public class ContentBrowserDatabaseImplTest {
     }
 
     private static FluentQuery<FluentComponent> getFluentQuery(@NotNull final List<FluentComponent> testComponents) {
-        return new FluentQuery<FluentComponent>() {
+        return new FluentQuery<>() {
             final List<FluentComponent> components  = Collections.unmodifiableList(testComponents);
 
             @Override
@@ -447,7 +425,7 @@ public class ContentBrowserDatabaseImplTest {
 
         final List<FluentComponent> comps = components;
 
-        return new Continuation<FluentComponent>() {
+        return new Continuation<>() {
             private final List<FluentComponent> content = comps;
 
              @Override

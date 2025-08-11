@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sonatype.nexus.tags.Tag;
 import com.sonatype.nexus.tags.TagStore;
 import com.sonatype.nexus.tags.service.TagService;
-import org.apache.commons.io.input.QueueInputStream;
-import org.apache.commons.io.output.QueueOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
@@ -103,8 +101,8 @@ public class MavenCentralDeploy extends ComponentSupport {
     private static final String STATUS_ENDPOINT = "/api/v1/publisher/status";
 
 
-   public void processDeployment(MavenCentralDeployTaskConfiguration configuration) {
-        log.info("Deploying content.....");
+   public  void processDeployment(MavenCentralDeployTaskConfiguration configuration) {
+        log.info("Possibly deploying content.....");
 
         checkNotNull(configuration, "Configuration was not found");
 
@@ -114,9 +112,10 @@ public class MavenCentralDeploy extends ComponentSupport {
 
        List<FailedCheck> listOfFailures = new ArrayList<>();
 
-       Filter filter = Filter.parseFilterString(configuration.getFilter(), configuration.getLatestComponentTime());
+
 
         try {
+          Filter filter = Filter.parseFilterString(configuration.getFilter(), configuration.getLatestComponentTime());
           List<Component> toDeploy = new ArrayList<>();
 
           Repository repository = checkNotNull(repositoryManager.get(checkNotNull(configuration.getRepository(), "Repository not configured for the task!")), "Invalid repository configured!");
@@ -184,41 +183,50 @@ public class MavenCentralDeploy extends ComponentSupport {
 
                   // curl -u 'dhladky@redhat.com:redacted' -F bundle=@kieuploadtest.zip 'https://central.sonatype.com/api/v1/publisher/upload?name=testbundle;publishingType=USER_MANAGED'
 
+
+                  log.info("Publishing "+toDeploy.size()+" artifacts.");
                   final Credentials credentials = new UsernamePasswordCredentials(centralUser, centralPassword);
 
-                  try (QueueOutputStream queueOutputStream = new QueueOutputStream()) {
-                      try (QueueInputStream queueInputStream = queueOutputStream.newQueueInputStream()) {
 
-                          HttpPost httpPost = new HttpPost(centralURL+BUNDLE_ENDPOINT+"?name="+configuration.getBundleName()+"&publishingType="+centralMode );
+                  File temporaryFile = null;
+                  try {
+                      HttpPost httpPost = new HttpPost(centralURL+BUNDLE_ENDPOINT+"?name="+configuration.getBundleName()+"&publishingType="+centralMode );
+                      HttpClientBuilder httpClientBuilder = getHttpClientBuilder(centralProxy, centralProxyPort);
 
-                          MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create()
-                                  .addBinaryBody("bundle", queueInputStream, ContentType.create(APPLICATION_ZIP), (configuration.getBundleName()+".zip"));
+                      // check for man in the middle without login to avoid main in the middle attacks
+                      try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
+                          HttpPost httpNoBodyPost = new HttpPost(httpPost.getURI());
+                          try(CloseableHttpResponse requestResponse = httpClient.execute(httpNoBodyPost)) {
+                              if(requestResponse.getStatusLine().getStatusCode() != 401) // the endpoint should complain about not being authenticated
+                                  throw new IOException("Unexpected return value when connecting " + httpNoBodyPost.getURI().toString());
+                          }
+                      }
 
+
+                      temporaryFile = File.createTempFile("MavenCentralDeploy", ".zip");
+                      try (OutputStream queueOutputStream = new FileOutputStream(temporaryFile)) {
                           try (ZipOutputStream zipStream = new ZipOutputStream(queueOutputStream)) {
+                              int counter = 0;
                               for (Component component : toDeploy) {
+                                  if (log.isDebugEnabled())
+                                      log.debug("Publishing " + component.toStringExternal() + " (" + ++counter + "/" + toDeploy.size() + ")");
+
                                   publishArtifact(component, zipStream);
 
                                   if (component.getCreated() > latestComponentTime)
                                       latestComponentTime = component.getCreated();
                               }
                           }
+                      }
+
+                      try (InputStream fileInputStream = new FileInputStream(temporaryFile)) {
+                          MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create()
+                                  .addBinaryBody("bundle", fileInputStream, ContentType.create(APPLICATION_ZIP), (configuration.getBundleName()+".zip"));
 
                           httpPost.setEntity(multipartEntityBuilder.build());
 
                           Header authenticateHeader = new BasicScheme().authenticate(credentials, httpPost, new BasicHttpContext());
                           httpPost.addHeader(authenticateHeader);
-
-                          HttpClientBuilder httpClientBuilder = getHttpClientBuilder(centralProxy, centralProxyPort);
-
-                          // check for man in the middle without login to avoid main in the middle attacks
-                          try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
-                              HttpPost httpNoBodyPost = new HttpPost(httpPost.getURI());
-                              try(CloseableHttpResponse requestResponse = httpClient.execute(httpNoBodyPost)) {
-                                  if(requestResponse.getStatusLine().getStatusCode() != 401) // the endpoint should complain about not being authenticated
-                                      throw new IOException("Unexpected return value when connecting " + httpNoBodyPost.getURI().toString());
-                              }
-                          }
-
 
                           try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
                               try(CloseableHttpResponse requestResponse = httpClient.execute(httpPost)) {
@@ -232,16 +240,21 @@ public class MavenCentralDeploy extends ComponentSupport {
 
                               }
                           }
+
+                      } catch (AuthenticationException e) {
+                          // it can not happen with basic authentication only
+                          String problem = "Unexpected authentication error: " + e.getMessage();
+                          errors.add(new FailedCheck(problem));
+                          log.error(problem);
+                          throw new RuntimeException(e);
                       }
                   } catch (IOException ex) {
-                      errors.add(new FailedCheck("Failed to deploy "+ ex.getMessage()));
+                      errors.add(new FailedCheck("Failed to deploy " + ex.getMessage()));
                       log.error(ex.getMessage());
-                  } catch (AuthenticationException e) {
-                      // it can not happen with basic authentication only
-                      String problem = "Unexpected authentication error: " + e.getMessage();
-                      errors.add(new FailedCheck(problem));
-                      log.error(problem);
-                      throw new RuntimeException(e);
+                  } finally {
+                      if(temporaryFile != null)
+                          //noinspection ResultOfMethodCallIgnored
+                          temporaryFile.delete();
                   }
 
 
@@ -466,13 +479,7 @@ public class MavenCentralDeploy extends ComponentSupport {
 
     void publishArtifact(Component component, ZipOutputStream zipStream) throws IOException {
 
-
-       // TODO: 06.03.2023 push the content to Maven Central
-
-       // TODO: 15.09.2023 also remove possible error tag from the artifact
-
-       byte[] buffer = new byte[1024];
-
+       byte[] buffer = new byte[0xfffff];
        String zipName = (component.group().replace('.', '/')+"/" + component.name().replace('.', '/')+"/"+component.version()+"/");
        ZipEntry zipEntry = new ZipEntry(zipName);
        zipStream.putNextEntry(zipEntry);
@@ -483,12 +490,19 @@ public class MavenCentralDeploy extends ComponentSupport {
            if(assetName.charAt(0)=='/')
                assetName = assetName.substring(1);
 
+
+           if(log.isDebugEnabled())
+                log.debug("Pushing "+assetName+" to Maven Central.");
+
            final ZipEntry assetEntry = new ZipEntry(assetName);
            try(InputStream inputStream = asset.openContentInputStream()) {
                 zipStream.putNextEntry(assetEntry);
-
                int length;
+               int counter = 0;
                while ((length = inputStream.read(buffer)) >= 0) {
+                   CancelableHelper.checkCancellation();
+                   if(log.isTraceEnabled())
+                        log.trace("writing "+length+ " characters to output zip stream (run "+ ++counter+").");
                    zipStream.write(buffer, 0, length);
                }
            } catch (IOException e) {
@@ -512,8 +526,9 @@ public class MavenCentralDeploy extends ComponentSupport {
     private void waitForMavenCentralResults(List<FailedCheck> errors, HttpClientBuilder httpClientBuilder, HttpPost httpPost) throws IOException {
         //  wait for validation on Sonatype site finishes and analyze possible errors
 
-
+        log.info("Waiting for Maven Central to process deployment ");
         do {
+
             try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
                 try(CloseableHttpResponse httpResponse = httpClient.execute(httpPost)) {
 
@@ -533,6 +548,7 @@ public class MavenCentralDeploy extends ComponentSupport {
                            case "PENDING":
                            case "VALIDATING":
                            case "PUBLISHING":
+                               log.debug("... still waiting for Maven Central");
                                waitSomeTime(5000);
                                break;
                            case "VALIDATED":

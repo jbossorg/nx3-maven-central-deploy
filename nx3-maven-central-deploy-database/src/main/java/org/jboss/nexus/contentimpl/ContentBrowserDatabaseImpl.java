@@ -108,7 +108,6 @@ public class ContentBrowserDatabaseImpl implements ContentBrowser {
 
         browse.stream()
                 .filter(fluentComponent ->  fluentComponent.created().toEpochSecond() > configuration.getLatestComponentTime() && fluentComponent.created().toEpochSecond() < currentProcessingEpochTime )
-                .filter(filter::checkComponent)
                 .forEach(
                 fluentComponent -> {
                     try {

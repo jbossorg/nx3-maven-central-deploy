@@ -615,7 +615,7 @@ public class MavenCentralDeployTest{
         } catch (RuntimeException e) {
             assertEquals("Validations failed!", e.getMessage());
 
-            verify(mavenCentralDeploy).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // deployed once
+            verify(mavenCentralDeploy, never()).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // not deploying - SSL error
             verify(closeableHttpClient).execute(any(HttpUriRequest.class)); // called just once
             verify(closeableHttpClientStatus, never()).execute(any(HttpUriRequest.class));
             verify(report).createReport(any(), any(), any());
@@ -643,7 +643,7 @@ public class MavenCentralDeployTest{
             mavenCentralDeploy.processDeployment(testConfiguration);
         } catch (RuntimeException e) {
             assertEquals("Validations failed!", e.getMessage());
-            verify(mavenCentralDeploy).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // deployed once
+            verify(mavenCentralDeploy, never()).publishArtifact(same(testComponent), any(ZipOutputStream.class)); // no attempt to deploy - access failed
             verify(closeableHttpClient).execute(any(HttpUriRequest.class)); // called just once
             verify(closeableHttpClientStatus, never()).execute(any(HttpUriRequest.class));
             verify(report).createReport(any(), any(), any()); // there needs to be a status error for failed push
