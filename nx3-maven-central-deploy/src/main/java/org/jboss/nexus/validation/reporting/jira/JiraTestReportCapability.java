@@ -151,14 +151,16 @@ public class JiraTestReportCapability extends TestReportCapability<JiraTestRepor
 	public void createReport(MavenCentralDeployTaskConfiguration mavenCentralDeployTaskConfiguration, List<FailedCheck> listOfFailures, Map<String, Object> printVariables) {
 		JiraTestReportCapabilityConfiguration configuration = mavenCentralDeploy.findConfigurationForPlugin(JiraTestReportCapabilityConfiguration.class) ;
 
-		if(configuration == null)
+		if(configuration == null || mavenCentralDeployTaskConfiguration.isValidationTask())
 			return; // feature is disabled or not configured
 
 		if(
 				// creating test Jira issues is considered troubleshooting so try to create the ticket as many times as necessary
-				mavenCentralDeployTaskConfiguration instanceof MavenCentralDeployTaskWithJiraConfiguration && !((MavenCentralDeployTaskWithJiraConfiguration)mavenCentralDeployTaskConfiguration).getCreateTestTicket()
+				!(mavenCentralDeployTaskConfiguration instanceof MavenCentralDeployTaskWithJiraConfiguration
+				&& ((MavenCentralDeployTaskWithJiraConfiguration)mavenCentralDeployTaskConfiguration).getCreateTestTicket())
+				&& mavenCentralDeployTaskConfiguration.hasLastRunState()
+				&& Objects.requireNonNull(mavenCentralDeployTaskConfiguration.getLastRunState()).getEndState().equals(TaskState.FAILED))
 
-				&& mavenCentralDeployTaskConfiguration.hasLastRunState() && Objects.requireNonNull(mavenCentralDeployTaskConfiguration.getLastRunState()).getEndState().equals(TaskState.FAILED))
 			return; // real deployment failed previously, so we do not want to report errors over and over.
 
 		Objects.requireNonNull(templateHelper);

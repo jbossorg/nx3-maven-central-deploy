@@ -1,13 +1,14 @@
 package org.jboss.nexus.content;
 
 import com.sonatype.nexus.tags.Tag;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.sonatype.nexus.common.entity.EntityId;
 
 import java.util.*;
 
 /** Parent class for working with artifacts.  */
-public abstract class Component {
+public abstract class Component implements Comparable<Component>{
 
     protected Component(EntityId entityId, String group, String name, String version, long created, Set<Tag> tags) {
         this(entityId, group,name, version, created);
@@ -117,5 +118,18 @@ public abstract class Component {
                 ", name=" + name() +
                 ", version=" + version() +
                 ", format=maven2";
+    }
+
+    @Override
+    public int compareTo(@NotNull Component o) {
+        int i = StringUtils.compare(group(), o.group());
+        if(i != 0)
+            return i;
+
+        i = StringUtils.compare(name(), o.name());
+        if(i != 0)
+            return i;
+
+        return StringUtils.compare(version(), o.version());
     }
 }

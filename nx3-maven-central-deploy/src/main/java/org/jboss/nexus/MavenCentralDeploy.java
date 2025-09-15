@@ -112,8 +112,6 @@ public class MavenCentralDeploy extends ComponentSupport {
 
        List<FailedCheck> listOfFailures = new ArrayList<>();
 
-
-
         try {
           Filter filter = Filter.parseFilterString(configuration.getFilter(), configuration.getLatestComponentTime());
           List<Component> toDeploy = new ArrayList<>();
@@ -177,7 +175,7 @@ public class MavenCentralDeploy extends ComponentSupport {
               long latestComponentTime = configuration.getLatestComponentTime();
               String deploymentCreated = null;
 
-              if (publishPossible && !configuration.getDryRun() && !toDeploy.isEmpty()) {
+              if (publishPossible && !configuration.isValidationTask() && !configuration.getDryRun() && !toDeploy.isEmpty()) {
                   if(centralURL.endsWith("/"))
                       centralURL = centralURL.substring(0, centralURL.length()-1);
 
@@ -292,27 +290,42 @@ public class MavenCentralDeploy extends ComponentSupport {
 
               }
 
-              if(configuration.getMarkArtifacts() && errors.isEmpty() && (StringUtils.isNotBlank(deploymentCreated)) || configuration.getDryRun()) // only record latest artifacts if the reason is not an error
+              if(configuration.getAdjustLatestTimeAfterSuccess() && errors.isEmpty() && (StringUtils.isNotBlank(deploymentCreated) || configuration.getDryRun() || configuration.isValidationTask() )) // only record latest artifacts if the reason is not an error
                 configuration.setLatestComponentTime(String.valueOf(latestComponentTime));
 
-             final String publishedTag;
+             if(mcdTagSetupConfiguration != null) {
+                 final String publishedTag, publishedTagAttributes;
+                 if (configuration.isValidationTask()) {
+                     publishedTag = mcdTagSetupConfiguration.getValidatedTagName();
+                     publishedTagAttributes = mcdTagSetupConfiguration.getValidatedTagAttributes();
+                 } else {
+                     publishedTag = mcdTagSetupConfiguration.getDeployedTagName();
+                     publishedTagAttributes = mcdTagSetupConfiguration.getDeployedTagAttributes();
+                 }
 
-             if (errors.isEmpty() && (StringUtils.isNotBlank(deploymentCreated) || configuration.getDryRun()) && configuration.getMarkArtifacts() && mcdTagSetupConfiguration != null && StringUtils.isNotBlank((publishedTag = mcdTagSetupConfiguration.getDeployedTagName()))) {
-                if (tagStore == null || tagService == null) {
-                   String msg = "Cannot mark synchronized artifacts! This version of Nexus does not support tagging.";
-                   log.error(msg);
-                   response.append("\n- Warning: ").append(msg);
-                } else {
-                   log.info("Tagging " + toDeploy.size() + " artifacts.");
-                   verifyTag(publishedTag, mcdTagSetupConfiguration.getDeployedTagAttributes(), templateVariables);
+                 String failedTag = mcdTagSetupConfiguration.getFailedTagName();
 
-                   toDeploy.forEach(component -> {
-                      if (log.isDebugEnabled())
-                         log.debug("Tagging deployed artifact: " + component.toStringExternal());
+                 if (errors.isEmpty()  && configuration.getMarkArtifacts() &&    (StringUtils.isNotBlank(deploymentCreated)  && StringUtils.isNotBlank((publishedTag))|| configuration.getDryRun() || configuration.isValidationTask())) {
+                     if (tagStore == null || tagService == null) {
+                         String msg = "Cannot mark synchronized artifacts! This version of Nexus does not support tagging.";
+                         log.error(msg);
+                         response.append("\n- Warning: ").append(msg);
+                     } else {
+                         log.info("Tagging " + toDeploy.size() + " artifacts.");
 
-                      tagService.maybeAssociateById(publishedTag, repository, component.entityId());
-                   });
-                }
+                         verifyTag(publishedTag, publishedTagAttributes, templateVariables);
+
+                         toDeploy.forEach(component -> {
+                             if (log.isDebugEnabled())
+                                 log.debug("Tagging deployed artifact: " + component.toStringExternal());
+
+                             tagService.maybeAssociateById(publishedTag, repository, component.entityId());
+
+                             if(StringUtils.isNotBlank(failedTag))
+                                tagService.disassociateById(failedTag, repository, component.entityId() );
+                         });
+                     }
+                 }
              }
 
              if(publishPossible ) {
@@ -325,7 +338,10 @@ public class MavenCentralDeploy extends ComponentSupport {
                  response.append("\n- validation was OK, but the Maven Central deployment is not properly configured.");
              }
 
-             if (configuration.getDryRun())
+              if (configuration.isValidationTask())
+                response.append("\n- the deployment was a validation (no actual publishing).");
+
+              if (configuration.getDryRun())
                 response.append("\n- the deployment was a dry run (no actual publishing).");
           }
 
@@ -373,9 +389,39 @@ public class MavenCentralDeploy extends ComponentSupport {
                  }
              }
 
+              response.append("\n\nOK Artifacts:\n");
+
+              Set<Component> errs = errors.stream().filter(FailedCheck::isHasComponent).map(FailedCheck::getComponent).collect(Collectors.toSet());
+
+              toDeploy.stream()
+                      .filter(component -> !errs.contains(component))
+                      .limit(50)
+                      .sorted()
+                      .forEachOrdered(component -> response.append("- ").append(component.toStringExternal()).append('\n'));
 
              throw new RuntimeException("Validations failed!"); // throw an exception so the task is reported as failed
           }
+
+          // success
+          if(!toDeploy.isEmpty()) {
+
+              response.append("\n\nArtifacts:\n");
+
+              toDeploy.stream()
+                      .limit(50)
+                      .sorted()
+                      .forEachOrdered(component ->
+                          response.append("- ").append(component.toStringExternal()).append('\n')
+                      );
+
+              if(!configuration.isValidationTask() && !configuration.getDryRun())
+                    toDeploy.stream()
+                      .sorted()
+                      .forEachOrdered(component ->
+                              log.info("Published to Maven Central: "+component.toStringExternal()+", task "+configuration.getName()+", run  "+configuration.getRunNumber())
+                      );
+          }
+
         } catch (RuntimeException e) {
           if(!response.isEmpty())
              response.append('\n');

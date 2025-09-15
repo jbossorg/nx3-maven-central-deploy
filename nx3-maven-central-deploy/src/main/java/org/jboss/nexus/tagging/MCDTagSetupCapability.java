@@ -18,7 +18,6 @@ public class MCDTagSetupCapability extends MavenCentralDeployCapabilityParent<MC
 		return new MCDTagSetupConfiguration(properties);
 	}
 
-
 	@Nullable
 	@Override
 	protected String renderStatus()  {
@@ -33,6 +32,14 @@ public class MCDTagSetupCapability extends MavenCentralDeployCapabilityParent<MC
 			string = getConfig().getDeployedTagAttributes();
 			if(StringUtils.isNotBlank(string))
 				stringBuilder.append("- successful deployment tag attributes: ").append(string).append("<br/>");
+
+			string = getConfig().getValidatedTagName();
+			if(StringUtils.isNotBlank(string))
+				stringBuilder.append("- successful validation tag name: ").append(string).append("<br/>");
+
+			string = getConfig().getValidatedTagAttributes();
+			if(StringUtils.isNotBlank(string))
+				stringBuilder.append("- successful validation tag attributes: ").append(string).append("<br/>");
 
 			string = getConfig().getFailedTagName();
 			if(StringUtils.isNotBlank(string))

@@ -102,7 +102,7 @@ public class PomXMLValidationCheck extends CentralValidation {
 									break;
 								case "organization":
 									// this can be considered developer info as well
-									hasDeveloperInfo = checkLevelMultipleLevels(listOfFailures, component, asset.name(), event.getLocation(), "organization" , level, mavenCentralDeployTaskConfiguration.getDisableHasDeveloperInfo() ,2, 4);
+									hasDeveloperInfo |= level >= 2 && level <= 4;
 									break;
 								case "name":
 									if(level == 2) // element named name appears in many tags, but we need the one on level 2

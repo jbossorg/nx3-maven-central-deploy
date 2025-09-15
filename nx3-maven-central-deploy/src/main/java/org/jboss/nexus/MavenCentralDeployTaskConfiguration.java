@@ -16,8 +16,10 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
 
     public static final String REPOSITORY = "repository";
     public static final String CONTENT_SELECTOR = "contentSelector";
+    public static final String VALIDATION_TASK = "validationTask";
     public static final String DRY_RUN = "dryRun";
     public static final String MARK_ARTIFACTS = "markArtifacts";
+    public static final String ADJUST_LATEST_TIME_AFTER_SUCCESS = "adjustLatestTime";
     public static final String FILTER = "filter";
 
     public static final String VARIABLES = "variables";
@@ -69,8 +71,16 @@ public class MavenCentralDeployTaskConfiguration extends TaskConfiguration {
         return getBoolean(DRY_RUN, true);
     }
 
+    public Boolean isValidationTask() {
+        return getBoolean(VALIDATION_TASK, false);
+    }
+
     public Boolean getMarkArtifacts() {
         return getBoolean(MARK_ARTIFACTS, false);
+    }
+
+    public Boolean getAdjustLatestTimeAfterSuccess() {
+        return getBoolean(ADJUST_LATEST_TIME_AFTER_SUCCESS, true);
     }
 
     public String getContentSelector() {

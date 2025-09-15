@@ -61,6 +61,18 @@ public class MCDTagSetupDescriptor extends CapabilityDescriptorSupport<MCDTagSet
 		@DefaultMessage("List of attributes in format attribute=value of tag attributes, that will be assigned to the tag. Multiple attributes are divided by a newline (property file like format). You may use ${variable} from the deployment task.")
 		String deployedTagAttributesHelp();
 
+		@DefaultMessage("Successfully Validated Artifact Tag Name")
+		String validatedTagNameLabel();
+
+		@DefaultMessage("Name of the tag, that will be set for artifacts, that were successfully validated (not deployed) to Maven Central.")
+		String validatedTagNameHelp();
+
+		@DefaultMessage("Successfully Validated Artifact Tag Attributes")
+		String validatedTagAttributesLabel();
+
+		@DefaultMessage("List of attributes in format attribute=value of tag attributes, that will be assigned to the tag. Multiple attributes are divided by a newline (property file like format). You may use ${variable} from the validation task.")
+		String validatedTagAttributesHelp();
+
 		@DefaultMessage("Tag Name for Validation Failed Artifacts")
 		String failedTagNameLabel();
 
@@ -84,6 +96,8 @@ public class MCDTagSetupDescriptor extends CapabilityDescriptorSupport<MCDTagSet
 		List<FormField> initializeFormFields = new ArrayList<>(4);
 		initializeFormFields.add(new StringTextFormField(MCDTagSetupConfiguration.DEPLOYED_TAG_NAME, messages.deployedTagNameLabel(), messages.deployedTagNameHelp(), FormField.OPTIONAL));
 		initializeFormFields.add(new TextAreaFormField(MCDTagSetupConfiguration.DEPLOYED_TAG_ATTRIBUTES, messages.deployedTagAttributesLabel(), messages.deployedTagAttributesHelp(), FormField.OPTIONAL));
+		initializeFormFields.add(new StringTextFormField(MCDTagSetupConfiguration.VALIDATED_TAG_NAME, messages.validatedTagNameLabel(), messages.validatedTagNameHelp(), FormField.OPTIONAL));
+		initializeFormFields.add(new TextAreaFormField(MCDTagSetupConfiguration.VALIDATED_TAG_ATTRIBUTES, messages.validatedTagAttributesLabel(), messages.validatedTagAttributesHelp(), FormField.OPTIONAL));
 		initializeFormFields.add(new StringTextFormField(MCDTagSetupConfiguration.FAILED_TAG_NAME, messages.failedTagNameLabel(), messages.failedTagNameHelp(), FormField.OPTIONAL));
 		initializeFormFields.add(new TextAreaFormField(MCDTagSetupConfiguration.FAILED_TAG_ATTRIBUTES, messages.failedTagAttributesLabel(), messages.failedTagAttributesHelp(), FormField.OPTIONAL));
 

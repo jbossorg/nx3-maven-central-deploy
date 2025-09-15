@@ -84,7 +84,7 @@ public class Filter {
 							result.tagAttributeOperations.add(operation);
 							break;
 						} else
-							throw new ParseException("Incorrect filter expression: allowed fields are group, artifact, name, version, tag, tagAttr: "+token); // FIXME: 02.02.2023 maybe not the right text
+							throw new ParseException("Incorrect filter expression: allowed fields are group, artifact, name, version, tag, tagAttr: "+token);
 				}
 			}
 		}

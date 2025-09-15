@@ -53,6 +53,12 @@ public class MavenCentralDeployTaskDescriptor
     @DefaultMessage("Repository, that will be used as source for artifacts")
     String repositoryHelp();
 
+    @DefaultMessage("Validation task")
+    String validationTaskLabel();
+
+    @DefaultMessage("This task is only for validating artifacts. Overrides dry-run setting and artifacts will be marked with validation tag only.")
+    String validationTaskHelp();
+
     @DefaultMessage("Dry-Run")
     String dryRunLabel();
 
@@ -65,8 +71,14 @@ public class MavenCentralDeployTaskDescriptor
     @DefaultMessage("Optionally you may filter artifacts by their content selector. If used alongside Filter, both will be used to narrow search (AND).")
     String contentSelectorHelp();
 
+    @DefaultMessage("Adjust Latest Run Timestamp after Success")
+    String adjustLatestComponentTimeLabel();
+
+    @DefaultMessage("Uncheck while doing repeated testing. If checked, the successfully  processed artifacts will not be processed again in future. After success Latest Run Timestamp field will be increased automatically.")
+    String adjustLatestComponentTimeHelp();
+
     @DefaultMessage("Mark Completed")
-    String markArtifactsAfterRunLabel(); // TODO: 06.03.2023  
+    String markArtifactsAfterRunLabel();
 
     @DefaultMessage("Uncheck while doing repeated testing. If checked, the processed artifacts are marked as deployed. With dry-run on it may be used for the initial marking of artifacts as deployed before you installed this plugin.")
     String markArtifactsAfterRunHelp();
@@ -206,9 +218,12 @@ public class MavenCentralDeployTaskDescriptor
   protected static final FormField[] taskFields = {
           new TextAreaFormField(MavenCentralDeployTaskConfiguration.LATEST_STATUS, messages.latestResultsLabel(), messages.latestResultsHelp(), FormField.OPTIONAL, null, true ),
           new RepositoryCombobox(MavenCentralDeployTaskConfiguration.REPOSITORY, messages.repositoryLabel(), messages.repositoryHelp(), FormField.MANDATORY).includingAnyOfFormats("maven2"),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.VALIDATION_TASK, messages.validationTaskLabel(), messages.validationTaskHelp(), FormField.OPTIONAL).withInitialValue(false),
           new CheckboxFormField(MavenCentralDeployTaskConfiguration.DRY_RUN, messages.dryRunLabel(), messages.dryRunHelp(), FormField.OPTIONAL).withInitialValue(true),
           new CheckboxFormField(MavenCentralDeployTaskConfiguration.MARK_ARTIFACTS, messages.markArtifactsAfterRunLabel(), messages.markArtifactsAfterRunHelp(), FormField.OPTIONAL).withInitialValue(false),
           new NumberTextFormField(MavenCentralDeployTaskConfiguration.LATEST_COMPONENT_TIME, messages.latestRunTimeStampLabel(), messages.latestRunTimeStampHelp(), FormField.OPTIONAL),
+          new CheckboxFormField(MavenCentralDeployTaskConfiguration.ADJUST_LATEST_TIME_AFTER_SUCCESS, messages.adjustLatestComponentTimeLabel(), messages.adjustLatestComponentTimeHelp(), FormField.OPTIONAL).withInitialValue(true),
+
           new NumberTextFormField(MavenCentralDeployTaskConfiguration.PROCESSING_TIME_OFFSET, messages.processingTimeOffsetLabel(), messages.processingTimeOffsetHelp(), FormField.OPTIONAL).withInitialValue(10).withMinimumValue(0),
           new SelectorComboFormField(MavenCentralDeployTaskConfiguration.CONTENT_SELECTOR, messages.contentSelector(), messages.contentSelectorHelp(), FormField.OPTIONAL),
           new StringTextFormField(MavenCentralDeployTaskConfiguration.FILTER, messages.filterLabel(), messages.filterHelp(), FormField.OPTIONAL),

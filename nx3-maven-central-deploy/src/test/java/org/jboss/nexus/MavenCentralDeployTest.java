@@ -97,55 +97,58 @@ public class MavenCentralDeployTest{
     private List<Component> okComponentsToDeploy;
 
 
-    private final String errorSample1 = "{\n" +
-            "   \"deploymentId\":\"cbfe2fa8-c84c-4ec0-8e45-c71cdb5f6390\",\n" +
-            "   \"deploymentName\":\"xcom\",\n" +
-            "   \"deploymentState\":\"FAILED\",\n" +
-            "   \"purls\":[\n" +
-            "      \"pkg:maven/xcom.sonatype.central.testing.david-hladky/kie-api@7.42.0.Final?type=bundle\"\n" +
-            "   ],\n" +
-            "   \"errors\":{\n" +
-            "      \"pkg:maven/xcom.sonatype.central.testing.david-hladky/kie-api@7.42.0.Final?type=bundle\":[\n" +
-            "         \"Invalid 'md5' checksum for file: kie-api-7.42.0.Final.pom\",\n" +
-            "         \"Invalid 'sha1' checksum for file: kie-api-7.42.0.Final.pom\",\n" +
-            "         \"Missing signature for file: kie-api-7.42.0.Final-javadoc.jar\",\n" +
-            "         \"Missing signature for file: kie-api-7.42.0.Final-sources.jar\",\n" +
-            "         \"Missing signature for file: kie-api-7.42.0.Final-test-sources.jar\",\n" +
-            "         \"Missing signature for file: kie-api-7.42.0.Final-tests.jar\",\n" +
-            "         \"Missing signature for file: kie-api-7.42.0.Final.jar\",\n" +
-            "         \"Missing signature for file: kie-api-7.42.0.Final.pom\",\n" +
-            "         \"Namespace 'xcom.sonatype.central.testing.david-hladky' is not allowed\",\n" +
-            "         \"Dependency version information is missing\",\n" +
-            "         \"Developers information is missing\",\n" +
-            "         \"License information is missing\",\n" +
-            "         \"Project URL is not defined\",\n" +
-            "         \"SCM URL is not defined\"\n" +
-            "      ]\n" +
-            "   },\n" +
-            "   \"cherryBomUrl\":null\n" +
-            "}";
+    private final String errorSample1 = """
+            {
+               "deploymentId":"cbfe2fa8-c84c-4ec0-8e45-c71cdb5f6390",
+               "deploymentName":"xcom",
+               "deploymentState":"FAILED",
+               "purls":[
+                  "pkg:maven/xcom.sonatype.central.testing.david-hladky/kie-api@7.42.0.Final?type=bundle"
+               ],
+               "errors":{
+                  "pkg:maven/xcom.sonatype.central.testing.david-hladky/kie-api@7.42.0.Final?type=bundle":[
+                     "Invalid 'md5' checksum for file: kie-api-7.42.0.Final.pom",
+                     "Invalid 'sha1' checksum for file: kie-api-7.42.0.Final.pom",
+                     "Missing signature for file: kie-api-7.42.0.Final-javadoc.jar",
+                     "Missing signature for file: kie-api-7.42.0.Final-sources.jar",
+                     "Missing signature for file: kie-api-7.42.0.Final-test-sources.jar",
+                     "Missing signature for file: kie-api-7.42.0.Final-tests.jar",
+                     "Missing signature for file: kie-api-7.42.0.Final.jar",
+                     "Missing signature for file: kie-api-7.42.0.Final.pom",
+                     "Namespace 'xcom.sonatype.central.testing.david-hladky' is not allowed",
+                     "Dependency version information is missing",
+                     "Developers information is missing",
+                     "License information is missing",
+                     "Project URL is not defined",
+                     "SCM URL is not defined"
+                  ]
+               },
+               "cherryBomUrl":null
+            }""";
 
-    private final String pendingSample = "{\n" +
-            "   \"deploymentId\":\"cbfe2fa8-c84c-4ec0-8e45-c71cdb5f6390\",\n" +
-            "   \"deploymentName\":\"com\",\n" +
-            "   \"deploymentState\":\"PENDING\",\n" +
-            "   \"purls\":[\n" +
-            "      \"pkg:maven/com.sonatype.central.testing.david-hladky/kie-api@7.42.0.Final?type=bundle\"\n" +
-            "   ],\n" +
-            "   \"errors\":{ },\n" +
-            "   \"cherryBomUrl\":null\n" +
-            "}";
+    private final String pendingSample = """
+            {
+               "deploymentId":"cbfe2fa8-c84c-4ec0-8e45-c71cdb5f6390",
+               "deploymentName":"com",
+               "deploymentState":"PENDING",
+               "purls":[
+                  "pkg:maven/com.sonatype.central.testing.david-hladky/kie-api@7.42.0.Final?type=bundle"
+               ],
+               "errors":{ },
+               "cherryBomUrl":null
+            }""";
 
-    private final String publishedSample = "{\n" +
-            "   \"deploymentId\":\"cbfe2fa8-c84c-4ec0-8e45-c71cdb5f6390\",\n" +
-            "   \"deploymentName\":\"com\",\n" +
-            "   \"deploymentState\":\"PUBLISHED\",\n" +
-            "   \"purls\":[\n" +
-            "      \"pkg:maven/com.sonatype.central.testing.david-hladky/kie-api@7.42.0.Final?type=bundle\"\n" +
-            "   ],\n" +
-            "   \"errors\":{ },\n" +
-            "   \"cherryBomUrl\":null\n" +
-            "}";
+    private final String publishedSample = """
+            {
+               "deploymentId":"cbfe2fa8-c84c-4ec0-8e45-c71cdb5f6390",
+               "deploymentName":"com",
+               "deploymentState":"PUBLISHED",
+               "purls":[
+                  "pkg:maven/com.sonatype.central.testing.david-hladky/kie-api@7.42.0.Final?type=bundle"
+               ],
+               "errors":{ },
+               "cherryBomUrl":null
+            }""";
 
 
     @SuppressWarnings("ExtractMethodRecommender")
@@ -229,9 +232,10 @@ public class MavenCentralDeployTest{
         okComponentsToDeploy.clear(); // nothing to deploy
         mavenCentralDeploy.processDeployment(testConfiguration);
 
-        assertEquals("Processed 0 components.\n" +
-            "- no errors were found.\n" +
-            "- the deployment was a dry run (no actual publishing).", testConfiguration.getLatestStatus());
+        assertEquals("""
+                Processed 0 components.
+                - no errors were found.
+                - the deployment was a dry run (no actual publishing).""", testConfiguration.getLatestStatus());
     }
 
     @Test
@@ -288,6 +292,21 @@ public class MavenCentralDeployTest{
     public void processDeploymentSuccessDryRun() throws IOException {
 
         testConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.DRY_RUN, true);
+
+        TestReportCapability report = mock(TestReportCapability.class);
+        reports.add(report);
+
+        mavenCentralDeploy.processDeployment(testConfiguration);
+
+        verify(mavenCentralDeploy, never()).publishArtifact(same(testComponent), any(ZipOutputStream.class));
+        verify(report, never()).createReport(any(), any(), any());
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void processDeploymentSuccessDryValidationTask() throws IOException {
+
+        testConfiguration.setBoolean(MavenCentralDeployTaskConfiguration.VALIDATION_TASK, true);
 
         TestReportCapability report = mock(TestReportCapability.class);
         reports.add(report);
