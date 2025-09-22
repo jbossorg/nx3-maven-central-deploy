@@ -57,6 +57,8 @@ import static org.sonatype.nexus.repository.view.ContentTypes.APPLICATION_ZIP;
 @SuppressWarnings("CdiInjectionPointsInspection")
 public class MavenCentralDeploy extends ComponentSupport {
 
+    /** Artifacts to list in successful release */
+    private static final int ARTIFACTS_SHOW = 100;
     private final RepositoryManager repositoryManager;
 
     private final Set<TestReportCapability<?>> reports;
@@ -305,7 +307,9 @@ public class MavenCentralDeploy extends ComponentSupport {
 
                  String failedTag = mcdTagSetupConfiguration.getFailedTagName();
 
-                 if (errors.isEmpty()  && configuration.getMarkArtifacts() &&    (StringUtils.isNotBlank(deploymentCreated)  && StringUtils.isNotBlank((publishedTag))|| configuration.getDryRun() || configuration.isValidationTask())) {
+                 if (errors.isEmpty()  && configuration.getMarkArtifacts()
+                         && StringUtils.isNotBlank((publishedTag))
+                         && (StringUtils.isNotBlank(deploymentCreated) || configuration.getDryRun() || configuration.isValidationTask())) {
                      if (tagStore == null || tagService == null) {
                          String msg = "Cannot mark synchronized artifacts! This version of Nexus does not support tagging.";
                          log.error(msg);
@@ -355,7 +359,7 @@ public class MavenCentralDeploy extends ComponentSupport {
                      .forEach(response::append);
 
              // add errors with component (limit to first 100)
-              errors.stream().filter(FailedCheck::isHasComponent).limit(100)
+              errors.stream().filter(FailedCheck::isHasComponent).limit(ARTIFACTS_SHOW)
                       .map(failedCheck -> "\n   - "+failedCheck.formatComponent()+": "+failedCheck.getProblem()).forEach(response::append);
 
              for (TestReportCapability<?> report : reports) {
@@ -369,7 +373,7 @@ public class MavenCentralDeploy extends ComponentSupport {
 
              if(configuration.getMarkArtifacts()) {
                  final String failedTagName;
-                 if (/*configuration.getMarkArtifacts() && */ mcdTagSetupConfiguration != null && StringUtils.isNotBlank((failedTagName = mcdTagSetupConfiguration.getFailedTagName()))) {
+                 if ( mcdTagSetupConfiguration != null && StringUtils.isNotBlank((failedTagName = mcdTagSetupConfiguration.getFailedTagName()))) {
                      if (tagStore == null || tagService == null) {
                          String msg = "Cannot mark failed artifacts! This version of Nexus does not support tagging.";
                          log.error(msg);
@@ -408,11 +412,13 @@ public class MavenCentralDeploy extends ComponentSupport {
               response.append("\n\nArtifacts:\n");
 
               toDeploy.stream()
-                      .limit(50)
+                      .limit(ARTIFACTS_SHOW)
                       .sorted()
                       .forEachOrdered(component ->
                           response.append("- ").append(component.toStringExternal()).append('\n')
                       );
+              if(toDeploy.size()> ARTIFACTS_SHOW)
+                  response.append("- .... and ").append(toDeploy.size()- ARTIFACTS_SHOW).append(" others");
 
               if(!configuration.isValidationTask() && !configuration.getDryRun())
                     toDeploy.stream()
