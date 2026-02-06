@@ -70,6 +70,8 @@ public class PomXMLValidationCheck extends CentralValidation {
 						 hasProjectURL = false,
 						 hasParentSection = false;
 
+					boolean inPluginsSection = false;
+
 
 					while (reader.hasNext()) {
 						XMLEvent event = reader.nextEvent();
@@ -82,7 +84,8 @@ public class PomXMLValidationCheck extends CentralValidation {
 									hasProject = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "project", level, 1, mavenCentralDeployTaskConfiguration.getDisableHasProject());
 									break;
 								case "scm":
-									hasSCM = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "source code source (scm)", level, 2, mavenCentralDeployTaskConfiguration.getDisableHasSourceCodes());
+									if(!inPluginsSection)
+										hasSCM = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "source code source (scm)", level, 2, mavenCentralDeployTaskConfiguration.getDisableHasSourceCodes());
 									break;
 								case "license":
 									// license is in the expected place in xml (level and inside licenses block)
@@ -109,7 +112,8 @@ public class PomXMLValidationCheck extends CentralValidation {
 										hasProjectName = true;
 									break;
 								case "description":
-									hasProjectDescription = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "description", level, 2, mavenCentralDeployTaskConfiguration.getDisableHasProjectDescription());
+									if(!inPluginsSection)
+										hasProjectDescription = checkLevel(listOfFailures, component, asset.name(), event.getLocation(), "description", level, 2, mavenCentralDeployTaskConfiguration.getDisableHasProjectDescription());
 									break;
 								case "url":
 									if(level == 2) // url tag may be elsewhere, which is all right so no complaining
@@ -142,6 +146,9 @@ public class PomXMLValidationCheck extends CentralValidation {
 									}
 
 									break;
+								case "plugins":
+									inPluginsSection = true;
+									break;
 							}
 						} else if (event.isEndElement()) {
 							level--;
@@ -156,6 +163,10 @@ public class PomXMLValidationCheck extends CentralValidation {
 								case "parent":
 									parentSection = false;
 									break;
+								case "plugins":
+									inPluginsSection = false;
+									break;
+
 							}
 
 						}

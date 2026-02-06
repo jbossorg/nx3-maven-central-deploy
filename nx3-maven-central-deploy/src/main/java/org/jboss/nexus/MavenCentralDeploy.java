@@ -181,7 +181,7 @@ public class MavenCentralDeploy extends ComponentSupport {
                   if(centralURL.endsWith("/"))
                       centralURL = centralURL.substring(0, centralURL.length()-1);
 
-                  // curl -u 'dhladky@redhat.com:redacted' -F bundle=@kieuploadtest.zip 'https://central.sonatype.com/api/v1/publisher/upload?name=testbundle;publishingType=USER_MANAGED'
+                  // curl -u 'dhladky@redhat.com:redacted' -F bundle=@kieuploadtest.zip 'https://central.sonatype.com/api/v1/publisher/upload?name=testbundle&publishingType=USER_MANAGED'
 
 
                   log.info("Publishing "+toDeploy.size()+" artifacts.");
