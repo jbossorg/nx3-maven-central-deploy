@@ -23,7 +23,7 @@
 
     <groupId>org.jboss.nexus</groupId>
     <artifactId>nx3-maven-central-deploy-parent</artifactId>
-    <version>3.77.2-03-SNAPSHOT</version>
+    <version>3.77.2-02-SNAPSHOT</version>
     <description>Plugin for deployment of artifacts from Sonatype Nexus 3 repositories to Maven Central.</description>
 
 

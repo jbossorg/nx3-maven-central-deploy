@@ -108,7 +108,7 @@ public abstract class Component implements Comparable<Component>{
 
         Component that = (Component) obj;
 
-        return  Objects.equals(group(), that.group()) && Objects.equals(name(), that.name()) && Objects.equals(version(), version());
+        return  Objects.equals(group(), that.group()) && Objects.equals(name(), that.name()) && Objects.equals(version(), that.version());
     }
 
     /** Alternative to {@link #toString()}. It is designed to provide the same result as {@link org.sonatype.nexus.repository.storage.Component#toStringExternal()}

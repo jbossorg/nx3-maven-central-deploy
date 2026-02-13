@@ -8,10 +8,12 @@ import com.sonatype.nexus.tags.service.TagService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
+import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -19,6 +21,7 @@ import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.util.EntityUtils;
 import org.jboss.nexus.content.Component;
 import org.jboss.nexus.content.ContentBrowser;
 import org.jboss.nexus.tagging.MCDTagSetupConfiguration;
@@ -49,6 +52,7 @@ import java.util.zip.ZipOutputStream;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jboss.nexus.MavenCentralDeployCentralSettingsConfiguration.AUTOMATIC;
+import static org.jboss.nexus.MavenCentralDeployCentralSettingsConfiguration.USER_MANAGED;
 import static org.sonatype.nexus.repository.view.ContentTypes.APPLICATION_ZIP;
 
 
@@ -96,6 +100,11 @@ public class MavenCentralDeploy extends ComponentSupport {
      *
      * @see <a href="https://central.sonatype.com/api-doc" >documentation</a> */
     private static final String BUNDLE_ENDPOINT = "/api/v1/publisher/upload";
+
+    /** Sonatype Central endpoint for deployment management
+     *
+     * @see <a href="https://central.sonatype.com/api-doc" >documentation</a> */
+    private static final String DEPLOYMENT_ENDPOINT = "/api/v1/publisher/deployment/";
 
     /** Sonatype Central status endpoint.
      *
@@ -157,7 +166,7 @@ public class MavenCentralDeploy extends ComponentSupport {
                   response.append('\n').append(msg);
                   publishPossible = false;
               }
-              if (!"USER_MANAGED".equalsIgnoreCase(centralMode) && !AUTOMATIC.equalsIgnoreCase(centralMode)) {
+              if (!USER_MANAGED.equalsIgnoreCase(centralMode) && !AUTOMATIC.equalsIgnoreCase(centralMode)) {
                   String msg = "The artifacts can not be published. Deployment mode should either be USER_MANAGED or AUTOMATIC! It is " + centralMode;
                   log.error(msg);
                   response.append('\n').append(msg);
@@ -177,14 +186,17 @@ public class MavenCentralDeploy extends ComponentSupport {
               long latestComponentTime = configuration.getLatestComponentTime();
               String deploymentCreated = null;
 
-              if (publishPossible && !configuration.isValidationTask() && !configuration.getDryRun() && !toDeploy.isEmpty()) {
+              if(configuration.isValidationTask())
+                  centralMode = USER_MANAGED;
+
+              if (publishPossible && !configuration.getDryRun() && !toDeploy.isEmpty()) {
                   if(centralURL.endsWith("/"))
                       centralURL = centralURL.substring(0, centralURL.length()-1);
 
                   // curl -u 'dhladky@redhat.com:redacted' -F bundle=@kieuploadtest.zip 'https://central.sonatype.com/api/v1/publisher/upload?name=testbundle&publishingType=USER_MANAGED'
 
 
-                  log.info("Publishing "+toDeploy.size()+" artifacts.");
+                  log.info("Publishing {} artifacts.", toDeploy.size());
                   final Credentials credentials = new UsernamePasswordCredentials(centralUser, centralPassword);
 
 
@@ -277,6 +289,26 @@ public class MavenCentralDeploy extends ComponentSupport {
                           httpClientBuilder.setDefaultHeaders(Collections.singleton(authenticateHeader));
 
                           waitForMavenCentralResults(errors, httpClientBuilder, httpPost);
+
+                          if(configuration.isValidationTask()) {
+                              // cleanup after validation
+
+                              HttpDelete httpDelete = new HttpDelete(centralURL+DEPLOYMENT_ENDPOINT+"/"+deploymentCreated );
+
+                              httpClientBuilder = getHttpClientBuilder(centralProxy, centralProxyPort).setDefaultHeaders(Collections.singleton(authenticateHeader));
+
+                              try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
+                                  try (CloseableHttpResponse httpResponse = httpClient.execute(httpDelete)) {
+                                      StatusLine statusLine = httpResponse.getStatusLine();
+                                      if(statusLine.getStatusCode() == 204) {
+                                          log.debug("Validation deployment to Maven Central {} successfully deleted.", deploymentCreated);
+                                      } {
+                                         log.error("Failed to delete deployment {} in Maven Central: {} due to {}: {}", configuration.getBundleName() , deploymentCreated, statusLine.getStatusCode(), statusLine.getReasonPhrase());
+                                      }
+                                      EntityUtils.consume(httpResponse.getEntity());
+                                  }
+                              }
+                          }
 
                       } catch (IOException e) {
                           throw new RuntimeException(e);
@@ -393,16 +425,35 @@ public class MavenCentralDeploy extends ComponentSupport {
                  }
              }
 
-              response.append("\n\nOK Artifacts:\n");
+
 
               Set<Component> errs = errors.stream().filter(FailedCheck::isHasComponent).map(FailedCheck::getComponent).collect(Collectors.toSet());
 
-              toDeploy.stream()
-                      .filter(component -> !errs.contains(component))
-                      .limit(50)
-                      .sorted()
-                      .forEachOrdered(component -> response.append("- ").append(component.toStringExternal()).append('\n'));
+              Set<Component> ok = new HashSet<>();
+              toDeploy.forEach( component ->
+                      {
+                          if(
+                           errs.stream().noneMatch(failedComponent -> Objects.equals(failedComponent.group(), component.group()) && Objects.equals(failedComponent.name(), component.name()) && Objects.equals(failedComponent.version(), component.version()) )
+                          ) ok.add(component);
+                      }
+              );
 
+              if(!ok.isEmpty()) {
+                  response.append("\n\nOK Artifacts:\n");
+                  ok.stream()
+                          .filter(component -> !errs.contains(component))
+                          .limit(50)
+                          .sorted()
+                          .forEachOrdered(component -> response.append("- ").append(component.toStringExternal()).append('\n'));
+              }
+
+              if(!errs.isEmpty()) {
+                  response.append("\n\nFailed Artifacts:\n");
+                  errs.stream()
+                          .limit(50)
+                          .sorted()
+                          .forEachOrdered(component -> response.append("- ").append(component.toStringExternal()).append('\n'));
+              }
              throw new RuntimeException("Validations failed!"); // throw an exception so the task is reported as failed
           }
 
@@ -628,6 +679,7 @@ public class MavenCentralDeploy extends ComponentSupport {
                        String msg = "Unexpected error processing the status request for deployment "+ httpPost.getURI().getQuery()+": "+httpResponse.getStatusLine().getStatusCode()+" - "+httpResponse.getStatusLine().getReasonPhrase();
                        log.error(msg);
                        errors.add(new FailedCheck(msg));
+                       EntityUtils.consume(httpResponse.getEntity());
                        return;
                     }
                 }
